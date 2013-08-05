@@ -41,6 +41,7 @@ print_help() {
     echo "         -m             disable library compilation in multithreading mode ( "${nomultithread}" )"  && \
     echo "         -P  iteration  select the OpenMPI execution mode ( "${mpimode}" ) for the run iteration <iteration>" && \
     echo "         -c  MPI proc   number of parallel processes to be run by OpenMPI if "${mpimode}" is selected" && \  
+    echo "         -b  MPI mode   running mode of MPI option: 0 simple mpiexec ; 1 mpiexec through LSF bsub" && \
     echo "         -h             display this help and exit" && \
     echo ""
 }
@@ -116,9 +117,10 @@ verbose="FALSE"                    # controls verbose mode
 nomultithread="FALSE"              # disables multithread mode of Sherpa library compilation
 mpiiter=""                         # Sherpa iteration for which the OpenMPI run is required
 nmpiproc="1"                       # number of parallel processes to be run by OpenMPI
+mpisub="0"                         # running mode of MPI option: 0 simple mpiexec ; 1 mpiexec through LSF bsub
 
 # get & evaluate options
-while getopts :d:i:p:o:f:D:L:C:P:c:Ahvmi OPT
+while getopts :d:i:p:o:f:D:L:C:P:c:b:Ahvmi OPT
 do
   case $OPT in
   d) shr=$OPTARG ;;
@@ -131,6 +133,7 @@ do
   C) cfcr=$OPTARG ;;
   P) mpiiter=$OPTARG ;;
   c) nmpiproc=$OPTARG ;;
+  b) mpisub=$OPTARG ;;
   A) FLGAMISIC="TRUE" ;;
   v) verbose="TRUE";;
   m) nomultithread="TRUE";;
@@ -152,6 +155,8 @@ done
 
 mpimode="FALSE"                    # disable/enable the OpenMPI execution of the Sherpa executable, requires the coresponding tool version 
 if [ "${mpiiter}" != "" ]; then mpimode="TRUE" ; fi 
+
+if [ "${mpisub}" != "0" ] && [ "${mpisub}" != "1" ]; then echo " <E> Unknown MPI execution mode "${mpisub}" . Aborting..." ; fi
 
 # make sure to use absolute path names...
 cd ${shr} && shr=`pwd`; cd ${HDIR}
@@ -425,9 +430,9 @@ fi
 sherpaexe=`find ${shr} -type f -name Sherpa`
 echo " <I> Sherpa executable is "${sherpaexe}
 
-if [ "${mpimode}" = "TRUE" ]; then 
-    sherpaexempi="mpiexec --show-progress -np ${nmpiproc} ${sherpaexe}" 
-    echo " <I> Sherpa OpenMPI command is "${sherpaexempi}  
+if [ "${mpimode}" = "TRUE" ] && [ "${mpisub}" = "0" ]; then  
+    sherpaexempi="mpiexec --show-progress -np ${nmpiproc} ${sherpaexe}"  
+    echo " <I> Sherpa OpenMPI command "${sherpaexempi}  
 fi
 
 cd ${pth}
@@ -468,6 +473,47 @@ exec_log2(){
     fi
 }
 
+#Equivalent of exec_log2 but for execution in OpenMPI using LSF 
+#Usage mpilsf_log2 [-a] stdout_file stderr_file cmd args ....
+# -a: append outputs to the files.
+mpilsf_log2(){
+    local append_opt=""
+    if [ $1 = -a ]; then
+	append_opt=-a
+	shift
+    else
+	unset append_opt
+    fi
+    local fout=$1
+    local ferr=$2
+    shift 2;
+
+    rm -f exe_job outlog errlog endjob
+    cat > exe_job <<EOF
+    mpiexec --show-progress $@
+    touch endjob
+    ls -lrt
+EOF
+
+    echo " <I> Sherpa OpenMPI command "
+    cat exe_job
+    set -x
+    bsub -J sherpa -o outlog -e errlog -q ts_cms -m farm044.ts.infn.it -n ${nmpiproc} < exe_job
+    set +x
+
+# wait for LSF execution end before continuing
+    while [ ! -f endjob ]; do sleep 15 ; done
+    
+    if [ -n "$append_opt" ]; then
+        cat outlog >> "$fout" 
+        cat errlog >> "$ferr"
+    else
+        mv outlog "$fout"
+        mv errlog "$ferr"
+    fi
+
+}
+
 countiter=0
 
 ## first pass (loop if AMEGIC + NLO loop generators are used)
@@ -478,7 +524,11 @@ if [ "${lbo}" = "LIBS" ] || [ "${lbo}" = "LBCR" ]; then
   echo " <I> creating library code..."
   echo "     ...Logs stored in ${shrun}/${outflbs}_passLC.out and ${shrun}/${outflbs}_passLC.err."
   if [ "${mpimode}" = "TRUE" ] && [ "${countiter}" = "${mpiiter}" ]; then 
-      exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexempi} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+      if [ "${mpisub}" = "0" ]; then 
+          exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexempi} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+      elif [ "${mpisub}" = "1" ]; then    
+          mpilsf_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexe} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+      fi
   else
       exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexe} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
   fi
@@ -516,7 +566,11 @@ if [ "${lbo}" = "LIBS" ] || [ "${lbo}" = "LBCR" ]; then
       echo " <I> re-invoking Sherpa for futher library/cross section calculation..."
       echo "     ...Logs stored in ${shrun}/${outflbs}_passLC.out and ${shrun}/${outflbs}_passLC.err."
       if [ "${mpimode}" = "TRUE" ] && [ "${countiter}" = "${mpiiter}" ]; then 
-          exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexempi} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+          if [ "${mpisub}" = "0" ]; then 
+              exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexempi} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+          elif [ "${mpisub}" = "1" ]; then    
+              mpilsf_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexe} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
+          fi
       else
           exec_log2 -a ${shrun}/${outflbs}_passLC.out ${shrun}/${outflbs}_passLC.err ${sherpaexe} ${multithread_opt} "PATH="${pth} "PATH_PIECE="${pth} "RESULT_DIRECTORY="${dir2}
       fi
