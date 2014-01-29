@@ -95,7 +95,7 @@ namespace {
 namespace edm {
   namespace service {
     SiteLocalConfigService::SiteLocalConfigService(ParameterSet const& pset) :
-          m_url("/SITECONF/local/JobConfig/site-local-config.xml"),
+          m_url("/SITECONF/T3_IT_Trieste/JobConfig/site-local-config.xml"),
           m_dataCatalog(),
           m_fallbackDataCatalog(),
           m_frontierConnect(),

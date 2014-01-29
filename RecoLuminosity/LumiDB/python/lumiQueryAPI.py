@@ -1,6 +1,6 @@
 import os
 import coral,datetime
-from RecoLuminosity.LumiDB import nameDealer,lumiTime,CommonUtil
+from RecoLuminosity.LumiDB import nameDealer,lumiTime,CommonUtil,lumiCorrections
 import array
 from RecoLuminosity.LumiDB import argparse, nameDealer, selectionParser, hltTrgSeedMapper, \
      connectstrParser, cacheconfigParser, tablePrinter, csvReporter, csvSelectionParser
@@ -79,35 +79,42 @@ def lsBylsLumi (deadtable):
     return result
 
 
-def deliveredLumiForRange (dbsession, parameters, inputRange):
+def deliveredLumiForRange (dbsession, parameters,inputRange,finecorrections=None):
     '''Takes either single run as a string or dictionary of run ranges'''
     lumidata = []
-    # is this a single string?
-    if isinstance (inputRange, str):
-        lumidata.append( deliveredLumiForRun (dbsession, parameters, inputRange) )
+    runs=[]
+    if isinstance(inputRange, str):
+        runs.append(int(inputRange))
     else:
-        # if not, it's one of these dictionary things
-        for run in sorted( inputRange.runs() ):
-            if parameters.verbose:
-                print "run", run
-            lumidata.append( deliveredLumiForRun (dbsession, parameters, run) )
-    #print lumidata
+        runs=inputRange.runs()
+    for r in sorted(runs):
+        if parameters.verbose:
+            print "run", run
+        c=None
+        if finecorrections:
+            c=finecorrections[r]
+        lumidata.append( deliveredLumiForRun (dbsession, parameters,r,finecorrections=c) )       
     return lumidata
 
-
-def recordedLumiForRange (dbsession, parameters, inputRange):
+def recordedLumiForRange (dbsession, parameters, inputRange,finecorrections=None):
     '''Takes either single run as a string or dictionary of run ranges'''
     lumidata = []
-    # is this a single string?
-    if isinstance (inputRange, str):
-        lumiDataPiece = recordedLumiForRun (dbsession, parameters, inputRange)
-        if parameters.lumiXing:
+    if isinstance(inputRange,str):
+        run=int(inputRange)
+        if finecorrections and finecorrections[run]:
+            lumiDataPiece = recordedLumiForRun (dbsession, parameters,inputRange,lslist=None,finecorrections=finecorrections[run])
+        else:
+            lumiDataPiece = recordedLumiForRun(dbsession, parameters,run)
+        if parameters.lumiXing:            
             # get the xing information for the run
-            xingLumiDict = xingLuminosityForRun (dbsession, inputRange,
-                                                 parameters)
+            if  finecorrections and finecorrections[run]:
+                xingLumiDict = xingLuminosityForRun (dbsession, inputRange,
+                                                     parameters,finecorrections=finecorrections[run])
+            else:
+                xingLumiDict = xingLuminosityForRun (dbsession, inputRange,
+                                                     parameters)
             mergeXingLumi (lumiDataPiece, xingLumiDict)
         lumidata.append (lumiDataPiece)
-        
     else:
         # we want to collapse the lists so that every run is considered once.
         runLsDict = {}
@@ -122,14 +129,24 @@ def recordedLumiForRange (dbsession, parameters, inputRange):
                 print "run", run
             runLumiData = []
             for lslist in metaLsList:
-                runLumiData.append( recordedLumiForRun (dbsession, parameters,
-                                                        run, lslist) )
+                if finecorrections and finecorrections[run]:
+                    runLumiData.append( recordedLumiForRun (dbsession, parameters,run,lslist=lslist,finecorrections=finecorrections[run]) )
+                    
+                else:
+                    runLumiData.append( recordedLumiForRun (dbsession, parameters,run,lslist=lslist) )
             if parameters.lumiXing:
                 # get the xing information once for the whole run
-                xingLumiDict = xingLuminosityForRun (dbsession, run,
-                                                     parameters,
-                                                     maxLumiSection = \
-                                                     maxLumiSectionDict[run])
+                if finecorrections and finecorrections[run]:
+                    xingLumiDict = xingLuminosityForRun (dbsession, run,
+                                                         parameters,
+                                                         maxLumiSection = \
+                                                         maxLumiSectionDict[run],
+                                                         finecorrections=finecorrections[run])
+                else:
+                    xingLumiDict = xingLuminosityForRun (dbsession, run,
+                                                         parameters,
+                                                         maxLumiSection = \
+                                                         maxLumiSectionDict[run])
                 # merge it with every piece of lumi data for this run
                 for lumiDataPiece in runLumiData:
                     mergeXingLumi (lumiDataPiece, xingLumiDict)
@@ -138,13 +155,14 @@ def recordedLumiForRange (dbsession, parameters, inputRange):
                 lumidata.extend( runLumiData )
     return lumidata
 
-
-
-def deliveredLumiForRun (dbsession, parameters, runnum):    
+def deliveredLumiForRun (dbsession, parameters, runnum, finecorrections=None ):    
     """
     select sum (INSTLUMI), count (INSTLUMI) from lumisummary where runnum = 124025 and lumiversion = '0001';
     select INSTLUMI,NUMORBIT  from lumisummary where runnum = 124025 and lumiversion = '0001'
-    query result unit E27cm^-2 (= 1 / mb)"""    
+    query result unit E27cm^-2 (= 1 / mb)
+
+    optional corrections=None/(constfactor,afterglowfactor,nonlinearfactor)
+    """    
     #if parameters.verbose:
     #    print 'deliveredLumiForRun : norm : ', parameters.norm, ' : run : ', runnum
     #output ['run', 'totalls', 'delivered', 'beammode']
@@ -155,8 +173,6 @@ def deliveredLumiForRun (dbsession, parameters, runnum):
         dbsession.transaction().start (True)
         schema = dbsession.nominalSchema()
         query = schema.tableHandle (nameDealer.lumisummaryTableName()).newQuery()
-        #query.addToOutputList ("sum (INSTLUMI)", "totallumi")
-        #query.addToOutputList ("count (INSTLUMI)", "totalls")
         query.addToOutputList("INSTLUMI",'instlumi')
         query.addToOutputList ("NUMORBIT", "norbits")
         queryBind = coral.AttributeList()
@@ -174,13 +190,12 @@ def deliveredLumiForRun (dbsession, parameters, runnum):
         result.extend ("norbits", "unsigned int")
         query.defineOutput (result)
         query.setCondition (conditionstring,queryBind)
-        #query.limitReturnedRows (1)
-        #query.groupBy ('NUMORBIT')
         cursor = query.execute()
         while cursor.next():
             instlumi = cursor.currentRow()['instlumi'].data()
             norbits = cursor.currentRow()['norbits'].data()
-
+            if finecorrections is not None:
+                instlumi=lumiCorrections.applyfinecorrection(instlumi,finecorrections[0],finecorrections[1],finecorrections[2])
             if instlumi is not None and norbits is not None:
                 lstime = lslengthsec(norbits, parameters.NBX)
                 delivered=delivered+instlumi*parameters.norm*lstime
@@ -198,7 +213,7 @@ def deliveredLumiForRun (dbsession, parameters, runnum):
         dbsession.transaction().rollback()
         del dbsession
 
-def recordedLumiForRun (dbsession, parameters, runnum, lslist = None):
+def recordedLumiForRun (dbsession, parameters, runnum, lslist=None,finecorrections=None):
     """
     lslist = [] means take none in the db
     lslist = None means to take all in the db
@@ -260,8 +275,7 @@ def recordedLumiForRun (dbsession, parameters, runnum, lslist = None):
         hltprescCondition['runnumber'].setData (int (runnum))
         hltprescCondition['cmslsnum'].setData (1)
         hltprescCondition['inf'].setData (0)
-        hltprescQuery.setCondition ("RUNNUM = :runnumber and CMSLSNUM = :cmslsnum and PRESCALE != :inf",
-                                    hltprescCondition)
+        hltprescQuery.setCondition ("RUNNUM = :runnumber and CMSLSNUM = :cmslsnum and PRESCALE != :inf",hltprescCondition)
         cursor = hltprescQuery.execute()
         while cursor.next():
             hltpath = cursor.currentRow()['hltpath'].data()
@@ -312,6 +326,8 @@ def recordedLumiForRun (dbsession, parameters, runnum, lslist = None):
         while cursor.next():
             cmsls       = cursor.currentRow()["cmsls"].data()
             instlumi    = cursor.currentRow()["instlumi"].data()*parameters.norm
+            if finecorrections:
+                instlumi=lumiCorrections.applyfinecorrection(instlumi,finecorrections[0],finecorrections[1],finecorrections[2])
             norbits     = cursor.currentRow()["norbits"].data()
             trgcount    = cursor.currentRow()["trgcount"].data()
             trgbitname  = cursor.currentRow()["bitname"].data()
@@ -345,7 +361,6 @@ def recordedLumiForRun (dbsession, parameters, runnum, lslist = None):
                 lumidata[1][hpath].append (trgprescalemap[bitn])                
         #filter selected cmsls
         lumidata[2] = filterDeadtable (deadtable, lslist)
-        #print 'lslist ',lslist
         if not parameters.noWarnings:
             if len(lumidata[2])!=0:
                 for lumi, deaddata in lumidata[2].items():
@@ -757,7 +772,7 @@ def dumpOverview (delivered, recorded, hltpath = ''):
 
 
 def xingLuminosityForRun (dbsession, runnum, parameters, lumiXingDict = {},
-                          maxLumiSection = None):
+                          maxLumiSection = None, finecorrections=None):
     '''Given a run number and a minimum xing luminosity value,
     returns a dictionary (keyed by (run, lumi section)) where the
     value is a list of tuples of (xingID, xingLum).
@@ -766,7 +781,6 @@ def xingLuminosityForRun (dbsession, runnum, parameters, lumiXingDict = {},
 
     - If you want one dictionary for several runs, pass it in to
       "lumiXingDict"
-
 
     select 
     s.cmslsnum, d.bxlumivalue, d.bxlumierror, d.bxlumiquality, d.algoname from LUMIDETAIL d, LUMISUMMARY s where s.runnum = 133885 and d.algoname = 'OCC1' and s.lumisummary_id = d.lumisummary_id order by s.startorbit, s.cmslsnum
@@ -824,8 +838,15 @@ def xingLuminosityForRun (dbsession, runnum, parameters, lumiXingDict = {},
             xingArray.fromstring( bxlumivalue.readline() )
             numPrinted = 0
             xingLum = []
+            avginstlumi=0.0
+            if len(xingArray)!=0:
+                avginstlumi=sum(xingArray)
             for index, lum in enumerate (xingArray):
-                lum  *=  parameters.normFactor
+                mynorm=parameters.normFactor
+                if finecorrections:
+                    lum=lumiCorrections.applyfinecorrectionBX(lum,avginstlumi*mynorm,mynorm,finecorrections[0],finecorrections[1],finecorrections[2])
+                else:
+                    lum*=mynorm
                 if lum < parameters.xingMinLum:
                     continue
                 xingLum.append( (index, lum) )
@@ -1077,7 +1098,7 @@ def runsummaryByrun(queryHandle,runnum):
     #    raise
     return result
 
-def lumisummaryByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09):
+def lumisummaryByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09,finecorrections=None):
     '''
     one can impose beamstatus, beamenergy selections at the SQL query level or process them later from the general result
     select cmslsnum,instlumi,numorbit,startorbit,beamstatus,beamenery from lumisummary where runnum=:runnum and lumiversion=:lumiversion order by startorbit;
@@ -1126,6 +1147,8 @@ def lumisummaryByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=N
     while cursor.next():
         cmslsnum=cursor.currentRow()['cmslsnum'].data()
         instlumi=cursor.currentRow()['instlumi'].data()
+        if finecorrections:
+            instlumi=lumiCorrections.applyfinecorrection(instlumi,finecorrections[0],finecorrections[1],finecorrections[2])
         numorbit=cursor.currentRow()['numorbit'].data()
         startorbit=cursor.currentRow()['startorbit'].data()
         beamstatus=cursor.currentRow()['beamstatus'].data()
@@ -1134,15 +1157,15 @@ def lumisummaryByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=N
         result.append([cmslsnum,instlumi,numorbit,startorbit,beamstatus,beamenergy,cmsalive])
     return result
 
-def lumisumByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09):
+def lumisumByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09,finecorrections=None):
     '''
     beamenergy unit : GeV
     beamenergyfluctuation : fraction allowed to fluctuate around beamenergy value
-    select sum(instlumi) from lumisummary where runnum=:runnum and lumiversion=:lumiversion
-    output: float totallumi
+    select instlumi from lumisummary where runnum=:runnum and lumiversion=:lumiversion
+    output: float sum(instlumi)
     Note: the output is the raw result, need to apply LS length in time(sec)
     '''
-    result=0.0
+    result=[]
     queryHandle.addToTableList(nameDealer.lumisummaryTableName())
     queryCondition=coral.AttributeList()
     queryCondition.extend('runnum','unsigned int')
@@ -1150,7 +1173,7 @@ def lumisumByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,
     
     queryCondition['runnum'].setData(int(runnum))
     queryCondition['lumiversion'].setData(lumiversion)
-    queryHandle.addToOutputList('sum(INSTLUMI)','lumitotal')
+    queryHandle.addToOutputList('INSTLUMI','instlumi')
     conditionstring='RUNNUM=:runnum and LUMIVERSION=:lumiversion'
     if beamstatus and len(beamstatus)!=0:
         conditionstring=conditionstring+' and BEAMSTATUS=:beamstatus'
@@ -1166,12 +1189,19 @@ def lumisumByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,
         queryCondition['maxBeamenergy'].setData(float(maxBeamenergy))
     queryHandle.setCondition(conditionstring,queryCondition)
     queryResult=coral.AttributeList()
-    queryResult.extend('lumitotal','float')
+    queryResult.extend('instlumi','float')
     queryHandle.defineOutput(queryResult)
     cursor=queryHandle.execute()
     while cursor.next():
-        result=cursor.currentRow()['lumitotal'].data()
-    return result
+        instlumi=cursor.currentRow()['instlumi'].data()
+        if instlumi:
+            if finecorrections:
+                instlumi=lumiCorrections.applyfinecorrection(instlumi,finecorrections[0],finecorrections[1],finecorrections[2])
+            result.append(instlumi)
+    if result:
+        return sum(result)
+    else:
+        return 0.0
 
 def trgbitzeroByrun(queryHandle,runnum):
     '''
@@ -1209,7 +1239,7 @@ def trgbitzeroByrun(queryHandle,runnum):
             result[cmslsnum]=[trgcount,deadtime,bitname,prescale]
     return result
 
-def lumisummarytrgbitzeroByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09):
+def lumisummarytrgbitzeroByrun(queryHandle,runnum,lumiversion,beamstatus=None,beamenergy=None,beamenergyfluctuation=0.09,finecorrections=None):
     '''
     select l.cmslsnum,l.instlumi,l.numorbit,l.startorbit,l.beamstatus,l.beamenery,t.trgcount,t.deadtime,t.bitname,t.prescale from trg t,lumisummary l where t.bitnum=:bitnum and l.runnum=:runnum and l.lumiversion=:lumiversion and l.runnum=t.runnum and t.cmslsnum=l.cmslsnum; 
     Everything you ever need to know about bitzero and avg luminosity. Since we do not know if joint query is better of sperate, support both.
@@ -1267,6 +1297,8 @@ def lumisummarytrgbitzeroByrun(queryHandle,runnum,lumiversion,beamstatus=None,be
     while cursor.next():
         cmslsnum=cursor.currentRow()['cmslsnum'].data()
         instlumi=cursor.currentRow()['instlumi'].data()
+        if finecorrections:
+            instlumi=lumiCorrections.applyfinecorrection(instlumi,finecorrections[0],finecorrections[1],finecorrections[2])
         numorbit=cursor.currentRow()['numorbit'].data()
         startorbit=cursor.currentRow()['startorbit'].data()
         beamstatus=cursor.currentRow()['beamstatus'].data()
@@ -1466,29 +1498,45 @@ def beamIntensityForRun(query,parameters,runnum):
     while cursor.next():
         #cmslsnum=cursor.currentRow()['cmslsnum'].data()
         startorbit=cursor.currentRow()['startorbit'].data()
+        bxidx=[]
+        bb1=[]
+        bb2=[]
+        bxindexblob=None
+        beamintensityblob1=None
+        beamintensityblob2=None
         if not cursor.currentRow()["bxindexblob"].isNull():
             bxindexblob=cursor.currentRow()['bxindexblob'].data()
-            beamintensityblob1=cursor.currentRow()['beamintensityblob1'].data()
-            beamintensityblob2=cursor.currentRow()['beamintensityblob2'].data()
-            if bxindexblob.readline() is not None and beamintensityblob1.readline() is not None and beamintensityblob2.readline() is not None:
-                bxidx=array.array('h')
-                bxidx.fromstring(bxindexblob.readline())
-                bb1=array.array('f')
-                bb1.fromstring(beamintensityblob1.readline())
-                bb2=array.array('f')
-                bb2.fromstring(beamintensityblob2.readline())
-                for index,bxidxvalue in enumerate(bxidx):
-                    if not result.has_key(startorbit):
-                        result[startorbit]=[]
-                    b1intensity=bb1[index]
-                    b2intensity=bb2[index]
-                    result[startorbit].append((bxidxvalue,b1intensity,b2intensity))
+            if bxindexblob and bxindexblob.readline()!=None:
+                bxidx=CommonUtil.unpackBlobtoArray(bxindexblob,'h')
+                if not cursor.currentRow()['beamintensityblob1'].isNull():
+                    beamintensityblob1=cursor.currentRow()['beamintensityblob1'].data()
+                    if beamintensityblob1 and beamintensityblob1.readline()!=None:
+                        bb1=CommonUtil.unpackBlobtoArray(beamintensityblob1,'f')
+                if not cursor.currentRow()['beamintensityblob2'].isNull():
+                    beamintensityblob2=cursor.currentRow()['beamintensityblob2'].data()
+                    if beamintensityblob2 and beamintensityblob2.readline()!=None:
+                        bb2=CommonUtil.unpackBlobtoArray(beamintensityblob2,'f')
+        if not result.has_key(startorbit):
+            result[startorbit]=[]
+        for idx,bxidxvalue in enumerate(bxidx):
+            try:
+                b1intensity=bb1[idx]
+            except IndexError:
+                b1intensity=0.0
+            try:
+                b2intensity=bb2[idx]
+            except IndexError:
+                b2intensity=0.0
+            result[startorbit].append((bxidxvalue,b1intensity,b2intensity))
+        del bxidx[:]
+        del bb1[:]
+        del bb2[:]
     return result
     
-def calibratedDetailForRunLimitresult(query,parameters,runnum,algoname='OCC1'):
+def calibratedDetailForRunLimitresult(query,parameters,runnum,algoname='OCC1',finecorrection=None):
     '''select 
     s.cmslsnum,d.bxlumivalue,d.bxlumierror,d.bxlumiquality,d.algoname from LUMIDETAIL d,LUMISUMMARY s where s.runnum=133885 and d.algoname='OCC1' and s.lumisummary_id=d.lumisummary_id order by s.startorbit,s.cmslsnum
-    result={(startorbit,cmslsnum):[(lumivalue,lumierr),]}
+    result={(startorbit,cmslsnum):[(index,lumivalue,lumierr),]}
     '''
     result={}
     detailOutput=coral.AttributeList()
@@ -1517,22 +1565,32 @@ def calibratedDetailForRunLimitresult(query,parameters,runnum,algoname='OCC1'):
         bxlumivalue=cursor.currentRow()['bxlumivalue'].data()
         bxlumierror=cursor.currentRow()['bxlumierror'].data()
         startorbit=cursor.currentRow()['startorbit'].data()
-        
         bxlumivalueArray=array.array('f')
         bxlumivalueArray.fromstring(bxlumivalue.readline())
         bxlumierrorArray=array.array('f')
         bxlumierrorArray.fromstring(bxlumierror.readline())
         xingLum=[]
         #apply selection criteria
-        maxlumi=max(bxlumivalueArray)*parameters.normFactor
+        maxlumi=0.0
+        if len(bxlumivalueArray)!=0:
+            maxlumi=max(bxlumivalueArray)
+        avginstlumi=0.0
+        if len(bxlumivalueArray)!=0:
+            avginstlumi=sum(bxlumivalueArray)
         for index,lum in enumerate(bxlumivalueArray):
-            lum *= parameters.normFactor
-            lumierror = bxlumierrorArray[index]*parameters.normFactor
+            lumierror = bxlumierrorArray[index]
             if lum<max(parameters.xingMinLum,maxlumi*0.2): 
                 continue
+            mynorm=parameters.normFactor
+            if finecorrection:
+                lum=lumiCorrections.applyfinecorrectionBX(lum,avginstlumi*mynorm,mynorm,finecorrection[0],finecorrection[1],finecorrection[2])
+                lumierror=lumiCorrections.applyfinecorrectionBX(lumierror,avginstlumi*mynorm,mynorm,finecorrection[0],finecorrection[1],finecorrection[2])
+            else:
+                lum*=mynorm
+                lumierror*=mynorm
             xingLum.append( (index,lum,lumierror) )
-            if len(xingLum)!=0:
-                result[(startorbit,cmslsnum)]=xingLum
+        if len(xingLum)!=0:
+            result[(startorbit,cmslsnum)]=xingLum
     return result
    
 def lumidetailByrunByAlgo(queryHandle,runnum,algoname='OCC1'):
