@@ -1,0 +1,59 @@
+#ifndef DataFormats_ETLDetId_ETLDetId_h
+#define DataFormats_ETLDetId_ETLDetId_h
+
+#include "DataFormats/ForwardDetId/interface/MTDDetId.h"
+#include <ostream>
+
+/** 
+    @class ETLDetId
+    @brief Detector identifier class for the Endcap Timing Layer.
+*/
+
+class ETLDetId : public MTDDetId {
+  
+ private:
+  
+  static const uint32_t kETLmoduleOffset           = 7;
+  static const uint32_t kETLmoduleMask             = 0xFF;
+  static const uint32_t kETLmodTypeOffset          = 5;
+  static const uint32_t kETLmodTypeMask            = 0x3;
+  
+ public:
+  
+  // ---------- Constructors, enumerated types ----------
+  
+  /** Construct a null id */
+ ETLDetId()  : MTDDetId() {;}
+  
+  /** Construct from a raw value */
+ ETLDetId( const uint32_t& raw_id ) : MTDDetId( raw_id ) {;}
+  
+  /** Construct from generic DetId */
+ ETLDetId( const DetId& det_id )  : MTDDetId( det_id.rawId() ) {;}
+  
+  /** Construct and fill only the det and sub-det fields. */
+ ETLDetId( uint32_t zside, 
+           uint32_t ring, 
+           uint32_t module, 
+           uint32_t modtyp ) : MTDDetId( DetId::Forward, ForwardSubdetector::FastTime ) {
+    id_ |= ( MTDType::ETL& kMTDtypeMask ) << kMTDtypeOffset |
+      ( zside& kZsideMask ) << kZsideOffset |
+      ( ring& kRodRingMask ) << kRodRingOffset |
+      ( module& kETLmoduleMask ) << kETLmoduleOffset |
+      ( modtyp& kETLmodTypeMask ) << kETLmodTypeOffset ;
+}
+
+// ---------- Common methods ----------
+
+/** Returns ETL module number. */
+inline int etlModule() const { return (id_>>kETLmoduleOffset)&kETLmoduleMask; }
+
+/** Returns ETL crystal type number. */
+inline int etlModType() const { return (id_>>kETLmodTypeOffset)&kETLmodTypeMask; }
+
+};
+
+std::ostream& operator<< ( std::ostream&, const ETLDetId& );
+
+#endif // DataFormats_ETLDetId_ETLDetId_h
+
