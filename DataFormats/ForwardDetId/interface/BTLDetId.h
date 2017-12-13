@@ -15,8 +15,8 @@ class BTLDetId : public MTDDetId {
   
   static const uint32_t kBTLmoduleOffset           = 8;
   static const uint32_t kBTLmoduleMask             = 0x7F;
-  static const uint32_t kBTLCrysTypeOffset         = 6;
-  static const uint32_t kBTLCrysTypeMask           = 0x3;
+  static const uint32_t kBTLmodTypeOffset          = 6;
+  static const uint32_t kBTLmodTypeMask            = 0x3;
   static const uint32_t kBTLCrystalOffset          = 0;
   static const uint32_t kBTLCrystalMask            = 0x3F;
   
@@ -43,7 +43,7 @@ class BTLDetId : public MTDDetId {
       ( zside& kZsideMask ) << kZsideOffset |
       ( rod& kRodRingMask ) << kRodRingOffset |
       ( module& kBTLmoduleMask ) << kBTLmoduleOffset |
-      ( crytyp& kBTLCrysTypeMask ) << kBTLCrysTypeOffset |
+      ( crytyp& kBTLmodTypeMask ) << kBTLmodTypeOffset |
       ( crystal& kBTLCrystalMask ) << kBTLCrystalOffset ; 
 }
 
@@ -53,7 +53,7 @@ class BTLDetId : public MTDDetId {
 inline int btlModule() const { return (id_>>kBTLmoduleOffset)&kBTLmoduleMask; }
 
 /** Returns BTL crystal type number. */
-inline int btlCrysType() const { return (id_>>kBTLCrysTypeOffset)&kBTLCrysTypeMask; }
+inline int btlmodType() const { return (id_>>kBTLmodTypeOffset)&kBTLmodTypeMask; }
 
 /** Returns BTL crystal number. */
 inline int btlCrystal() const { return (id_>>kBTLCrystalOffset)&kBTLCrystalMask; }
