@@ -22,10 +22,10 @@ class MTDDetId : public DetId {
   
   static const uint32_t kMTDtypeOffset             = 23;
   static const uint32_t kMTDtypeMask               = 0x3;
-  static const uint32_t kZsideOffset               = 21;
-  static const uint32_t kZsideMask                 = 0x3;
+  static const uint32_t kZsideOffset               = 22;
+  static const uint32_t kZsideMask                 = 0x1;
   static const uint32_t kRodRingOffset             = 15;
-  static const uint32_t kRodRingMask               = 0x3F;
+  static const uint32_t kRodRingMask               = 0x7F;
   
  public:
   
