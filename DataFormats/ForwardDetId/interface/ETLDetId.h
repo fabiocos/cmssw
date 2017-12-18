@@ -23,7 +23,7 @@ class ETLDetId : public MTDDetId {
   // ---------- Constructors, enumerated types ----------
   
   /** Construct a null id */
- ETLDetId()  : MTDDetId() {;}
+ ETLDetId()  : MTDDetId() { id_ |= ( MTDType::BTL& kMTDtypeMask ) << kMTDtypeOffset ;}
   
   /** Construct from a raw value */
  ETLDetId( const uint32_t& raw_id ) : MTDDetId( raw_id ) {;}

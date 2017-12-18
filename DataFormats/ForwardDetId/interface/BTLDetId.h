@@ -7,6 +7,7 @@
 /** 
     @class BTLDetId
     @brief Detector identifier class for the Barrel Timing Layer.
+    The crystal count must start from 0, copy number must be scaled by 1 unit.
 */
 
 class BTLDetId : public MTDDetId {
@@ -25,7 +26,7 @@ class BTLDetId : public MTDDetId {
   // ---------- Constructors, enumerated types ----------
   
   /** Construct a null id */
- BTLDetId()  : MTDDetId() {;}
+ BTLDetId()  : MTDDetId() { id_ |= ( MTDType::BTL& kMTDtypeMask ) << kMTDtypeOffset; }
   
   /** Construct from a raw value */
  BTLDetId( const uint32_t& raw_id ) : MTDDetId( raw_id ) {;}
@@ -37,14 +38,14 @@ class BTLDetId : public MTDDetId {
  BTLDetId( uint32_t zside, 
            uint32_t rod, 
            uint32_t module, 
-           uint32_t crytyp, 
+           uint32_t modtyp, 
            uint32_t crystal ) : MTDDetId( DetId::Forward, ForwardSubdetector::FastTime ) {
     id_ |= ( MTDType::BTL& kMTDtypeMask ) << kMTDtypeOffset |
       ( zside& kZsideMask ) << kZsideOffset |
       ( rod& kRodRingMask ) << kRodRingOffset |
       ( module& kBTLmoduleMask ) << kBTLmoduleOffset |
-      ( crytyp& kBTLmodTypeMask ) << kBTLmodTypeOffset |
-      ( crystal& kBTLCrystalMask ) << kBTLCrystalOffset ; 
+      ( modtyp& kBTLmodTypeMask ) << kBTLmodTypeOffset |
+      ( (crystal-1)& kBTLCrystalMask ) << kBTLCrystalOffset ; 
 }
 
 // ---------- Common methods ----------
@@ -56,7 +57,7 @@ inline int btlModule() const { return (id_>>kBTLmoduleOffset)&kBTLmoduleMask; }
 inline int btlmodType() const { return (id_>>kBTLmodTypeOffset)&kBTLmodTypeMask; }
 
 /** Returns BTL crystal number. */
-inline int btlCrystal() const { return (id_>>kBTLCrystalOffset)&kBTLCrystalMask; }
+ inline int btlCrystal() const { return ((id_>>kBTLCrystalOffset)&kBTLCrystalMask) + 1; }
 
 };
 
