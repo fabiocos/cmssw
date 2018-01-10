@@ -15,6 +15,11 @@
 
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 
+#include "Geometry/MTDData/interface/MTDBaseNumber.h"
+#include "Geometry/MTDData/interface/BTLNumberingScheme.h"
+#include "Geometry/MTDData/interface/ETLNumberingScheme.h"
+#include "DataFormats/ForwardDetId/interface/MTDDetId.h"
+
 #include "SimDataFormats/SimHitMaker/interface/TrackingSlaveSD.h"
 #include "SimDataFormats/TrackingHit/interface/UpdatablePSimHit.h"
 
@@ -35,16 +40,16 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-//#define EDM_ML_DEBUG
+#define EDM_ML_DEBUG
 //-------------------------------------------------------------------
 FastTimerSD::FastTimerSD(const std::string& name, const DDCompactView & cpv,
 			 const SensitiveDetectorCatalog & clg, 
 			 edm::ParameterSet const & p, 
 			 const SimTrackManager* manager) :
-  SensitiveTkDetector(name, cpv, clg, p), ftcons(nullptr),
+  SensitiveTkDetector(name, cpv, clg, p), 
   hcID(-1), theHC(nullptr), theManager(manager), currentHit(nullptr), theTrack(nullptr), 
   currentPV(nullptr), unitID(0),  previousUnitID(0), preStepPoint(nullptr), 
-  postStepPoint(nullptr), eventno(0) {
+  postStepPoint(nullptr), eventno(0), numberingScheme(nullptr) {
     
   //Parameters
   edm::ParameterSet m_p = p.getParameter<edm::ParameterSet>("FastTimerSD");
@@ -62,11 +67,25 @@ FastTimerSD::FastTimerSD(const std::string& name, const DDCompactView & cpv,
   std::vector<int> temp = dbl_to_int(getDDDArray("Type",sv));
   type_  = temp[0];
 
+  MTDNumberingScheme* scheme=nullptr;
+  if (name == "FastTimerHitsBarrel") {
+    scheme = dynamic_cast<MTDNumberingScheme*>(new BTLNumberingScheme());
+    isBTL=true;
+  } else if (name == "FastTimerHitsEndcap") { 
+    scheme = dynamic_cast<MTDNumberingScheme*>(new ETLNumberingScheme());
+    isETL=true;
+  } else {
+    scheme = nullptr;
+    edm::LogWarning("EcalSim") << "FastTimerSD: ReadoutName not supported";
+  }
+  if (scheme)  setNumberingScheme(scheme);
+
   edm::LogInfo("FastTimerSim") << "FastTimerSD: Instantiation completed for "
 			       << name << " of type " << type_;
 }
 
 FastTimerSD::~FastTimerSD() { 
+  if (numberingScheme) delete numberingScheme;
   if (slave)  delete slave; 
 }
 
@@ -156,23 +175,12 @@ void FastTimerSD::GetStepInfo(G4Step* aStep) {
 }
 
 uint32_t FastTimerSD::setDetUnitId(const G4Step * aStep) { 
-
-  //Find the depth segment
-  const G4VTouchable* touch = aStep->GetPreStepPoint()->GetTouchable();
-  G4ThreeVector global = aStep->GetPreStepPoint()->GetPosition();
-  G4ThreeVector local  = touch->GetHistory()->GetTopTransform().TransformPoint(global);
-  int        iz = (global.z() > 0) ? 1 : -1;
-  std::pair<int,int> izphi = ((ftcons) ? ((type_ == 1) ? 
-					  (ftcons->getZPhi(std::abs(local.z()),local.phi())) : 
-					  (ftcons->getEtaPhi(local.perp(),local.phi()))) :
-			      (std::pair<int,int>(0,0)));
-  uint32_t id = FastTimeDetId(type_,izphi.first,izphi.second,iz).rawId();
-#ifdef EDM_ML_DEBUG
-  std::cout << "Volume " << touch->GetVolume(0)->GetName() << ":" << global.z()
-	    << " Iz(eta)phi " << izphi.first << ":"  << izphi.second << ":" 
-	    << iz  << " id " << std::hex << id << std::dec << std::endl;
-#endif
-  return id;
+  if (numberingScheme == nullptr) {
+    return MTDDetId();
+  } else {
+    getBaseNumber(aStep);
+    return numberingScheme->getUnitID(theBaseNumber);
+  }
 }
 
 
@@ -372,21 +380,7 @@ void FastTimerSD::fillHits(edm::PSimHitContainer& cc, const std::string& hname) 
   if (slave->name() == hname) { cc=slave->hits(); }
 }
 
-void FastTimerSD::update(const BeginOfJob * job) {
-
-  const edm::EventSetup* es = (*job)();
-  edm::ESHandle<FastTimeDDDConstants> fdc;
-  es->get<IdealGeometryRecord>().get(fdc);
-  if (fdc.isValid()) {
-    ftcons = &(*fdc);
-  } else {
-    edm::LogError("FastTimerSim") << "FastTimerSD : Cannot find FastTimeDDDConstants";
-    throw cms::Exception("Unknown", "FastTimerSD") << "Cannot find FastTimeDDDConstants\n";
-  }
-#ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD::Initialized with FastTimeDDDConstants\n";
-#endif
-}
+void FastTimerSD::update(const BeginOfJob * job) {}
 
 void FastTimerSD::update (const BeginOfEvent * i) {
 #ifdef EDM_ML_DEBUG
@@ -428,5 +422,33 @@ std::vector<double> FastTimerSD::getDDDArray(const std::string & str,
   } else {
     edm::LogError("FastTimerSim") << "FastTimerSD: cannot get array " << str;
     throw cms::Exception("DDException") << "FastTimerSD: cannot get array " << str;
+  }
+}
+
+void FastTimerSD::setNumberingScheme(MTDNumberingScheme* scheme) {
+  if (scheme != nullptr) {
+    edm::LogInfo("FastTimerSim") << "FastTimerSD: updates numbering scheme for " 
+                            << GetName();
+    if (numberingScheme) delete numberingScheme;
+    numberingScheme = scheme;
+  }
+}
+
+void FastTimerSD::getBaseNumber(const G4Step* aStep) {
+
+  theBaseNumber.reset();
+  const G4VTouchable* touch = preStepPoint->GetTouchable();
+  int theSize = touch->GetHistoryDepth()+1;
+  if ( theBaseNumber.getCapacity() < theSize ) theBaseNumber.setSize(theSize);
+  //Get name and copy numbers
+  if ( theSize > 1 ) {
+    for (int ii = 0; ii < theSize ; ii++) {
+      theBaseNumber.addLevel(touch->GetVolume(ii)->GetName(),touch->GetReplicaNumber(ii));
+#ifdef EDM_ML_DEBUG
+      edm::LogInfo("FastTimerSim") << "FastTimerSD::getBaseNumber(): Adding level " << ii
+                              << ": " << touch->GetVolume(ii)->GetName() << "["
+                              << touch->GetReplicaNumber(ii) << "]";
+#endif
+    }
   }
 }
