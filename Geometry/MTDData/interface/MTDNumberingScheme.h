@@ -8,7 +8,7 @@
 class MTDNumberingScheme {
  public:
   MTDNumberingScheme();
-  ~MTDNumberingScheme();
+  virtual ~MTDNumberingScheme();
   virtual uint32_t getUnitID(const MTDBaseNumber& baseNumber) const = 0;
 };
 
