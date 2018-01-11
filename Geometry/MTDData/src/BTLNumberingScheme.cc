@@ -38,7 +38,8 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   uint32_t pos = modName.find("Positive");
 
   const uint32_t zside = ( pos <= strlen(modName.c_str()) ? 1 : 0 );
-  const int modtyp ( ::atoi( (modName.substr(11,1)).c_str() ) ) ;
+  std::string baseName = modName.substr(modName.find(":")+1);
+  const int modtyp ( ::atoi( (baseName.substr(7,1)).c_str() ) ) ;
 
   // LogDebug("MTDGeom") << baseNumber.getLevelName(0) << ", "
   //                     << baseNumber.getLevelName(1) << ", "

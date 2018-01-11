@@ -40,7 +40,7 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-#define EDM_ML_DEBUG
+//#define EDM_ML_DEBUG
 //-------------------------------------------------------------------
 FastTimerSD::FastTimerSD(const std::string& name, const DDCompactView & cpv,
 			 const SensitiveDetectorCatalog & clg, 
@@ -95,7 +95,7 @@ double FastTimerSD::getEnergyDeposit(const G4Step* aStep) {
 
 void FastTimerSD::Initialize(G4HCofThisEvent * HCE) { 
 #ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD : Initialize called for " << name << std::endl;
+  edm::LogInfo("FastTimerSim") << "FastTimerSD : Initialize called for " << name;
 #endif
 
   theHC = new BscG4HitCollection(name, collectionName[0]);
@@ -114,7 +114,7 @@ bool FastTimerSD::ProcessHits(G4Step * aStep, G4TouchableHistory * ) {
   } else {
     GetStepInfo(aStep);
 #ifdef EDM_ML_DEBUG
-    std::cout << "FastTimerSD :  number of hits = " << theHC->entries() <<"\n";
+    edm::LogInfo("FastTimerSim") << "FastTimerSD :  number of hits = " << theHC->entries() <<"\n";
 #endif
     if (HitExists() == false && edeposit>0. ){ 
       CreateNewHit();
@@ -139,8 +139,8 @@ void FastTimerSD::GetStepInfo(G4Step* aStep) {
 
   G4int particleCode = theTrack->GetDefinition()->GetPDGEncoding();
 #ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD :particleType =  " 
-	    << theTrack->GetDefinition()->GetParticleName() << std::endl;
+  edm::LogInfo("FastTimerSim") << "FastTimerSD :particleType =  " 
+	    << theTrack->GetDefinition()->GetParticleName();
 #endif
   if (particleCode == emPDG ||
       particleCode == epPDG ||
@@ -154,7 +154,7 @@ void FastTimerSD::GetStepInfo(G4Step* aStep) {
   tSliceID  = (int) tSlice;
   unitID    = setDetUnitId(aStep);
 #ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD:unitID = " << std::hex << unitID << std::dec<<"\n";
+  edm::LogInfo("FastTimerSim") << "FastTimerSD:unitID = " << std::hex << unitID << std::dec<<"\n";
 #endif
   primaryID    = theTrack->GetTrackID();
   //  Position     = hitPoint;
@@ -245,25 +245,25 @@ void FastTimerSD::StoreHit(BscG4Hit* hit){
 void FastTimerSD::CreateNewHit() {
 
 #ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD CreateNewHit for" << " PV "
+  edm::LogInfo("FastTimerSim") << "FastTimerSD CreateNewHit for" << " PV "
 	    << currentPV->GetName() << " PVid = " << currentPV->GetCopyNo()
-	    << " Unit " << unitID << std::endl;
-  std::cout << " primary " << primaryID << " time slice " << tSliceID 
+	    << " Unit " << unitID ;
+  edm::LogInfo("FastTimerSim") << " primary " << primaryID << " time slice " << tSliceID 
 	    << " For Track  " << theTrack->GetTrackID() << " which is a "
 	    << theTrack->GetDefinition()->GetParticleName();
 	   
   if (theTrack->GetTrackID()==1) {
-    std::cout << " of energy "     << theTrack->GetTotalEnergy();
+    edm::LogInfo("FastTimerSim") << " of energy "     << theTrack->GetTotalEnergy();
   } else {
-    std::cout << " daughter of part. " << theTrack->GetParentID();
+    edm::LogInfo("FastTimerSim") << " daughter of part. " << theTrack->GetParentID();
   }
 
-  std::cout << " and created by " ;
+  edm::LogInfo("FastTimerSim") << " and created by " ;
   if (theTrack->GetCreatorProcess()!=NULL)
-    std::cout << theTrack->GetCreatorProcess()->GetProcessName() ;
+    edm::LogInfo("FastTimerSim") << theTrack->GetCreatorProcess()->GetProcessName() ;
   else 
-    std::cout << "NO process";
-  std::cout << std::endl;
+    edm::LogInfo("FastTimerSim") << "NO process";
+  edm::LogInfo("FastTimerSim") ;
 #endif          
     
   currentHit = new BscG4Hit;
@@ -305,9 +305,9 @@ void FastTimerSD::UpdateHit() {
     currentHit->addEnergyDeposit(edepositEM,edepositHAD);
 
 #ifdef EDM_ML_DEBUG
-    std::cout << "updateHit: add eloss " << Eloss <<std::endl;
-    std::cout << "CurrentHit="<< currentHit<< ", PostStepPoint = "
-	      << postStepPoint->GetPosition() << std::endl;
+    edm::LogInfo("FastTimerSim") << "updateHit: add eloss " << Eloss ;
+    edm::LogInfo("FastTimerSim") << "CurrentHit="<< currentHit<< ", PostStepPoint = "
+	      << postStepPoint->GetPosition() ;
 #endif
     currentHit->setEnergyLoss(Eloss);
   }  
@@ -341,10 +341,10 @@ void FastTimerSD::EndOfEvent(G4HCofThisEvent* ) {
   for (int j=0; j<theHC->entries(); j++) {
     BscG4Hit* aHit = (*theHC)[j];
 #ifdef EDM_ML_DEBUG
-    std::cout << "hit number " << j << " unit ID = " << std::hex 
+    edm::LogInfo("FastTimerSim") << "hit number " << j << " unit ID = " << std::hex 
 	      << aHit->getUnitID() << std::dec << " entry z "
 	      << aHit->getEntry().z() << " entry theta "
-	      << aHit->getThetaAtEntry() << std::endl;
+	      << aHit->getThetaAtEntry() ;
 #endif
     Local3DPoint locExitPoint(0,0,0);
     Local3DPoint locEntryPoint(aHit->getEntry().x(),
@@ -371,7 +371,7 @@ void FastTimerSD::DrawAll() {}
 
 void FastTimerSD::PrintAll() {
 #ifdef EDM_ML_DEBUG
-  std::cout << "FastTimerSD: Collection " << theHC->GetName() << std::endl;
+  edm::LogInfo("FastTimerSim") << "FastTimerSD: Collection " << theHC->GetName() ;
 #endif
   theHC->PrintAllHits();
 } 
@@ -384,7 +384,7 @@ void FastTimerSD::update(const BeginOfJob * job) {}
 
 void FastTimerSD::update (const BeginOfEvent * i) {
 #ifdef EDM_ML_DEBUG
-  std::cout << "Dispatched BeginOfEvent for " << GetName() << " !\n" ;
+  edm::LogInfo("FastTimerSim") << "Dispatched BeginOfEvent for " << GetName() << " !\n" ;
 #endif
    clearHits();
    eventno = (*i)()->GetEventID();
