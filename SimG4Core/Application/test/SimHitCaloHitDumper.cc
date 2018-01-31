@@ -24,10 +24,12 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
 
    std::vector<PSimHit> theTrackerHits;
    std::vector<PSimHit> theMuonHits;
+   std::vector<PSimHit> theMTDHits;
    std::vector<PCaloHit> theCaloHits;
 
    std::vector< std::pair<int,std::string> > theTrackerComposition;
    std::vector< std::pair<int,std::string> > theMuonComposition;
+   std::vector< std::pair<int,std::string> > theMTDComposition;
    std::vector< std::pair<int,std::string> > theCaloComposition;
    
 
@@ -47,6 +49,9 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
    Handle<PSimHitContainer> DTHits;
    Handle<PSimHitContainer> CSCHits;
    Handle<PSimHitContainer> RPCHits;
+
+   Handle<PSimHitContainer> BTLHits;
+   Handle<PSimHitContainer> ETLHits;
 
    Handle<PCaloHitContainer> EBHits;
    Handle<PCaloHitContainer> EEHits;
@@ -86,6 +91,9 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
    iEvent.getByLabel("g4SimHits","CastorPL", CastorPLHits );
    iEvent.getByLabel("g4SimHits","CastorFI", CastorFIHits );
    iEvent.getByLabel("g4SimHits","CastorBU", CastorBUHits );
+
+   iEvent.getByLabel("g4SimHits","FastTimerHitsBarrel",BTLHits);
+   iEvent.getByLabel("g4SimHits","FastTimerHitsEndcap",ETLHits);
 
    int oldsize = 0;
 
@@ -244,6 +252,20 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
      theCaloComposition.push_back(label25);
    } 
 
+   oldsize = 0;
+   if ( BTLHits.isValid() ) {
+     theMTDHits.insert(theMTDHits.end(), BTLHits->begin(), BTLHits->end() );
+     std::pair<int,std::string> label26(theMTDHits.size()-oldsize,"BTLHits");
+     oldsize = theMTDHits.size();
+     theMTDComposition.push_back(label26);
+   }
+   if ( ETLHits.isValid() ) {
+     theMTDHits.insert(theMTDHits.end(), ETLHits->begin(), ETLHits->end() );
+     std::pair<int,std::string> label27(theMTDHits.size()-oldsize,"ETLHits");
+     oldsize = theMTDHits.size();
+     theMTDComposition.push_back(label27);
+   }
+
    std::cout << "\n SimHit / CaloHit structure dump \n" << std::endl;
    std::cout << " Tracker Hits in the event = " << theTrackerHits.size() << std::endl; 
    std::cout << "\n" << std::endl;
@@ -277,6 +299,24 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
      std::cout << "\n" << std::endl;
      for ( int ihit = 0; ihit < (*icoll).first; ++ihit ) {
        std::cout << theMuonHits[nhit] << " Track Id = " << theMuonHits[nhit].trackId() << std::endl;
+       nhit++;
+     }
+   }   
+
+   std::cout << "\n MTD Hits in the event = " << theMTDHits.size() << std::endl; 
+   std::cout << "\n" << std::endl;
+   //   for (std::vector<PSimHit>::iterator isim = theMTDHits.begin();
+   //        isim != theMTDHits.end(); ++isim){
+   //     std::cout << (*isim) << " Track Id = " << isim->trackId() << std::endl;
+   //   }
+   nhit = 0;
+   for (std::vector< std::pair<int,std::string> >::iterator icoll = theMTDComposition.begin();
+        icoll != theMTDComposition.end(); ++icoll){
+     std::cout << "\n" << std::endl;
+     std::cout << (*icoll).second << " hits in the event = " << (*icoll).first << std::endl;
+     std::cout << "\n" << std::endl;
+     for ( int ihit = 0; ihit < (*icoll).first; ++ihit ) {
+       std::cout << theMTDHits[nhit] << " Track Id = " << theMTDHits[nhit].trackId() << std::endl;
        nhit++;
      }
    }   

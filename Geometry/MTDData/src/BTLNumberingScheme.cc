@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstring>
 
+//#define DEB_NUM
+
 BTLNumberingScheme::BTLNumberingScheme() : 
   MTDNumberingScheme() {
   edm::LogInfo("MTDGeom") << "Creating BTLNumberingScheme";
@@ -17,15 +19,16 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
 
   const uint32_t nLevels ( baseNumber.getLevels() ) ;
 
-  //  LogDebug("MTDGeom") << "BTLNumberingScheme geometry levels = " << nLevels;
-  
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << "BTLNumberingScheme geometry levels = " << nLevels;
+#endif  
 
-  if( 9 > nLevels )
+  if( 8 > nLevels )
   {   
      edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-				 << "Not enough levels found in MTDBaseNumber ( "
-				 <<  nLevels 
-				 << ") Returning 0" ;
+                                << "Not enough levels found in MTDBaseNumber ( "
+                                <<  nLevels 
+                                << ") Returning 0" ;
      return 0;
   }
 
@@ -41,15 +44,16 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   std::string baseName = modName.substr(modName.find(":")+1);
   const int modtyp ( ::atoi( (baseName.substr(7,1)).c_str() ) ) ;
 
-  // LogDebug("MTDGeom") << baseNumber.getLevelName(0) << ", "
-  //                     << baseNumber.getLevelName(1) << ", "
-  //                     << baseNumber.getLevelName(2) << ", "
-  //                     << baseNumber.getLevelName(3) << ", "
-  //                     << baseNumber.getLevelName(4) << ", "
-  //                     << baseNumber.getLevelName(5) << ", "
-  //                     << baseNumber.getLevelName(6) << ", "
-  //                     << baseNumber.getLevelName(7) << ", "
-  //                     << baseNumber.getLevelName(8)         ;
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << baseNumber.getLevelName(0) << ", "
+                          << baseNumber.getLevelName(1) << ", "
+                          << baseNumber.getLevelName(2) << ", "
+                          << baseNumber.getLevelName(3) << ", "
+                          << baseNumber.getLevelName(4) << ", "
+                          << baseNumber.getLevelName(5) << ", "
+                          << baseNumber.getLevelName(6) << ", "
+                          << baseNumber.getLevelName(7) ;
+#endif
   
   // error checking
 
@@ -102,14 +106,16 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   BTLDetId thisBTLdetid( zside, rodCopy, modCopy, modtyp, crystal );
   const int32_t intindex = thisBTLdetid.rawId() ;
 
-  // LogDebug("MTDGeom") << "BTL Numbering scheme: " 
-  //                     << " rod = " << rodCopy
-  //                     << " zside = " << zside
-  //                     << " module = " << modCopy
-  //                     << " modtyp = " << modtyp
-  //                     << " crystal = " << crystal
-  //                     << " Raw Id = " << intindex
-  //                     << thisBTLdetid;
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << "BTL Numbering scheme: " 
+                          << " rod = " << rodCopy
+                          << " zside = " << zside
+                          << " module = " << modCopy
+                          << " modtyp = " << modtyp
+                          << " crystal = " << crystal
+                          << " Raw Id = " << intindex
+                          << thisBTLdetid;
+#endif
 
   return intindex ;  
 }
