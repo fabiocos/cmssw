@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+//#define DEB_NUM
+
 ETLNumberingScheme::ETLNumberingScheme() : 
   MTDNumberingScheme() {
   edm::LogInfo("MTDGeom") << "Creating ETLNumberingScheme";
@@ -16,15 +18,17 @@ uint32_t ETLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
 
   const uint32_t nLevels ( baseNumber.getLevels() ) ;
 
-  //  LogDebug("MTDGeom") << "ETLNumberingScheme geometry levels = " << nLevels;
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << "ETLNumberingScheme geometry levels = " << nLevels;
+#endif
   
 
   if( 11 > nLevels )
   {   
      edm::LogWarning("MTDGeom") << "ETLNumberingScheme::getUnitID(): "
-				 << "Not enough levels found in MTDBaseNumber ( "
-				 <<  nLevels 
-				 << ") Returning 0" ;
+                                << "Not enough levels found in MTDBaseNumber ( "
+                                <<  nLevels 
+                                << ") Returning 0" ;
      return 0;
   }
 
@@ -38,18 +42,20 @@ uint32_t ETLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   const uint32_t sideCopy ( baseNumber.getCopyNumber( 7 ) ) ;
   const uint32_t zside ( sideCopy == 1 ? 1 : 0 ) ;
 
-  // LogDebug("MTDGeom") << baseNumber.getLevelName(0) << ", "
-  //                     << baseNumber.getLevelName(1) << ", "
-  //                     << baseNumber.getLevelName(2) << ", "
-  //                     << baseNumber.getLevelName(3) << ", "
-  //                     << baseNumber.getLevelName(4) << ", "
-  //                     << baseNumber.getLevelName(5) << ", "
-  //                     << baseNumber.getLevelName(6) << ", "
-  //                     << baseNumber.getLevelName(7) << ", "
-  //                     << baseNumber.getLevelName(8) << ", "
-  //                     << baseNumber.getLevelName(9) << ", "
-  //                     << baseNumber.getLevelName(10) << ", "
-  //                     << baseNumber.getLevelName(11)         ;
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << baseNumber.getLevelName(0) << ", "
+                          << baseNumber.getLevelName(1) << ", "
+                          << baseNumber.getLevelName(2) << ", "
+                          << baseNumber.getLevelName(3) << ", "
+                          << baseNumber.getLevelName(4) << ", "
+                          << baseNumber.getLevelName(5) << ", "
+                          << baseNumber.getLevelName(6) << ", "
+                          << baseNumber.getLevelName(7) << ", "
+                          << baseNumber.getLevelName(8) << ", "
+                          << baseNumber.getLevelName(9) << ", "
+                          << baseNumber.getLevelName(10) << ", "
+                          << baseNumber.getLevelName(11)         ;
+#endif
   
   // error checking
 
@@ -90,14 +96,15 @@ uint32_t ETLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   ETLDetId thisETLdetid( zside, ringCopy, modCopy, modtyp );
   const int32_t intindex = thisETLdetid.rawId() ;
 
-  LogDebug("MTDGeom") << "ETL Numbering scheme: " 
-                      << " ring = " << ringCopy
-                      << " zside = " << zside
-                      << " module = " << modCopy
-                      << " modtyp = " << modtyp
-                      << " Raw Id = " << intindex
-                      << thisETLdetid;
-
+#ifdef DEB_NUM
+  edm::LogInfo("MTDGeom") << "ETL Numbering scheme: " 
+                          << " ring = " << ringCopy
+                          << " zside = " << zside
+                          << " module = " << modCopy
+                          << " modtyp = " << modtyp
+                          << " Raw Id = " << intindex
+                          << thisETLdetid;
+#endif
 
   return intindex ;  
 }

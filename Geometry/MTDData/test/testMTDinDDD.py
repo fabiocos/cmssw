@@ -35,11 +35,9 @@ process.testETL = cms.EDAnalyzer("TestMTDNumbering",
 process.MessageLogger = cms.Service("MessageLogger",
                                     cout = cms.untracked.PSet( INFO = cms.untracked.PSet( limit = cms.untracked.int32(-1) ),
                                                                noLineBreaks = cms.untracked.bool(True),
-                                                               DEBUG = cms.untracked.PSet( limit = cms.untracked.int32(-1) ),
-                                                               threshold = cms.untracked.string('DEBUG'),
+                                                               threshold = cms.untracked.string('INFO'),
                                                                ),
                                     # For LogDebug/LogTrace output...
-                                    debugModules = cms.untracked.vstring('testBTL','testETL'),
                                     categories = cms.untracked.vstring('TestMTDNumbering','MTDGeom'),
                                     destinations = cms.untracked.vstring('cout')
                                     )

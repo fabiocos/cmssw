@@ -126,6 +126,7 @@ void TestMTDNumbering::checkMTD ( const DDCompactView& cpv, std::string fname, i
     size_t num = epv.geoHistory().size();
 
     if ( epv.geoHistory()[num-1].logicalPart().name() == "btl:BarrelTimingLayer" ) {
+      isBarrel = true;
       limit = num;
       write = true;
     }
