@@ -176,9 +176,6 @@ void SimHitCaloHitDumper::analyze( const edm::Event& iEvent, const edm::EventSet
    iEvent.getByToken( FastTimerBTLToken, BTLHits);
    iEvent.getByToken( FastTimerETLToken, ETLHits);
 
-   iEvent.getByLabel("g4SimHits","FastTimerHitsBarrel",BTLHits);
-   iEvent.getByLabel("g4SimHits","FastTimerHitsEndcap",ETLHits);
-
    int oldsize = 0;
 
    if ( PixelBarrelHitsLowTof.isValid() ) {
