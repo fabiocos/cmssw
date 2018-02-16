@@ -148,7 +148,11 @@ namespace ftl_digitizer {
     for(int i=0; i<nchits; ++i) {
       const auto& the_hit = hits->at(i);    
       
-      DetId id = ( validIds_.count(the_hit.detUnitId()) ? the_hit.detUnitId() : 0 );
+      //
+      // --- This check is not needed with the detailed description of the detector geometry
+      //
+      //DetId id = ( validIds_.count(the_hit.detUnitId()) ? the_hit.detUnitId() : 0 );
+      DetId id = the_hit.detUnitId();
       
       if (verbosity_>0) {	
 	edm::LogInfo("HGCDigitizer") << " i/p " << std::hex << the_hit.detUnitId() << std::dec 
@@ -169,7 +173,10 @@ namespace ftl_digitizer {
       
       //get the data for this cell, if not available then we skip it
       
-      if( !validIds_.count(id) ) continue;
+      //
+      // --- This check is not needed with the detailed description of the detector geometry
+      //
+      //if( !validIds_.count(id) ) continue;
       auto simHitIt = simHitAccumulator_.emplace(id,FTLCellInfo()).first;
       
       if(id==0) continue; // to be ignored at RECO level
@@ -250,31 +257,34 @@ namespace ftl_digitizer {
 
   template<class SensorPhysics, class ElectronicsSim>
   void FTLDigitizer<SensorPhysics,ElectronicsSim>::beginRun(const edm::EventSetup & es) {
-    if ( idealGeomWatcher_.check(es) ) {
-      /// Get DDD constants
-      es.get<IdealGeometryRecord>().get(dddFTL_);
-      { // force scope for the temporary nameless unordered_set
-	std::unordered_set<DetId>().swap(validIds_);
-      }
-      // recalculate valid detids
-      for( int zside = -1; zside <= 1; zside += 2 ) {	  
-	for( unsigned type = 1; type <= 2; ++type ) {
-	  for( unsigned izeta = 0; izeta < 1<<10; ++izeta ) {
-	    for( unsigned iphi = 0; iphi < 1<<10; ++iphi ) {
-	      
-	      if( dddFTL_->isValidXY(type, izeta, iphi) ) {
-		validIds_.emplace( FastTimeDetId( type, 
-						  izeta, 
-						  iphi, 
-						  zside ) );
-	      }
-	      
-	    }
-	  }
-	}
-      }      
-      validIds_.reserve(validIds_.size());
-    }
+    //
+    // --- This check is not needed with the detailed description of the detector geometry
+    //
+    //if ( idealGeomWatcher_.check(es) ) {
+    //  /// Get DDD constants
+    //  es.get<IdealGeometryRecord>().get(dddFTL_);
+    //  { // force scope for the temporary nameless unordered_set
+    //	std::unordered_set<DetId>().swap(validIds_);
+    //  }
+    //  // recalculate valid detids
+    //  for( int zside = -1; zside <= 1; zside += 2 ) {	  
+    //	for( unsigned type = 1; type <= 2; ++type ) {
+    //	  for( unsigned izeta = 0; izeta < 1<<10; ++izeta ) {
+    //	    for( unsigned iphi = 0; iphi < 1<<10; ++iphi ) {
+    //	      
+    //	      if( dddFTL_->isValidXY(type, izeta, iphi) ) {
+    //		validIds_.emplace( FastTimeDetId( type, 
+    //						  izeta, 
+    //						  iphi, 
+    //						  zside ) );
+    //	      }
+    //	      
+    //	    }
+    //	  }
+    //	}
+    //  }      
+    //  validIds_.reserve(validIds_.size());
+    //}
     deviceSim_.getEventSetup(es);
     electronicsSim_.getEventSetup(es);
   }
