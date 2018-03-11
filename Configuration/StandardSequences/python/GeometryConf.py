@@ -4,7 +4,7 @@ GeometryConf={
     'DBExtendedLiMax'  : 'DB:ExtendedLiMax',
     'DBExtendedLiMin'  : 'DB:ExtendedLiMin',
     'DBExtendedX0Max'  : 'DB:ExtendedX0Max',
-    'DBExtendedX0Min'  : 'DB:ExtendedX0Min',
+{    'DBExtendedX0Min'  : 'DB:ExtendedX0Min',
     'DBExtended2015'   : 'DB:Extended',
     'DBExtended2017'   : 'DB:Extended',
     'DBExtended2017ZeroMaterial'    : 'DB:Extended2017ZeroMaterial',
@@ -31,5 +31,5 @@ GeometryConf={
     'Extended2023D17' : 'Extended2023D17,Extended2023D17Reco',
     'Extended2023D19' : 'Extended2023D19,Extended2023D19Reco',
     'Extended2023D21' : 'Extended2023D21,Extended2023D21Reco',
-    'Extended2023D22' : 'Extended2023D22,Extended2023D22Reco'
+    'Extended2023D90' : 'Extended2023D90,Extended2023D90Reco'
     }
