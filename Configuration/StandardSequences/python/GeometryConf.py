@@ -4,7 +4,7 @@ GeometryConf={
     'DBExtendedLiMax'  : 'DB:ExtendedLiMax',
     'DBExtendedLiMin'  : 'DB:ExtendedLiMin',
     'DBExtendedX0Max'  : 'DB:ExtendedX0Max',
-{    'DBExtendedX0Min'  : 'DB:ExtendedX0Min',
+    'DBExtendedX0Min'  : 'DB:ExtendedX0Min',
     'DBExtended2015'   : 'DB:Extended',
     'DBExtended2017'   : 'DB:Extended',
     'DBExtended2017ZeroMaterial'    : 'DB:Extended2017ZeroMaterial',
