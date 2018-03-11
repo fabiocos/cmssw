@@ -28,6 +28,8 @@ upgradeKeys[2023] = [
     '2023D21PU',
     '2023D90',
     '2023D90PU',
+    '2023D91',
+    '2023D91PU',
 ]
 
 # pre-generation of WF numbers
@@ -268,6 +270,13 @@ upgradeProperties[2023] = {
         'Era' : 'Phase2',
         'ScenToRun' : ['GenSimHLBeamSpotFull','DigiFullTrigger','RecoFullGlobal', 'HARVESTFullGlobal'],
      },
+    '2023D91' : {
+        'Geom' : 'Extended2023D91',
+        'HLTmenu': '@fake2',
+        'GT' : 'auto:phase2_realistic',
+        'Era' : 'Phase2',
+        'ScenToRun' : ['GenSimHLBeamSpotFull','DigiFullTrigger','RecoFullGlobal', 'HARVESTFullGlobal'],
+     },
 }
 
 
@@ -281,6 +290,8 @@ upgradeProperties[2023]['2023D21PU'] = deepcopy(upgradeProperties[2023]['2023D21
 upgradeProperties[2023]['2023D21PU']['ScenToRun'] = ['GenSimHLBeamSpotFull','DigiFullTriggerPU','RecoFullGlobalPU', 'HARVESTFullGlobalPU']
 upgradeProperties[2023]['2023D90PU'] = deepcopy(upgradeProperties[2023]['2023D90'])
 upgradeProperties[2023]['2023D90PU']['ScenToRun'] = ['GenSimHLBeamSpotFull','DigiFullTriggerPU','RecoFullGlobalPU', 'HARVESTFullGlobalPU']
+upgradeProperties[2023]['2023D91PU'] = deepcopy(upgradeProperties[2023]['2023D91'])
+upgradeProperties[2023]['2023D91PU']['ScenToRun'] = ['GenSimHLBeamSpotFull','DigiFullTriggerPU','RecoFullGlobalPU', 'HARVESTFullGlobalPU']
 
 
 from  Configuration.PyReleaseValidation.relval_steps import Kby
