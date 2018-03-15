@@ -2,7 +2,6 @@
 #define DataFormats_MTDDetId_MTDDetId_h
 
 #include "DataFormats/DetId/interface/DetId.h"
-#include "DataFormats/ForwardDetId/interface/ForwardSubdetector.h"
 #include <ostream>
 
 /** 
@@ -15,17 +14,12 @@ class MTDDetId : public DetId {
  protected:
   
   /** Enumerated type for Forward sub-deteector systems. */
-  enum SubDetector { subUNKNOWN=0, FastTime=1 };
+  enum SubDetector { subUNKNOWN=0, BTL=1, ETL=2 };
   
-  /** Enumerated type for MTD sub-deteector systems. */
-  enum MTDType { typeUNKNOWN=0, BTL=1, ETL=2 };
-  
-  static const uint32_t kMTDtypeOffset             = 23;
-  static const uint32_t kMTDtypeMask               = 0x3;
-  static const uint32_t kZsideOffset               = 22;
-  static const uint32_t kZsideMask                 = 0x1;
-  static const uint32_t kRodRingOffset             = 15;
-  static const uint32_t kRodRingMask               = 0x7F;
+  static const uint32_t kZsideOffset               = 23;
+  static const uint32_t kZsideMask                 = 0x3;
+  static const uint32_t kRodRingOffset             = 17;
+  static const uint32_t kRodRingMask               = 0x3F;
   
  public:
   
@@ -45,11 +39,8 @@ class MTDDetId : public DetId {
   
   // ---------- Common methods ----------
   
-  /** Returns enumerated type specifying CMS sub-detector. */
+  /** Returns enumerated type specifying MTD sub-detector. */
   inline SubDetector subDetector() const { return static_cast<MTDDetId::SubDetector>(subdetId()); }
-  
-  /** Returns enumerated type specifying MTD sub-detector, i.e. BTL or ETL. */
-  inline int mtdType() const { return (id_>>kMTDtypeOffset)&kMTDtypeMask; }
   
   /** Returns MTD side, i.e. Z-=1 or Z+=2. */
   inline int mtdSide() const { return (id_>>kZsideOffset)&kZsideMask; }

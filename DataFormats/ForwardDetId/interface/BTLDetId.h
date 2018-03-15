@@ -14,9 +14,9 @@ class BTLDetId : public MTDDetId {
   
  private:
   
-  static const uint32_t kBTLmoduleOffset           = 8;
+  static const uint32_t kBTLmoduleOffset           = 10;
   static const uint32_t kBTLmoduleMask             = 0x7F;
-  static const uint32_t kBTLmodTypeOffset          = 6;
+  static const uint32_t kBTLmodTypeOffset          = 8;
   static const uint32_t kBTLmodTypeMask            = 0x3;
   static const uint32_t kBTLCrystalOffset          = 0;
   static const uint32_t kBTLCrystalMask            = 0x3F;
@@ -26,8 +26,8 @@ class BTLDetId : public MTDDetId {
   // ---------- Constructors, enumerated types ----------
   
   /** Construct a null id */
- BTLDetId()  : MTDDetId() { id_ |= ( MTDType::BTL& kMTDtypeMask ) << kMTDtypeOffset; }
-  
+ BTLDetId() : MTDDetId( DetId::MTD, MTDDetId::BTL ) {;}
+
   /** Construct from a raw value */
  BTLDetId( const uint32_t& raw_id ) : MTDDetId( raw_id ) {;}
   
@@ -39,9 +39,8 @@ class BTLDetId : public MTDDetId {
            uint32_t rod, 
            uint32_t module, 
            uint32_t modtyp, 
-           uint32_t crystal ) : MTDDetId( DetId::Forward, ForwardSubdetector::FastTime ) {
-    id_ |= ( MTDType::BTL& kMTDtypeMask ) << kMTDtypeOffset |
-      ( zside& kZsideMask ) << kZsideOffset |
+           uint32_t crystal ) : MTDDetId( DetId::MTD, MTDDetId::BTL ) {
+    id_ |= ( zside& kZsideMask ) << kZsideOffset |
       ( rod& kRodRingMask ) << kRodRingOffset |
       ( module& kBTLmoduleMask ) << kBTLmoduleOffset |
       ( modtyp& kBTLmodTypeMask ) << kBTLmodTypeOffset |
