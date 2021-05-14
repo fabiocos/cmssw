@@ -101,5 +101,14 @@ puppiNoLep = puppi.clone(
     PtMaxPhotons = 20.
     )
 
+puppi4D = puppi.clone(
+        vertexName     = cms.InputTag('offlinePrimaryVertices4D'),
+    )
+
+puppi4DNoLep = puppi4D.clone(
+    puppiNoLep = True,
+    PtMaxPhotons = 20.
+    )
+
 from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
 pp_on_AA.toModify(puppi, algos = [])
