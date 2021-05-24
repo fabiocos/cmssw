@@ -130,6 +130,7 @@ void PuppiProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
               pVtxId = 0;
           }
           if (aTrackRef.isNonnull() && aV.trackWeight(pPF->trackRef()) > 0) {
+            edm::LogPrint("PuppiProducer") << "PUPPI PF " << pPF->trackRef().id() << " " << pPF-> trackRef().key() << " charge " << pPF->charge() << " p " << pPF->p() << " eta " << pPF->eta() << " phi " << pPF->phi() << " vtx weight " << aV.trackWeight(pPF->trackRef());
             closestVtx = &aV;
             break;
           }

@@ -318,6 +318,7 @@ std::vector<double> const &PuppiContainer::puppiWeights() {
     if (fInvert)
       pWeight = 1. - pWeight;
     //std::cout << "rParticle.pt = " <<  rParticle.pt << ", rParticle.charge = " << rParticle.charge << ", rParticle.id = " << rParticle.id << ", weight = " << pWeight << std::endl;
+    if ( pWeight > 0.) { edm::LogPrint("PuppiProducer") << "rParticle.pt = " <<  rParticle.pt << ", rParticle.charge = " << rParticle.charge << ", rParticle.id = " << rParticle.id << ", weight = " << pWeight << std::endl; }
 
     fWeights.push_back(pWeight);
     fAlphaMed.push_back(fPuppiAlgo[pPupId].median());

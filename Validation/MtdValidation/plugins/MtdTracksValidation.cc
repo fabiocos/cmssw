@@ -318,6 +318,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     if (v.isValid()) {
       meVerZ_->Fill(v.z());
       meVerTime_->Fill(v.t());
+      edm::LogPrint("MtdTrackValidation") << "Vertex #" << nv << " z " << v.z() << " +- " << v.zError() << " t " << v.t() << " +- " << v.tError();
+      size_t tcount(0);
+      for ( auto itrk = v.tracks_begin() ; itrk != v.tracks_end(); itrk++ ) {
+        edm::LogPrint("MtdTrackValidation") << "Track #" << tcount << " " << itrk->id() << " " << itrk->key() << " charge " << (*itrk)->charge() << " p " << (*itrk)->p() << " eta " << (*itrk)->eta() << " phi " << (*itrk)->phi() << " weight " << v.trackWeight(*itrk);
+        tcount++;
+      }
       nv++;
     } else
       cout << "The vertex is not valid" << endl;

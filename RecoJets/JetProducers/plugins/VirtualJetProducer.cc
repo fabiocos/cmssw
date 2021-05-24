@@ -441,6 +441,7 @@ void VirtualJetProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 
 void VirtualJetProducer::inputTowers() {
   auto inBegin = inputs_.begin(), inEnd = inputs_.end(), i = inBegin;
+  size_t ncount(0);
   for (; i != inEnd; ++i) {
     auto const& input = **i;
     // std::cout << "CaloTowerVI jets " << input->pt() << " " << input->et() << ' '<< input->energy() << ' ' << (isAnomalousTower(input) ? " bad" : " ok") << std::endl;
@@ -479,9 +480,13 @@ void VirtualJetProducer::inputTowers() {
               << "applyWeight set to True, but no weights given in VirtualJetProducer\n";
         float w = weights_[*i];
         if (w > 0) {
+	  if (makePFJet(jetTypeE) && applyWeight_ ) {
+	    edm::LogPrint("VirtualJetProducer") << "Input tower " << ncount << " w " << w << " charge " << input.charge() << " p " << input.p();
+	  }
           fjInputs_.emplace_back(input.px() * w, input.py() * w, input.pz() * w, input.energy() * w);
           fjInputs_.back().set_user_index(i - inBegin);
         }
+	ncount++;
       }
     }
   }
@@ -600,11 +605,11 @@ namespace {
 
 template <typename T>
 void VirtualJetProducer::writeJets(edm::Event& iEvent, edm::EventSetup const& iSetup) {
-  // std::cout << "writeJets " << typeid(T).name()
-  //          << (doRhoFastjet_ ? " doRhoFastjet " : "")
-  //          << (doAreaFastjet_ ? " doAreaFastjet " : "")
-  //          << (doAreaDiskApprox_ ? " doAreaDiskApprox " : "")
-  //          << std::endl;
+   std::cout << "writeJets " << typeid(T).name()
+	    << (doRhoFastjet_ ? " doRhoFastjet " : "")
+	    << (doAreaFastjet_ ? " doAreaFastjet " : "")
+	    << (doAreaDiskApprox_ ? " doAreaDiskApprox " : "")
+	    << std::endl;
 
   if (doRhoFastjet_) {
     // declare jet collection without the two jets,
@@ -692,6 +697,7 @@ void VirtualJetProducer::writeJets(edm::Event& iEvent, edm::EventSetup const& iS
     for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
       auto& jet = (*jets)[ijet];
 
+
       // get the fastjet jet
       const fastjet::PseudoJet& fjJet = fjJets_[ijet];
       // get the constituents from fastjet
@@ -715,6 +721,17 @@ void VirtualJetProducer::writeJets(edm::Event& iEvent, edm::EventSetup const& iS
       phiJ[ijet] = jet.phi();
       etaJ[ijet] = jet.eta();
       jet.setIsWeighted(applyWeight_);
+
+      if ((applyWeight_) && (makePFJet(jetTypeE))) {
+      edm::LogPrint("VirtualJetProducer") << "Jet #" << ijet << " p " << jet.p();
+
+      size_t ncount(0);
+      for ( const auto& iconst : constituents ) {
+	float weight = ( applyWeight_ == true ) ? weights_[iconst] : 1.;
+	edm::LogPrint("VirtualJetProducer") << "const# " << ncount << " charge " << iconst->charge() << " p " << iconst->p() << " w " << weight;
+	ncount++;
+      }
+      }
     }
 
     // calcuate the jet area

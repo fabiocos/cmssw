@@ -4,5 +4,6 @@
 <use name="Geometry/MTDGeometryBuilder"/>
 <use name="DQMServices/Core"/>
 <use name="DataFormats/TrackReco"/>
+<use name="DataFormats/VertexReco"/>
 <use name="hepmc"/>
 <flags EDM_PLUGIN="1"/>
