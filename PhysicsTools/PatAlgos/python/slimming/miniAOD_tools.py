@@ -428,6 +428,14 @@ def miniAOD_customizeCommon(process):
     )
     task.add(process.patJetPuppiCharge)
 
+    process.ak4PFJetsPuppi4DTracksAssociatorAtVertex = process.ak4PFJetsPuppiTracksAssociatorAtVertex.clone( jets = "ak4PFJetsPuppi4D" , pvSrc = "offlinePrimaryVertices4D" )
+    process.patJetPuppi4DCharge = process.patJetPuppiCharge.clone( src = "ak4PFJetsPuppi4DTracksAssociatorAtVertex" )
+
+    _rerun_puppi4djets_task = task.copy()
+    _rerun_puppi4djets_task.add(process.puppi4D, process.ak4PFJetsPuppi4D, process.ak4PFJetsPuppi4DTracksAssociatorAtVertex, process.patJetPuppi4DCharge)
+    from Configuration.Eras.Modifier_phase2_timing_layer_cff import phase2_timing_layer
+    phase2_timing_layer.toReplaceWith(task, _rerun_puppi4djets_task)
+
     def _add_jetsPuppi(process):
         from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
         noDeepFlavourDiscriminators = [x.value() if isinstance(x, cms.InputTag) else x for x in process.patJets.discriminatorSources 
@@ -460,6 +468,34 @@ def miniAOD_customizeCommon(process):
     (~pp_on_AA).toModify(process, _add_jetsPuppi)
 
     pp_on_AA.toModify(process, func = lambda p: addToProcessAndTask('slimmedJetsPuppi', _dummyPatJets.clone(), p, task))
+
+    def _add_jetsPuppi4D(process):
+        from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+        noDeepFlavourDiscriminators = [x.value() if isinstance(x, cms.InputTag) else x for x in process.patJets.discriminatorSources 
+                                       if not "DeepFlavour" in str(x)]
+        addJetCollection(process, postfix   = "", labelName = 'Puppi4D', jetSource = cms.InputTag('ak4PFJetsPuppi4D'),
+                         jetCorrections = ('AK4PFPuppi', ['L2Relative', 'L3Absolute'], ''),
+                         pfCandidates = cms.InputTag("particleFlow"),
+                         algo= 'AK', rParam = 0.4, btagDiscriminators = noDeepFlavourDiscriminators
+                     )
+
+        process.patJetGenJetMatchPuppi4D.matched = 'slimmedGenJets'
+
+        process.patJetsPuppi4D.jetChargeSource = cms.InputTag("patJetPuppi4DCharge")
+
+        process.selectedPatJetsPuppi4D.cut = cms.string("pt > 15")
+
+        # from PhysicsTools.PatAlgos.slimming.applyDeepBtagging_cff import applyDeepBtagging
+        # applyDeepBtagging( process )
+
+        addToProcessAndTask('slimmedJetsPuppi4D', process.slimmedJetsNoDeepFlavour.clone(
+            src = "selectedPatJetsPuppi4D", packedPFCandidates = "packedPFCandidates"),
+                            process, task)
+
+        task.add(process.slimmedJetsPuppi4D)
+
+    phase2_timing_layer.toModify(process, _add_jetsPuppi4D)
+
 
     # Embed pixelClusterTagInfos in slimmedJets
     process.patJets.addTagInfos = True

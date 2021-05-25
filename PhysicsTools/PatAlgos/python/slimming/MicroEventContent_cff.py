@@ -184,6 +184,6 @@ _phase2_hgc_extraCommands = ["keep *_slimmedElectronsFromMultiCl_*_*", "keep *_s
 from Configuration.Eras.Modifier_phase2_hgcal_cff import phase2_hgcal
 phase2_hgcal.toModify(MicroEventContentMC, outputCommands = MicroEventContentMC.outputCommands + _phase2_hgc_extraCommands)
 
-_phase2_timing_extraCommands = ["keep *_offlineSlimmedPrimaryVertices4D_*_*"]
+_phase2_timing_extraCommands = ["keep *_offlineSlimmedPrimaryVertices4D_*_*", "keep *_slimmedJetsPuppi4D_*_*"]
 from Configuration.Eras.Modifier_phase2_timing_cff import phase2_timing
 phase2_timing.toModify(MicroEventContentMC, outputCommands = MicroEventContentMC.outputCommands + _phase2_timing_extraCommands)
