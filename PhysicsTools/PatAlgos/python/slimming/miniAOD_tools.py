@@ -447,11 +447,11 @@ def miniAOD_customizeCommon(process):
                      )
 
         process.patJetGenJetMatchPuppi.matched = 'slimmedGenJets'
-    
+
         process.patJetsPuppi.jetChargeSource = cms.InputTag("patJetPuppiCharge")
-    
+
         process.selectedPatJetsPuppi.cut = cms.string("pt > 15")
-    
+
         from PhysicsTools.PatAlgos.slimming.applyDeepBtagging_cff import applyDeepBtagging
         applyDeepBtagging( process )
 
@@ -484,6 +484,8 @@ def miniAOD_customizeCommon(process):
         process.patJetsPuppi4D.jetChargeSource = cms.InputTag("patJetPuppi4DCharge")
 
         process.selectedPatJetsPuppi4D.cut = cms.string("pt > 15")
+        process.patJetFlavourAssociationPuppi4D.weights = cms.InputTag("puppi4D")
+        process.patJetCorrFactorsPuppi4D.primaryVertices = cms.InputTag("offlineSlimmedPrimaryVertices4D")
 
         # from PhysicsTools.PatAlgos.slimming.applyDeepBtagging_cff import applyDeepBtagging
         # applyDeepBtagging( process )
