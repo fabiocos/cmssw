@@ -476,6 +476,7 @@ def miniAOD_customizeCommon(process):
         addJetCollection(process, postfix   = "", labelName = 'Puppi4D', jetSource = cms.InputTag('ak4PFJetsPuppi4D'),
                          jetCorrections = ('AK4PFPuppi', ['L2Relative', 'L3Absolute'], ''),
                          pfCandidates = cms.InputTag("particleFlow"),
+                         pvSource = cms.InputTag('offlineSlimmedPrimaryVertices4D'),
                          algo= 'AK', rParam = 0.4, btagDiscriminators = noDeepFlavourDiscriminators
                      )
 

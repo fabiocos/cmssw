@@ -113,7 +113,7 @@ recoPFJetsHI   = cms.Sequence(recoPFJetsHITask)
 from CommonTools.PileupAlgos.Puppi_cff import puppi4D
 from Configuration.Eras.Modifier_phase2_timing_layer_cff import phase2_timing_layer
 ak4PFJetsPuppi4D = ak4PFJetsPuppi.clone()
-phase2_timing_layer.toModify(ak4PFJetsPuppi4D, srcWeights = cms.InputTag("puppi4D") )
+phase2_timing_layer.toModify(ak4PFJetsPuppi4D, src = cms.InputTag("puppi4D"), srcPVs = cms.InputTag("offlinePrimaryVertices4D"), applyWeight = False )
 
 recoPFJets4DOnlyTask = cms.Task(puppi4D,
                             ak4PFJetsPuppi4D
