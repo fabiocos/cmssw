@@ -74,6 +74,7 @@ Fast Timing system:
 * I11: Same as I10, xml reorganized, comparison base for new ETL and DD4hep migration
 * I12: Starting from I11, new ETL layout from MTD TDR
 * I13: Starting from I11, new ETL layout from post MTD TDR (2 sectors per disc face)
+* I14: Same as I13, updated sensor structure, disc z location and passive materials
 
 The script also handles the common and forward elements of the geometry:
 * O4: detailed cavern description, changes for modified CALO region for endcap part, no overlaps inside the Muon System 
@@ -101,3 +102,4 @@ Several detector combinations have been generated:
 * D82 = T21+C15+M9+I13+O7+F7
 * D83 = T24+C16+M9+I13+O7+F6
 * D84 = T24+C13+M7+I11+O6+F6 (For HGCAL study on evolution of HGCal replacing D70)
+* D85 = T21+C14+M9+I14+O7+F6

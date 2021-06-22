@@ -1217,6 +1217,13 @@ upgradeProperties[2026] = {
         'Era' : 'Phase2C11',
         'ScenToRun' : ['GenSimHLBeamSpot','DigiTrigger','RecoGlobal', 'HARVESTGlobal'],
     },
+    '2026D85' : {
+        'Geom' : 'Extended2026D85',
+        'HLTmenu': '@fake2',
+        'GT' : 'auto:phase2_realistic_T21',
+        'Era' : 'Phase2C11I13M9',
+        'ScenToRun' : ['GenSimHLBeamSpot','DigiTrigger','RecoGlobal', 'HARVESTGlobal'],
+    },
 }
 
 # standard PU sequences
