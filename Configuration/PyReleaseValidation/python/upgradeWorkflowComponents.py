@@ -54,6 +54,8 @@ upgradeKeys[2026] = [
     '2026D83PU',
     '2026D84',
     '2026D84PU',
+    '2026D85',
+    '2026D85PU',
 ]
 
 # pre-generation of WF numbers
