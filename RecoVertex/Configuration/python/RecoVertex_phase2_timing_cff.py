@@ -5,8 +5,8 @@ from RecoVertex.PrimaryVertexProducer.TkClusParameters_cff import DA2D_vectParam
 
 unsortedOfflinePrimaryVertices4D = unsortedOfflinePrimaryVertices.clone(
     TkClusParameters = DA2D_vectParameters,
-    TrackTimesLabel = cms.InputTag("trackTimeValueMapProducer","generalTracksConfigurableFlatResolutionModel"),
-    TrackTimeResosLabel = cms.InputTag("trackTimeValueMapProducer","generalTracksConfigurableFlatResolutionModelResolution"),
+    TrackTimesLabel = cms.InputTag("trackExtenderWithMTD:generalTrackt0"),
+    TrackTimeResosLabel = cms.InputTag("trackExtenderWithMTD:generalTracksigmat0")
 )
 trackWithVertexRefSelectorBeforeSorting4D = trackWithVertexRefSelector.clone(
     vertexTag = "unsortedOfflinePrimaryVertices4D",
@@ -19,8 +19,6 @@ trackRefsForJetsBeforeSorting4D = trackRefsForJets.clone(
 offlinePrimaryVertices4D = sortedPrimaryVertices.clone(
     vertices = "unsortedOfflinePrimaryVertices4D",
     particles = "trackRefsForJetsBeforeSorting4D",
-    trackTimeTag = "trackTimeValueMapProducer:generalTracksConfigurableFlatResolutionModel",
-    trackTimeResoTag = "trackTimeValueMapProducer:generalTracksConfigurableFlatResolutionModelResolution",
     assignment = dict(useTiming = True)
 )
 offlinePrimaryVertices4DWithBS = offlinePrimaryVertices4D.clone(
@@ -73,7 +71,6 @@ offlinePrimaryVertices4DwithPIDWithBS = offlinePrimaryVertices4DwithPID.clone(
 
 from SimTracker.TrackerHitAssociation.tpClusterProducer_cfi import tpClusterProducer
 from SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi import quickTrackAssociatorByHits
-from SimTracker.TrackAssociation.trackTimeValueMapProducer_cfi import trackTimeValueMapProducer
 from RecoMTD.TimingIDTools.tofPIDProducer_cfi import tofPIDProducer
 
 tofPID4DnoPID=tofPIDProducer.clone(vtxsSrc='unsortedOfflinePrimaryVertices4DnoPID')

@@ -204,14 +204,6 @@ phase2_muon.toModify(
 from Configuration.Eras.Modifier_phase2_timing_cff import phase2_timing
 phase2_timing.toModify(
     RandomNumberGeneratorService,
-    trackTimeValueMapProducer = cms.PSet( 
-        initialSeed = cms.untracked.uint32(1234567), 
-        engineName = FullSimEngine 
-        ),
-    gsfTrackTimeValueMapProducer = cms.PSet( 
-        initialSeed = cms.untracked.uint32(1234567), 
-        engineName = FullSimEngine 
-        ),
     ecalBarrelClusterFastTimer = cms.PSet(
         initialSeed = cms.untracked.uint32(1234567),
         engineName = FullSimEngine
