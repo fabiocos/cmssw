@@ -40,12 +40,8 @@ private:
   const MTDTopology* topo_;
 
   const float bxTime_;
-  const float LightYield_;
-  const float LightCollEff_;
-
-  const float LightCollSlopeR_;
-  const float LightCollSlopeL_;
-  const float PDE_;
+  const float LightOutput_;
+  const float LightCollSlope_;
 };
 
 #endif

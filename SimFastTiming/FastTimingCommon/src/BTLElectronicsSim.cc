@@ -21,9 +21,13 @@ BTLElectronicsSim::BTLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       TimeThreshold2_(pset.getParameter<double>("TimeThreshold2")),
       ReferencePulseNpe_(pset.getParameter<double>("ReferencePulseNpe")),
       SinglePhotonTimeResolution_(pset.getParameter<double>("SinglePhotonTimeResolution")),
-      DarkCountRate_(pset.getParameter<double>("DarkCountRate")),
-      SigmaElectronicNoise_(pset.getParameter<double>("SigmaElectronicNoise")),
       SigmaClock_(pset.getParameter<double>("SigmaClock")),
+      DCRparam_(pset.getParameter<std::vector<double> >("DCRParam")),
+      DarkCountRate_(pset.getParameter<double>("DarkCountRate")),
+      SRparam_(pset.getParameter<std::vector<double> >("SlewRateParam")),
+      SigmaElectronicNoise_(pset.getParameter<double>("SigmaElectronicNoise")),
+      SigmaElectronicNoiseConst_(pset.getParameter<double>("SigmaElectronicNoiseConst")),
+      ElectronicGain_(pset.getParameter<double>("ElectronicGain")),
       smearTimeForOOTtails_(pset.getParameter<bool>("SmearTimeForOOTtails")),
       Npe_to_pC_(pset.getParameter<double>("Npe_to_pC")),
       Npe_to_V_(pset.getParameter<double>("Npe_to_V")),
@@ -40,9 +44,10 @@ BTLElectronicsSim::BTLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       sinPhi_(0.5 * CorrCoeff_ / cosPhi_),
       ScintillatorDecayTime2_(ScintillatorDecayTime_ * ScintillatorDecayTime_),
       ScintillatorDecayTimeInv_(1. / ScintillatorDecayTime_),
-      SPTR2_(SinglePhotonTimeResolution_ * SinglePhotonTimeResolution_),
-      DCRxRiseTime_(DarkCountRate_ * ScintillatorRiseTime_),
+      DCRconst2_(std::pow(DCRparam_[0] * std::pow((DarkCountRate_ / DCRparam_[1]), DCRparam_[2]), 2.)),
       SigmaElectronicNoise2_(SigmaElectronicNoise_ * SigmaElectronicNoise_),
+      SigmaElectronicNoiseConst2_(SigmaElectronicNoiseConst_ * SigmaElectronicNoiseConst_),
+      SPTR2_(SinglePhotonTimeResolution_ * SinglePhotonTimeResolution_),
       SigmaClock2_(SigmaClock_ * SigmaClock_) {}
 
 void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
@@ -103,11 +108,13 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
         }
       }  // if smearTimeForOOTtails_
 
-      // --- Uncertainty due to the fluctuations of the n-th photon arrival time:
+      float slew = ScintillatorDecayTime_ / Npe;
+
+      // --- Stochastich term, uncertainty due to the fluctuations of the n-th photon arrival time:
       if (testBeamMIPTimeRes_ > 0.) {
         // In this case the time resolution is parametrized from the testbeam.
         // The same parameterization is used for both thresholds.
-        float sigma = testBeamMIPTimeRes_ / sqrt(Npe);
+        float sigma = testBeamMIPTimeRes_ * sqrt(slew);
         float smearing_stat_thr1 = CLHEP::RandGaussQ::shoot(hre, 0., sigma);
         float smearing_stat_thr2 = CLHEP::RandGaussQ::shoot(hre, 0., sigma);
 
@@ -127,12 +134,16 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
 
       // --- Add in quadrature the uncertainties due to the SiPM timing resolution, the SiPM DCR,
       //     the electronic noise and the clock distribution:
-      float slew2 = ScintillatorDecayTime2_ / Npe / Npe;
 
-      float sigma2_tot_thr1 =
-          SPTR2_ / TimeThreshold1_ + (DCRxRiseTime_ + SigmaElectronicNoise2_) * slew2 + SigmaClock2_;
-      float sigma2_tot_thr2 =
-          SPTR2_ / TimeThreshold2_ + (DCRxRiseTime_ + SigmaElectronicNoise2_) * slew2 + SigmaClock2_;
+      float GainxNpe = ElectronicGain_ * Npe;
+      float sigma2_tot_thr1 = DCRconst2_ * slew * slew + SigmaElectronicNoise2_ * expSlewRateVsQNpeInv2(GainxNpe) +
+                              SigmaElectronicNoiseConst2_;
+      float sigma2_tot_thr2 = sigma2_tot_thr1;
+
+      // --- Add in quadrature uncertainties independent on npe: Single Photon Time Response and clock distribution
+
+      sigma2_tot_thr1 += SPTR2_ / TimeThreshold1_ + SigmaClock2_;
+      sigma2_tot_thr2 += SPTR2_ / TimeThreshold2_ + SigmaClock2_;
 
       // --- Smear the arrival times using the correlated uncertainties:
       float smearing_thr1_uncorr = CLHEP::RandGaussQ::shoot(hre, 0., sqrt(sigma2_tot_thr1));
@@ -221,4 +232,14 @@ float BTLElectronicsSim::sigma2_pe(const float& Q, const float& R) const {
                   (Q + 1.) * (Q + 2.) * (2. * Q + 5.) * OneOverR2 * OneOverR);
 
   return sigma2;
+}
+
+float BTLElectronicsSim::expSlewRateVsQNpeInv2(const float& GainxNpe) const {
+  float res;
+  if (GainxNpe < SRparam_[0]) {
+    res = (SRparam_[2] * GainxNpe + SRparam_[1]);
+  } else {
+    res = (SRparam_[3] * std::log(GainxNpe) + SRparam_[2] * SRparam_[0] - SRparam_[3] * std::log(SRparam_[0]));
+  }
+  return 2. / (res * res);
 }

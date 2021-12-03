@@ -42,6 +42,8 @@ public:
 private:
   float sigma2_pe(const float& Q, const float& R) const;
 
+  float expSlewRateVsQNpeInv2(const float& GainxNpe) const;
+
   const bool debug_;
 
   const float bxTime_;
@@ -57,9 +59,13 @@ private:
   const float ReferencePulseNpe_;
 
   const float SinglePhotonTimeResolution_;
-  const float DarkCountRate_;
-  const float SigmaElectronicNoise_;
   const float SigmaClock_;
+  const std::vector<double> DCRparam_;
+  const float DarkCountRate_;
+  const std::vector<double> SRparam_;
+  const float SigmaElectronicNoise_;
+  const float SigmaElectronicNoiseConst_;
+  const float ElectronicGain_;
   const bool smearTimeForOOTtails_;
   const float Npe_to_pC_;
   const float Npe_to_V_;
@@ -81,9 +87,10 @@ private:
 
   const float ScintillatorDecayTime2_;
   const float ScintillatorDecayTimeInv_;
-  const float SPTR2_;
-  const float DCRxRiseTime_;
+  const float DCRconst2_;
   const float SigmaElectronicNoise2_;
+  const float SigmaElectronicNoiseConst2_;
+  const float SPTR2_;
   const float SigmaClock2_;
 
   const BTLPulseShape btlPulseShape_;
