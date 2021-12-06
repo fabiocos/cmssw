@@ -20,7 +20,7 @@ BTLElectronicsSim::BTLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       TimeThreshold1_(pset.getParameter<double>("TimeThreshold1")),
       TimeThreshold2_(pset.getParameter<double>("TimeThreshold2")),
       ReferencePulseNpe_(pset.getParameter<double>("ReferencePulseNpe")),
-      SinglePhotonTimeResolution_(pset.getParameter<double>("SinglePhotonTimeResolution")),
+      SigmaDigitization_(pset.getParameter<double>("SigmaDigitization")),
       SigmaClock_(pset.getParameter<double>("SigmaClock")),
       DCRparam_(pset.getParameter<std::vector<double> >("DCRParam")),
       DarkCountRate_(pset.getParameter<double>("DarkCountRate")),
@@ -47,8 +47,7 @@ BTLElectronicsSim::BTLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       DCRconst2_(std::pow(DCRparam_[0] * std::pow((DarkCountRate_ / DCRparam_[1]), DCRparam_[2]), 2.)),
       SigmaElectronicNoise2_(SigmaElectronicNoise_ * SigmaElectronicNoise_),
       SigmaElectronicNoiseConst2_(SigmaElectronicNoiseConst_ * SigmaElectronicNoiseConst_),
-      SPTR2_(SinglePhotonTimeResolution_ * SinglePhotonTimeResolution_),
-      SigmaClock2_(SigmaClock_ * SigmaClock_) {}
+      SigmaConst2_(SigmaDigitization_ * SigmaDigitization_ + SigmaClock_ * SigmaClock_) {}
 
 void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             BTLDigiCollection& output,
@@ -138,12 +137,12 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
       float GainxNpe = ElectronicGain_ * Npe;
       float sigma2_tot_thr1 = DCRconst2_ * slew * slew + SigmaElectronicNoise2_ * expSlewRateVsQNpeInv2(GainxNpe) +
                               SigmaElectronicNoiseConst2_;
+
+      // --- Add in quadrature uncertainties independent on npe: digitization and clock distribution
+
+      sigma2_tot_thr1 += SigmaConst2_;
+
       float sigma2_tot_thr2 = sigma2_tot_thr1;
-
-      // --- Add in quadrature uncertainties independent on npe: Single Photon Time Response and clock distribution
-
-      sigma2_tot_thr1 += SPTR2_ / TimeThreshold1_ + SigmaClock2_;
-      sigma2_tot_thr2 += SPTR2_ / TimeThreshold2_ + SigmaClock2_;
 
       // --- Smear the arrival times using the correlated uncertainties:
       float smearing_thr1_uncorr = CLHEP::RandGaussQ::shoot(hre, 0., sqrt(sigma2_tot_thr1));

@@ -58,7 +58,7 @@ private:
   const float TimeThreshold2_;
   const float ReferencePulseNpe_;
 
-  const float SinglePhotonTimeResolution_;
+  const float SigmaDigitization_;
   const float SigmaClock_;
   const std::vector<double> DCRparam_;
   const float DarkCountRate_;
@@ -90,8 +90,7 @@ private:
   const float DCRconst2_;
   const float SigmaElectronicNoise2_;
   const float SigmaElectronicNoiseConst2_;
-  const float SPTR2_;
-  const float SigmaClock2_;
+  const float SigmaConst2_;
 
   const BTLPulseShape btlPulseShape_;
 };
