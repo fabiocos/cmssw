@@ -42,33 +42,38 @@ public:
 private:
   float sigma2_pe(const float& Q, const float& R) const;
 
-  float expSlewRateVsQNpeInv2(const float& GainxNpe) const;
+  float sigma_stochastic(const float& npe) const;
 
+  float sigma_DCR(const float& npe) const;
+
+  float sigma_electronics(const float npe) const;
+
+  static constexpr float sqrt2_ = 1.41421356f;
   const bool debug_;
 
   const float bxTime_;
   const float testBeamMIPTimeRes_;
-  const float ScintillatorRiseTime_;
-  const float ScintillatorDecayTime_;
-  const float ChannelTimeOffset_;
+  const float scintillatorRiseTime_;
+  const float scintillatorDecayTime_;
+  const float channelTimeOffset_;
   const float smearChannelTimeOffset_;
 
-  const float EnergyThreshold_;
-  const float TimeThreshold1_;
-  const float TimeThreshold2_;
-  const float ReferencePulseNpe_;
+  const float energyThreshold_;
+  const float timeThreshold1_;
+  const float timeThreshold2_;
+  const float referencePulseNpe_;
 
-  const float SigmaDigitization_;
-  const float SigmaClock_;
-  const std::vector<double> DCRparam_;
-  const float DarkCountRate_;
-  const std::vector<double> SRparam_;
-  const float SigmaElectronicNoise_;
-  const float SigmaElectronicNoiseConst_;
-  const float ElectronicGain_;
+  const float sigmaDigitization_;
+  const float sigmaClock_;
+  const std::vector<double> paramDCR_;
+  const float darkCountRate_;
+  const std::vector<double> paramSR_;
+  const float sigmaElectronicNoise_;
+  const float sigmaElectronicNoiseConst_;
+  const float electronicGain_;
   const bool smearTimeForOOTtails_;
-  const float Npe_to_pC_;
-  const float Npe_to_V_;
+  const float npe_to_pC_;
+  const float npe_to_V_;
 
   // adc/tdc bitwidths
   const uint32_t adcNbits_, tdcNbits_;
@@ -81,16 +86,14 @@ private:
   const float toaLSB_ns_;
   const uint32_t tdcBitSaturation_;
 
-  const float CorrCoeff_;
+  const float corrCoeff_;
   const float cosPhi_;
   const float sinPhi_;
 
-  const float ScintillatorDecayTime2_;
-  const float ScintillatorDecayTimeInv_;
-  const float DCRconst2_;
-  const float SigmaElectronicNoise2_;
-  const float SigmaElectronicNoiseConst2_;
-  const float SigmaConst2_;
+  const float scintillatorDecayTime2_;
+  const float scintillatorDecayTimeInv_;
+  const float sigmaElectronicNoiseConst2_;
+  const float sigmaConst2_;
 
   const BTLPulseShape btlPulseShape_;
 };
