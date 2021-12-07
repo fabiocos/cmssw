@@ -1,5 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
+_common_BTLparameters = cms.PSet(
+  bxTime                   = cms.double(25),      # [ns]
+  LightOutput              = cms.double(1600.),  # [photons/MeV], including Light Yield, Light Collection Efficincy and Photon Detection Efficiency
+)
+
 _barrel_MTDDigitizer = cms.PSet(
     digitizerName     = cms.string("BTLDigitizer"),
     inputSimHits      = cms.InputTag("g4SimHits:FastTimerHitsBarrel"),
@@ -9,12 +14,11 @@ _barrel_MTDDigitizer = cms.PSet(
     premixStage1MinCharge = cms.double(1e-4),
     premixStage1MaxCharge = cms.double(1e6),
     DeviceSimulation = cms.PSet(
-        bxTime                   = cms.double(25),      # [ns]
-        LightOutput              = cms.double(1600.),  # [photons/MeV], including Light Yield, Light Collection Efficincy and Photon Detection Efficiency
+        _common_BTLparameters,
         LightCollectionSlope     = cms.double(0.075),   # [ns/cm]
         ),
     ElectronicsSimulation = cms.PSet(
-        bxTime                     = cms.double(25),    # [ns]
+        _common_BTLparameters,
         TestBeamMIPTimeRes         = cms.double(0.2697), # = 0.020[ns]*sqrt(7000.[npe]/38.5[ps])
         ScintillatorRiseTime       = cms.double(1.1),   # [ns]
         ScintillatorDecayTime      = cms.double(38.5),   # [ns]
@@ -28,10 +32,10 @@ _barrel_MTDDigitizer = cms.PSet(
         SigmaClock                 = cms.double(0.015), # [ns], 0.015 ps uncertainty on the combination of SiPMs
         DCRParam                   = cms.vdouble(6.234,30.,0.41), # 0.040[ns]*6000[pe]/38.5[ns], 30 [GHz], optimal exponent from fit to labo measurements
         DarkCountRate              = cms.double(1.864e-03), # [GHz]
-        SlewRateParam              = cms.double(5.32470e-01,0.,2.92152e+01,7.79368e+00), # parameterization of slew rate vs Gain * npe
+        SlewRateParam              = cms.vdouble(5.32470e-01,0.,2.92152e+01,7.79368e+00), # parameterization of slew rate vs Gain * npe
         SigmaElectronicNoise       = cms.double(0.335), # [ns]
         SigmaElectronicNoiseConst  = cms.double(0.0167), # 0.0167[ns]
-        ElectronicGain             = cms.double(5.239e+05),
+        ElectronicGain             = cms.double(0.0001457), # best gain / gain(3.5 Vov) / 9500. [pe]
         CorrelationCoefficient     = cms.double(1.),
         SmearTimeForOOTtails       = cms.bool(True),
         Npe_to_pC                  = cms.double(0.016), # [pC]

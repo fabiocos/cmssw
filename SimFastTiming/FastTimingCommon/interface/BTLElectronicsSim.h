@@ -49,6 +49,7 @@ private:
   float sigma_electronics(const float npe) const;
 
   static constexpr float sqrt2_ = 1.41421356f;
+
   const bool debug_;
 
   const float bxTime_;
