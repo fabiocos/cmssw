@@ -4,6 +4,8 @@
 #include "TrackingTools/MeasurementDet/interface/MeasurementDetSystem.h"
 #include "DataFormats/DetId/interface/DetId.h"
 
+#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
 
 #include "FWCore/Framework/interface/Event.h"
@@ -16,7 +18,6 @@ class SiStripRecHitMatcher;
 class StMeasurementConditionSet;
 class PxMeasurementConditionSet;
 class Phase2OTMeasurementConditionSet;
-class TrackerGeometry;
 
 class MeasurementTracker : public MeasurementDetSystem {
 public:
@@ -28,8 +29,13 @@ public:
     /* Pixels: */ BadROCs = 2
   };
 
-  MeasurementTracker(TrackerGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker)
-      : theTrackerGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker) {}
+  //MeasurementTracker(TrackerGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker)
+      //: theTrackerGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker) {}
+  MeasurementTracker(GlobalTrackingGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker)
+      : theTrkGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker) {
+      DetId trk(DetId::Detector::Tracker,0);
+      theTrackerGeom = static_cast<const TrackerGeometry*>(theTrkGeom->slaveGeometry(trk));
+      }
 
   ~MeasurementTracker() override;
 
@@ -46,6 +52,7 @@ public:
   virtual const Phase2OTMeasurementConditionSet& phase2DetConditions() const = 0;
 
 protected:
+  const GlobalTrackingGeometry* theTrkGeom;
   const TrackerGeometry* theTrackerGeom;
   const GeometricSearchTracker* theGeometricSearchTracker;
 };

@@ -7,6 +7,7 @@
 #include "RecoLocalTracker/Records/interface/TkPixelCPERecord.h"
 #include "RecoLocalTracker/Records/interface/TkPhase2OTCPERecord.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "RecoTracker/Record/interface/TrackerRecoGeometryRecord.h"
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 #include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
@@ -21,7 +22,7 @@
 
 class CkfComponentsRecord
     : public edm::eventsetup::DependentRecordImplementation<CkfComponentsRecord,
-                                                            edm::mpl::Vector<TrackerDigiGeometryRecord,
+                                                            edm::mpl::Vector<GlobalTrackingGeometryRecord,
                                                                              TkPixelCPERecord,
                                                                              TkStripCPERecord,
                                                                              TkPhase2OTCPERecord,

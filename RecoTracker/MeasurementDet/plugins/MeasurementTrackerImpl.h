@@ -34,6 +34,7 @@ class GluedGeomDet;
 class StackGeomDet;
 class SiPixelFedCabling;
 class TrackerGeometry;
+class GlobalTrackingGeometry;
 
 class dso_hidden MeasurementTrackerImpl final : public MeasurementTracker {
 public:
@@ -57,7 +58,7 @@ public:
                          const StripClusterParameterEstimator* stripCPE,
                          const SiStripRecHitMatcher* hitMatcher,
                          const TrackerTopology* trackerTopology,
-                         const TrackerGeometry* trackerGeom,
+                         const GlobalTrackingGeometry* trkGeom,
                          const GeometricSearchTracker* geometricSearchTracker,
                          const SiStripQuality* stripQuality,
                          int stripQualityFlags,

@@ -8,6 +8,7 @@
 #include "Geometry/CommonDetUnit/interface/GluedGeomDet.h"
 #include "Geometry/CommonDetUnit/interface/StackGeomDet.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
@@ -78,7 +79,7 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                const StripClusterParameterEstimator* stripCPE,
                                                const SiStripRecHitMatcher* hitMatcher,
                                                const TrackerTopology* trackerTopology,
-                                               const TrackerGeometry* trackerGeom,
+                                               const GlobalTrackingGeometry* trkGeom,
                                                const GeometricSearchTracker* geometricSearchTracker,
                                                const SiStripQuality* stripQuality,
                                                int stripQualityFlags,
@@ -88,7 +89,7 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                int pixelQualityFlags,
                                                int pixelQualityDebugFlags,
                                                const ClusterParameterEstimator<Phase2TrackerCluster1D>* phase2OTCPE)
-    : MeasurementTracker(trackerGeom, geometricSearchTracker),
+    : MeasurementTracker(trkGeom, geometricSearchTracker),
       theStDetConditions(hitMatcher, stripCPE),
       thePxDetConditions(pixelCPE),
       thePhase2DetConditions(phase2OTCPE) {

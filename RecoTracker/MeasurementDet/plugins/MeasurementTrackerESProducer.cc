@@ -10,12 +10,14 @@
 #include "RecoLocalTracker/ClusterParameterEstimator/interface/PixelClusterParameterEstimator.h"
 #include "RecoLocalTracker/Phase2TrackerRecHits/interface/Phase2StripCPE.h"
 #include "RecoLocalTracker/SiStripRecHitConverter/interface/SiStripRecHitMatcher.h"
+#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
 #include "RecoTracker/Record/interface/CkfComponentsRecord.h"
 #include "RecoTracker/MeasurementDet/interface/MeasurementTracker.h"
 
 #include "RecoLocalTracker/Records/interface/TrackerCPERecord.h"
+#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "RecoTracker/Record/interface/TrackerRecoGeometryRecord.h"
 
@@ -51,7 +53,8 @@ private:
   edm::ESGetToken<StripClusterParameterEstimator, TkStripCPERecord> stripCPEToken_;
   edm::ESGetToken<SiStripRecHitMatcher, TkStripCPERecord> hitMatcherToken_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopologyToken_;
-  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+  //edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+  edm::ESGetToken<GlobalTrackingGeometry, GlobalTrackingGeometryRecord> trackerGeomToken_;
   edm::ESGetToken<GeometricSearchTracker, TrackerRecoGeometryRecord> geometricSearchTrackerToken_;
   edm::ESGetToken<ClusterParameterEstimator<Phase2TrackerCluster1D>, TkPhase2OTCPERecord> phase2TrackerCPEToken_;
 
