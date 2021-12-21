@@ -3,9 +3,11 @@
 
 #include "TrackingTools/MeasurementDet/interface/MeasurementDetSystem.h"
 #include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/ForwardDetId/interface/MTDDetId.h"
 
-#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+#include "Geometry/CommonDetUnit/interface/TrackingGeometry.h"
 #include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
 
 #include "FWCore/Framework/interface/Event.h"
@@ -29,17 +31,29 @@ public:
     /* Pixels: */ BadROCs = 2
   };
 
-  //MeasurementTracker(TrackerGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker)
-      //: theTrackerGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker) {}
-  MeasurementTracker(GlobalTrackingGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker)
-      : theTrkGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker) {
-      DetId trk(DetId::Detector::Tracker,0);
-      theTrackerGeom = static_cast<const TrackerGeometry*>(theTrkGeom->slaveGeometry(trk));
-      }
+  MeasurementTracker(TrackerGeometry const* trackerGeom, MTDGeometry const* mtdGeom = nullptr, GeometricSearchTracker const* geometricSearchTracker)
+      : theTrkGeom(trackerGeom), theMTDGeom(mtdGeom), theGeometricSearchTracker(geometricSearchTracker) {}
 
   ~MeasurementTracker() override;
 
   const TrackerGeometry* geomTracker() const { return theTrackerGeom; }
+  const MTDGeometry* geomMTD() const { return theMTDGeom; }
+
+  const TrackingGeometry* geometry(const DetId& id) const {
+    TrackingGeometry* out = nullptr;
+    DetId::Detector det = id.det();
+    switch (det) {
+    case DetId::Detector::Tracker:
+      out = theTrackerGeometry;
+      break;
+    case DetId::Detector::Forward:
+      if (id.subDetector() == MTDDetId::SubDetector::FastTime) { out = theMTDGeom; }
+      break;
+    default:
+      break;
+    }
+    return out;
+  }
 
   const GeometricSearchTracker* geometricSearchTracker() const { return theGeometricSearchTracker; }
 
@@ -52,8 +66,8 @@ public:
   virtual const Phase2OTMeasurementConditionSet& phase2DetConditions() const = 0;
 
 protected:
-  const GlobalTrackingGeometry* theTrkGeom;
   const TrackerGeometry* theTrackerGeom;
+  const MTDGeometry* theMTDGeom;
   const GeometricSearchTracker* theGeometricSearchTracker;
 };
 

@@ -10,8 +10,8 @@
 #include "RecoLocalTracker/ClusterParameterEstimator/interface/PixelClusterParameterEstimator.h"
 #include "RecoLocalTracker/Phase2TrackerRecHits/interface/Phase2StripCPE.h"
 #include "RecoLocalTracker/SiStripRecHitConverter/interface/SiStripRecHitMatcher.h"
-#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
 #include "RecoTracker/TkDetLayers/interface/GeometricSearchTracker.h"
 #include "RecoTracker/Record/interface/CkfComponentsRecord.h"
 #include "RecoTracker/MeasurementDet/interface/MeasurementTracker.h"
@@ -53,8 +53,8 @@ private:
   edm::ESGetToken<StripClusterParameterEstimator, TkStripCPERecord> stripCPEToken_;
   edm::ESGetToken<SiStripRecHitMatcher, TkStripCPERecord> hitMatcherToken_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopologyToken_;
-  //edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
-  edm::ESGetToken<GlobalTrackingGeometry, GlobalTrackingGeometryRecord> trackerGeomToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+  edm::ESGetToken<MTDGeometry, MTDGeometryRecord> mtdGeomToken_;
   edm::ESGetToken<GeometricSearchTracker, TrackerRecoGeometryRecord> geometricSearchTrackerToken_;
   edm::ESGetToken<ClusterParameterEstimator<Phase2TrackerCluster1D>, TkPhase2OTCPERecord> phase2TrackerCPEToken_;
 
@@ -161,6 +161,7 @@ MeasurementTrackerESProducer::MeasurementTrackerESProducer(const edm::ParameterS
   if (not phase2.empty()) {
     usePhase2_ = true;
     phase2TrackerCPEToken_ = c.consumes(edm::ESInputTag("", phase2));
+    mtdGeomToken_ = c.consumes();
   }
 }
 
@@ -186,12 +187,19 @@ std::unique_ptr<MeasurementTracker> MeasurementTrackerESProducer::produce(const 
   if (usePhase2_) {
     ptr_phase2TrackerCPE = &iRecord.get(phase2TrackerCPEToken_);
   }
+
+  const MTDGeometry* ptr_MTDGeometry = nullptr;
+  if (usePhase2_) {
+    ptr_MTDGeometry = &iRecord.get(mtdGeomToken_);
+  }
+
   return std::make_unique<MeasurementTrackerImpl>(badStripCuts_,
                                                   &iRecord.get(pixelCPEToken_),
                                                   &iRecord.get(stripCPEToken_),
                                                   &iRecord.get(hitMatcherToken_),
                                                   &iRecord.get(trackerTopologyToken_),
                                                   &iRecord.get(trackerGeomToken_),
+                                                  ptr_MTDGeometry,
                                                   &iRecord.get(geometricSearchTrackerToken_),
                                                   ptr_stripQuality,
                                                   stripQualityFlags_,

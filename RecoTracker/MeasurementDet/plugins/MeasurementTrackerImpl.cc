@@ -4,11 +4,12 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
 #include "Geometry/CommonDetUnit/interface/GluedGeomDet.h"
 #include "Geometry/CommonDetUnit/interface/StackGeomDet.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
-#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
+#include "Geometry/Records/interface/MTDGeometryRecord.h"
 
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
@@ -79,7 +80,8 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                const StripClusterParameterEstimator* stripCPE,
                                                const SiStripRecHitMatcher* hitMatcher,
                                                const TrackerTopology* trackerTopology,
-                                               const GlobalTrackingGeometry* trkGeom,
+                                               const TrackerGeometry* trackerGeom,
+                                               const MTDGeometry* mtdGeom,
                                                const GeometricSearchTracker* geometricSearchTracker,
                                                const SiStripQuality* stripQuality,
                                                int stripQualityFlags,
@@ -89,7 +91,7 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                int pixelQualityFlags,
                                                int pixelQualityDebugFlags,
                                                const ClusterParameterEstimator<Phase2TrackerCluster1D>* phase2OTCPE)
-    : MeasurementTracker(trkGeom, geometricSearchTracker),
+    : MeasurementTracker(trackerGeom, mtdGeom, geometricSearchTracker),
       theStDetConditions(hitMatcher, stripCPE),
       thePxDetConditions(pixelCPE),
       thePhase2DetConditions(phase2OTCPE) {
