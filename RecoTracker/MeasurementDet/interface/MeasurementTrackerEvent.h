@@ -71,7 +71,7 @@ public:
   // forwarded calls
   const TrackerGeometry *geomTracker() const { return measurementTracker().geomTracker(); }
   const MTDGeometry *geomMTD() const { return measurementTracker().geomMTD(); }
-  const TrackingGeometry *geometry() const { return measurementTracker().geometry(); }
+  const TrackingGeometry *geometry(const DetId& id) const { return measurementTracker().geometry(id); }
   const GeometricSearchTracker *geometricSearchTracker() const { return measurementTracker().geometricSearchTracker(); }
 
   /// Previous MeasurementDetSystem interface

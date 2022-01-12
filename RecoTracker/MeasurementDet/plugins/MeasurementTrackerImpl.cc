@@ -81,7 +81,6 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                const SiStripRecHitMatcher* hitMatcher,
                                                const TrackerTopology* trackerTopology,
                                                const TrackerGeometry* trackerGeom,
-                                               const MTDGeometry* mtdGeom,
                                                const GeometricSearchTracker* geometricSearchTracker,
                                                const SiStripQuality* stripQuality,
                                                int stripQualityFlags,
@@ -90,8 +89,9 @@ MeasurementTrackerImpl::MeasurementTrackerImpl(const BadStripCutsDet& badStripCu
                                                const SiPixelFedCabling* pixelCabling,
                                                int pixelQualityFlags,
                                                int pixelQualityDebugFlags,
+                                               const MTDGeometry* mtdGeom,
                                                const ClusterParameterEstimator<Phase2TrackerCluster1D>* phase2OTCPE)
-    : MeasurementTracker(trackerGeom, mtdGeom, geometricSearchTracker),
+    : MeasurementTracker(trackerGeom, geometricSearchTracker, mtdGeom),
       theStDetConditions(hitMatcher, stripCPE),
       thePxDetConditions(pixelCPE),
       thePhase2DetConditions(phase2OTCPE) {

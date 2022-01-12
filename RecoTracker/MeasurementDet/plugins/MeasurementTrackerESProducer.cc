@@ -19,6 +19,7 @@
 #include "RecoLocalTracker/Records/interface/TrackerCPERecord.h"
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+#include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
 #include "RecoTracker/Record/interface/TrackerRecoGeometryRecord.h"
 
 #include "CondFormats/DataRecord/interface/SiStripNoisesRcd.h"
@@ -54,7 +55,7 @@ private:
   edm::ESGetToken<SiStripRecHitMatcher, TkStripCPERecord> hitMatcherToken_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopologyToken_;
   edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
-  edm::ESGetToken<MTDGeometry, MTDGeometryRecord> mtdGeomToken_;
+  edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdGeomToken_;
   edm::ESGetToken<GeometricSearchTracker, TrackerRecoGeometryRecord> geometricSearchTrackerToken_;
   edm::ESGetToken<ClusterParameterEstimator<Phase2TrackerCluster1D>, TkPhase2OTCPERecord> phase2TrackerCPEToken_;
 
@@ -199,7 +200,6 @@ std::unique_ptr<MeasurementTracker> MeasurementTrackerESProducer::produce(const 
                                                   &iRecord.get(hitMatcherToken_),
                                                   &iRecord.get(trackerTopologyToken_),
                                                   &iRecord.get(trackerGeomToken_),
-                                                  ptr_MTDGeometry,
                                                   &iRecord.get(geometricSearchTrackerToken_),
                                                   ptr_stripQuality,
                                                   stripQualityFlags_,
@@ -208,6 +208,7 @@ std::unique_ptr<MeasurementTracker> MeasurementTrackerESProducer::produce(const 
                                                   ptr_pixelCabling,
                                                   pixelQualityFlags_,
                                                   pixelQualityDebugFlags_,
+                                                  ptr_MTDGeometry,
                                                   ptr_phase2TrackerCPE);
 }
 

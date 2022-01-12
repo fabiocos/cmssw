@@ -59,7 +59,6 @@ public:
                          const SiStripRecHitMatcher* hitMatcher,
                          const TrackerTopology* trackerTopology,
                          const TrackerGeometry* trackerGeom,
-                         const MTDGeometry* mtdGeom = nullptr,
                          const GeometricSearchTracker* geometricSearchTracker,
                          const SiStripQuality* stripQuality,
                          int stripQualityFlags,
@@ -68,6 +67,7 @@ public:
                          const SiPixelFedCabling* pixelCabling,
                          int pixelQualityFlags,
                          int pixelQualityDebugFlags,
+                         const MTDGeometry* mtdGeom = nullptr,
                          const ClusterParameterEstimator<Phase2TrackerCluster1D>* phase2OTCPE = nullptr);
 
   ~MeasurementTrackerImpl() override;

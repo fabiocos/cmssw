@@ -23,7 +23,7 @@
 class CkfComponentsRecord
     : public edm::eventsetup::DependentRecordImplementation<CkfComponentsRecord,
                                                             edm::mpl::Vector<TrackerDigiGeometryRecord,
-                                                                             MTDGeometryRecord,
+                                                                             MTDDigiGeometryRecord,
                                                                              TkPixelCPERecord,
                                                                              TkStripCPERecord,
                                                                              TkPhase2OTCPERecord,

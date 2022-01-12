@@ -31,8 +31,8 @@ public:
     /* Pixels: */ BadROCs = 2
   };
 
-  MeasurementTracker(TrackerGeometry const* trackerGeom, MTDGeometry const* mtdGeom = nullptr, GeometricSearchTracker const* geometricSearchTracker)
-      : theTrkGeom(trackerGeom), theMTDGeom(mtdGeom), theGeometricSearchTracker(geometricSearchTracker) {}
+  MeasurementTracker(TrackerGeometry const* trackerGeom, GeometricSearchTracker const* geometricSearchTracker, MTDGeometry const* mtdGeom = nullptr)
+      : theTrackerGeom(trackerGeom), theGeometricSearchTracker(geometricSearchTracker), theMTDGeom(mtdGeom) {}
 
   ~MeasurementTracker() override;
 
@@ -40,14 +40,14 @@ public:
   const MTDGeometry* geomMTD() const { return theMTDGeom; }
 
   const TrackingGeometry* geometry(const DetId& id) const {
-    TrackingGeometry* out = nullptr;
+    const TrackingGeometry* out;
     DetId::Detector det = id.det();
     switch (det) {
     case DetId::Detector::Tracker:
-      out = theTrackerGeometry;
+      out = theTrackerGeom;
       break;
     case DetId::Detector::Forward:
-      if (id.subDetector() == MTDDetId::SubDetector::FastTime) { out = theMTDGeom; }
+      if (id.subdetId() == MTDDetId::SubDetector::FastTime) { out = theMTDGeom; }
       break;
     default:
       break;
@@ -67,8 +67,8 @@ public:
 
 protected:
   const TrackerGeometry* theTrackerGeom;
-  const MTDGeometry* theMTDGeom;
   const GeometricSearchTracker* theGeometricSearchTracker;
+  const MTDGeometry* theMTDGeom;
 };
 
 #endif  // MeasurementTracker_H
