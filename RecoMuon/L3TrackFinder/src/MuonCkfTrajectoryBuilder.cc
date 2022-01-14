@@ -145,7 +145,7 @@ void MuonCkfTrajectoryBuilder::findCompatibleMeasurements(const TrajectorySeed& 
     //set the currentState to be the one from the trajectory seed starting point
     PTrajectoryStateOnDet ptod = seed.startingState();
     DetId id(ptod.detId());
-    const GeomDet* g = theMeasurementTracker->geomTracker()->idToDet(id);
+    const GeomDet* g = theMeasurementTracker->geometry(id)->idToDet(id);
     const Surface* surface = &g->surface();
 
     TrajectoryStateOnSurface currentState(

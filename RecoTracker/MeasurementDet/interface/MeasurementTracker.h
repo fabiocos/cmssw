@@ -50,6 +50,7 @@ public:
       if (id.subdetId() == MTDDetId::SubDetector::FastTime) { out = theMTDGeom; }
       break;
     default:
+      throw cms::Exception("MeasurementTracker: requested for not supported detector");
       break;
     }
     return out;

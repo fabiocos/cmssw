@@ -1,3 +1,5 @@
+#define EDM_ML_DEBUG
+
 #include "DataFormats/Common/interface/Handle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"

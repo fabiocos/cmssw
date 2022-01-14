@@ -60,7 +60,7 @@ std::unique_ptr<TrajectoryFilter> BaseCkfTrajectoryBuilder::createTrajectoryFilt
 #include "RecoTracker/TransientTrackingRecHit/interface/TRecHit5DParamConstraint.h"
 void BaseCkfTrajectoryBuilder::seedMeasurements(const TrajectorySeed& seed, TempTrajectory& result, bool as5D) const {
   PTrajectoryStateOnDet pState(seed.startingState());
-  const GeomDet* gdet = theMeasurementTracker->geomTracker()->idToDet(pState.detId());
+  const GeomDet* gdet = theMeasurementTracker->geometry(pState.detId())->idToDet(pState.detId());
   TSOS outerState =
       trajectoryStateTransform::transientState(pState, &(gdet->surface()), forwardPropagator(seed)->magneticField());
 
