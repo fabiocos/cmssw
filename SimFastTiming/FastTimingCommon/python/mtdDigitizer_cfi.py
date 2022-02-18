@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 _common_BTLparameters = cms.PSet(
   bxTime                   = cms.double(25),      # [ns]
-  LightOutput              = cms.double(1600.),  # [photons/MeV], including Light Yield, Light Collection Efficincy and Photon Detection Efficiency
+  LightOutput              = cms.double(2000.),  # [photons/MeV], including Light Yield, Light Collection Efficincy and Photon Detection Efficiency
 )
 
 _barrel_MTDDigitizer = cms.PSet(
@@ -21,7 +21,7 @@ _barrel_MTDDigitizer = cms.PSet(
         _common_BTLparameters,
         TestBeamMIPTimeRes         = cms.double(0.2697), # = 0.020[ns]*sqrt(7000.[npe]/38.5[ps])
         ScintillatorRiseTime       = cms.double(1.1),   # [ns]
-        ScintillatorDecayTime      = cms.double(38.5),   # [ns]
+        ScintillatorDecayTime      = cms.double(40.),   # [ns]
         ChannelTimeOffset          = cms.double(0.),    # [ns]
         smearChannelTimeOffset     = cms.double(0.),    # [ns]
         EnergyThreshold            = cms.double(4.),    # [photo-electrons]
@@ -31,7 +31,7 @@ _barrel_MTDDigitizer = cms.PSet(
         SigmaDigitization          = cms.double(0.007), # [ns]
         SigmaClock                 = cms.double(0.015), # [ns], 0.015 ps uncertainty on the combination of SiPMs
         DCRParam                   = cms.vdouble(6.234,30.,0.41), # 0.040[ns]*6000[pe]/38.5[ns], 30 [GHz], optimal exponent from fit to labo measurements
-        DarkCountRate              = cms.double(1.864e-03), # [GHz]
+        DarkCountRate              = cms.double(10.), # [GHz]
         SlewRateParam              = cms.vdouble(5.32470e-01,0.,2.92152e+01,7.79368e+00), # parameterization of slew rate vs Gain * npe
         SigmaElectronicNoise       = cms.double(0.335), # [ns]
         SigmaElectronicNoiseConst  = cms.double(0.0167), # 0.0167[ns]
