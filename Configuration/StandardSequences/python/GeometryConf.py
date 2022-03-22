@@ -72,4 +72,5 @@ GeometryConf={
     'Extended2026D89' : 'Extended2026D89,Extended2026D89Reco',
     'Extended2026D90' : 'Extended2026D90,Extended2026D90Reco',
     'Extended2026D91' : 'Extended2026D91,Extended2026D91Reco',
+    'Extended2026D92' : 'Extended2026D92,Extended2026D92Reco',
     }

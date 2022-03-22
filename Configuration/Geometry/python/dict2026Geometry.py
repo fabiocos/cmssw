@@ -1723,6 +1723,34 @@ timingDict = {
            ],
        "era" : "phase2_timing, phase2_timing_layer, phase2_etlV4",
     },
+    "I16" : {
+        1 : [
+           'Geometry/MTDCommonData/data/mtdMaterial/v3/mtdMaterial.xml',
+           'Geometry/MTDCommonData/data/btl/v2/btl.xml',
+           'Geometry/MTDCommonData/data/etl/v7/etl.xml',
+           'Geometry/MTDCommonData/data/mtdParameters/v3/mtdStructureTopology.xml',
+           'Geometry/MTDCommonData/data/mtdParameters/v2/mtdParameters.xml',
+           ],
+       3 : [
+           'Geometry/MTDSimData/data/v2/mtdsens.xml'
+           ],
+       4 : [
+           'Geometry/MTDSimData/data/v2/mtdProdCuts.xml'
+           ],
+       "sim" : [
+           'from Geometry.MTDNumberingBuilder.mtdNumberingGeometry_cff import *',
+           ],
+       "reco" :[
+           'from RecoMTD.DetLayers.mtdDetLayerGeometry_cfi import *',
+           'from Geometry.MTDGeometryBuilder.mtdParameters_cff import *',
+           'from Geometry.MTDNumberingBuilder.mtdNumberingGeometry_cff import *',
+           'from Geometry.MTDNumberingBuilder.mtdTopology_cfi import *',
+           'from Geometry.MTDGeometryBuilder.mtdGeometry_cfi import *',
+           'from Geometry.MTDGeometryBuilder.idealForDigiMTDGeometry_cff import *',
+           'mtdGeometry.applyAlignment = cms.bool(False)'
+           ],
+       "era" : "phase2_timing, phase2_timing_layer, phase2_etlV4",
+    },
 }
 
 allDicts = [ commonDict, trackerDict, caloDict, muonDict, forwardDict, timingDict ]
@@ -1748,6 +1776,7 @@ detectorVersionDict = {
     ("O7","T28","C14","M9","F8","I13") : "D89",
     ("O7","T29","C14","M9","F8","I13") : "D90",
     ("O9","T30","C17","M10","F6","I15") : "D91",
+    ("O9","T24","C17","M10","F6","I16") : "D92",
  }
 
 deprecatedDets = set([ "D1", "D2", "D3", "D5", "D6" , "D7", "D4", "D8" , "D9", "D12", "D13", "D15", "D10", "D11", "D14", "D16", "D17", "D18", "D19", "D20", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28", "D29", "D30", "D31", "D32", "D33", "D34", "D36", "D37", "D38", "D39", "D40", "D42", "D35", "D41", "D43", "D44", "D45", "D46", "D48", "D47", "D50", "D51", "D52", "D53", "D54", "D55", "D56", "D57", "D58", "D59", "D61", "D62", "D63", "D64", "D65", "D66", "D67", "D69", "D71", "D72", "D73", "D74", "D75"])
