@@ -24,7 +24,7 @@
     <Box name="BModule1Layer1NegativeZ" dx="92*mm" dy="26.1*mm" dz="9*mm"/>
     <Box name="BModule1Layer1PositiveZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
     <Box name="BModule1Layer1NegativeZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
-    <Box name="BModule1Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="1.875*mm"/>
+    <Box name="BModule1Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="2*mm"/>
     <Box name="BModule1Layer1PositiveZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
     <Box name="BModule1Layer1PositiveZSupportPlate" dx="92*mm" dy="26.1*mm" dz="1.5*mm"/>
     <Box name="BModule1Layer1NegativeZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
@@ -33,7 +33,7 @@
     <Box name="BModule17Layer1NegativeZ" dx="92*mm" dy="26.1*mm" dz="9*mm"/>
     <Box name="BModule17Layer1PositiveZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
     <Box name="BModule17Layer1NegativeZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
-    <Box name="BModule17Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="1.875*mm"/>
+    <Box name="BModule17Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="2*mm"/>
     <Box name="BModule17Layer1PositiveZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
     <Box name="BModule17Layer1PositiveZSupportPlate" dx="92*mm" dy="26.1*mm" dz="1.5*mm"/>
     <Box name="BModule17Layer1NegativeZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
@@ -42,7 +42,7 @@
     <Box name="BModule33Layer1NegativeZ" dx="92*mm" dy="26.1*mm" dz="9*mm"/>
     <Box name="BModule33Layer1PositiveZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
     <Box name="BModule33Layer1NegativeZTimingwafer" dx="92*mm" dy="26.1*mm" dz="2*mm"/>
-    <Box name="BModule33Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="1.875*mm"/>
+    <Box name="BModule33Layer1Timingactive" dx="28.8*mm" dy="1.575*mm" dz="2*mm"/>
     <Box name="BModule33Layer1PositiveZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
     <Box name="BModule33Layer1PositiveZSupportPlate" dx="92*mm" dy="26.1*mm" dz="1.5*mm"/>
     <Box name="BModule33Layer1NegativeZFSide" dx="92*mm" dy="26.1*mm" dz="0.8*mm"/>
