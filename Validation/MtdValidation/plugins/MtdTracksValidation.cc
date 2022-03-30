@@ -521,7 +521,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       reco::TrackBaseRef tbrTrk(trackref);
       auto tp_info = getMatchedTP(tbrTrk);
       if (tp_info != nullptr) {
-
         double dbetaPi = c_cm_ns * (tMtd[trackref] - treco - tofPi[trackref]) / pathLength[trackref];
         double dbetaK = c_cm_ns * (tMtd[trackref] - treco - tofK[trackref]) / pathLength[trackref];
         double dbetaP = c_cm_ns * (tMtd[trackref] - treco - tofP[trackref]) / pathLength[trackref];

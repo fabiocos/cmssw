@@ -43,6 +43,8 @@
 #include "HepMC/GenRanges.h"
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "CLHEP/Units/PhysicalConstants.h"
+#include "DataFormats/Math/interface/LorentzVector.h"
+#include "CLHEP/Units/GlobalPhysicalConstants.h"
 
 class MtdSecondaryPvValidation : public DQMEDAnalyzer {
 public:
@@ -83,7 +85,14 @@ private:
   static constexpr double tol_ = 1.e-4;        // tolerance on reconstructed track time, [ns]
   static constexpr double mvaSel_ = 0.8;       // minimum MVA value for PID analysis
 
-  static constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
+  static constexpr double c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
+  static constexpr double c_inv = 1.0 / c_cm_ns;
+  static constexpr double m_pi = 0.13957018;
+  static constexpr double m_pi_inv2 = 1.0 / m_pi / m_pi;
+  static constexpr double m_k = 0.493677;
+  static constexpr double m_k_inv2 = 1.0 / m_k / m_k;
+  static constexpr double m_p = 0.9382720813;
+  static constexpr double m_p_inv2 = 1.0 / m_p / m_p;
 
   edm::EDGetTokenT<reco::TrackCollection> GenRecTrackToken_;
   edm::EDGetTokenT<reco::TrackCollection> RecTrackToken_;
@@ -120,35 +129,6 @@ private:
   const reco::RecoToSimCollection* r2s_;
   const reco::SimToRecoCollection* s2r_;
 
-  MonitorElement* meBTLTrackRPTime_;
-  MonitorElement* meBTLTrackEffEtaTot_;
-  MonitorElement* meBTLTrackEffPhiTot_;
-  MonitorElement* meBTLTrackEffPtTot_;
-  MonitorElement* meBTLTrackEffEtaMtd_;
-  MonitorElement* meBTLTrackEffPhiMtd_;
-  MonitorElement* meBTLTrackEffPtMtd_;
-  MonitorElement* meBTLTrackPtRes_;
-
-  MonitorElement* meETLTrackRPTime_;
-  MonitorElement* meETLTrackEffEtaTot_[2];
-  MonitorElement* meETLTrackEffPhiTot_[2];
-  MonitorElement* meETLTrackEffPtTot_[2];
-  MonitorElement* meETLTrackEffEtaMtd_[2];
-  MonitorElement* meETLTrackEffPhiMtd_[2];
-  MonitorElement* meETLTrackEffPtMtd_[2];
-  MonitorElement* meETLTrackPtRes_;
-
-  MonitorElement* meTracktmtd_;
-  MonitorElement* meTrackt0Src_;
-  MonitorElement* meTrackSigmat0Src_;
-  MonitorElement* meTrackt0Pid_;
-  MonitorElement* meTrackSigmat0Pid_;
-  MonitorElement* meTrackt0SafePid_;
-  MonitorElement* meTrackSigmat0SafePid_;
-  MonitorElement* meTrackNumHits_;
-  MonitorElement* meTrackMVAQual_;
-  MonitorElement* meTrackPathLenghtvsEta_;
-
   MonitorElement* meMVATrackEffPtTot_;
   MonitorElement* meMVATrackMatchedEffPtTot_;
   MonitorElement* meMVATrackMatchedEffPtMtd_;
@@ -171,8 +151,6 @@ private:
 
   MonitorElement* meBarrelPID3dip_;
   MonitorElement* meEndcapPID3dip_;
-
-  MonitorElement* meRefPointdist_;
 
   MonitorElement* meBarrelNoPIDtype_;
   MonitorElement* meEndcapNoPIDtype_;
@@ -204,6 +182,16 @@ private:
   MonitorElement* meEndcapTruePAsPi_;
   MonitorElement* meEndcapTruePAsK_;
   MonitorElement* meEndcapTruePAsP_;
+
+  MonitorElement* meSVpid_;
+  MonitorElement* meSV_pi_vs_k_pid_;
+  MonitorElement* meSV_pi_vs_k_uncpid_;
+  MonitorElement* meSV_pi_vs_k_4dpid_;
+
+  MonitorElement* me3GeVSVpid_;
+  MonitorElement* me3GeVSV_pi_vs_k_pid_;
+  MonitorElement* me3GeVSV_pi_vs_k_uncpid_;
+  MonitorElement* me3GeVSV_pi_vs_k_4dpid_;
 };
 
 // ------------ constructor and destructor --------------
@@ -258,15 +246,6 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
 
-  bool topo1Dis = false;
-  bool topo2Dis = false;
-  if (topology->getMTDTopologyMode() <= static_cast<int>(MTDTopologyMode::Mode::barphiflat)) {
-    topo1Dis = true;
-  }
-  if (topology->getMTDTopologyMode() > static_cast<int>(MTDTopologyMode::Mode::barphiflat)) {
-    topo2Dis = true;
-  }
-
   auto GenRecTrackHandle = makeValid(iEvent.getHandle(GenRecTrackToken_));
   auto RecVertexHandle = makeValid(iEvent.getHandle(RecVertexToken_));
 
@@ -289,154 +268,6 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   const auto& probP = iEvent.get(probPToken_);
 
   unsigned int index = 0;
-  // --- Loop over all RECO tracks ---
-  for (const auto& trackGen : *GenRecTrackHandle) {
-    const reco::TrackRef trackref(iEvent.getHandle(GenRecTrackToken_), index);
-    index++;
-
-    if (trackAssoc[trackref] == -1) {
-      LogInfo("mtdTracks") << "Extended track not associated";
-      continue;
-    }
-
-    const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
-    const reco::Track track = *mtdTrackref;
-
-    if (track.pt() < trackMinPt_ || std::abs(track.eta()) > trackMaxEtlEta_)
-      continue;
-
-    meTracktmtd_->Fill(tMtd[trackref]);
-    if (std::round(SigmatMtd[trackref] - Sigmat0Pid[trackref]) != 0) {
-      LogWarning("mtdTracks") << "TimeError associated to refitted track is different from TimeError stored in tofPID "
-                                 "sigmat0 ValueMap: this should not happen";
-    }
-
-    meTrackt0Src_->Fill(t0Src[trackref]);
-    meTrackSigmat0Src_->Fill(Sigmat0Src[trackref]);
-
-    meTrackt0Pid_->Fill(t0Pid[trackref]);
-    meTrackSigmat0Pid_->Fill(Sigmat0Pid[trackref]);
-    meTrackt0SafePid_->Fill(t0Safe[trackref]);
-    meTrackSigmat0SafePid_->Fill(Sigmat0Safe[trackref]);
-    meTrackMVAQual_->Fill(mtdQualMVA[trackref]);
-
-    meTrackPathLenghtvsEta_->Fill(std::abs(track.eta()), pathLength[trackref]);
-
-    if (std::abs(track.eta()) < trackMaxBtlEta_) {
-      // --- all BTL tracks (with and without hit in MTD) ---
-      meBTLTrackEffEtaTot_->Fill(track.eta());
-      meBTLTrackEffPhiTot_->Fill(track.phi());
-      meBTLTrackEffPtTot_->Fill(track.pt());
-
-      bool MTDBtl = false;
-      int numMTDBtlvalidhits = 0;
-      for (const auto hit : track.recHits()) {
-        if (hit->isValid() == false)
-          continue;
-        MTDDetId Hit = hit->geographicalId();
-        if ((Hit.det() == 6) && (Hit.subdetId() == 1) && (Hit.mtdSubDetector() == 1)) {
-          MTDBtl = true;
-          numMTDBtlvalidhits++;
-        }
-      }
-      meTrackNumHits_->Fill(numMTDBtlvalidhits);
-
-      // --- keeping only tracks with last hit in MTD ---
-      if (MTDBtl == true) {
-        meBTLTrackEffEtaMtd_->Fill(track.eta());
-        meBTLTrackEffPhiMtd_->Fill(track.phi());
-        meBTLTrackEffPtMtd_->Fill(track.pt());
-        meBTLTrackRPTime_->Fill(track.t0());
-        meBTLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
-      }
-    }  //loop over (geometrical) BTL tracks
-
-    else {
-      // --- all ETL tracks (with and without hit in MTD) ---
-      if ((track.eta() < -trackMinEtlEta_) && (track.eta() > -trackMaxEtlEta_)) {
-        meETLTrackEffEtaTot_[0]->Fill(track.eta());
-        meETLTrackEffPhiTot_[0]->Fill(track.phi());
-        meETLTrackEffPtTot_[0]->Fill(track.pt());
-      }
-
-      if ((track.eta() > trackMinEtlEta_) && (track.eta() < trackMaxEtlEta_)) {
-        meETLTrackEffEtaTot_[1]->Fill(track.eta());
-        meETLTrackEffPhiTot_[1]->Fill(track.phi());
-        meETLTrackEffPtTot_[1]->Fill(track.pt());
-      }
-
-      bool MTDEtlZnegD1 = false;
-      bool MTDEtlZnegD2 = false;
-      bool MTDEtlZposD1 = false;
-      bool MTDEtlZposD2 = false;
-      int numMTDEtlvalidhits = 0;
-      for (const auto hit : track.recHits()) {
-        if (hit->isValid() == false)
-          continue;
-        MTDDetId Hit = hit->geographicalId();
-        if ((Hit.det() == 6) && (Hit.subdetId() == 1) && (Hit.mtdSubDetector() == 2)) {
-          ETLDetId ETLHit = hit->geographicalId();
-
-          if (topo2Dis) {
-            if ((ETLHit.zside() == -1) && (ETLHit.nDisc() == 1)) {
-              MTDEtlZnegD1 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              meETLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
-              numMTDEtlvalidhits++;
-            }
-            if ((ETLHit.zside() == -1) && (ETLHit.nDisc() == 2)) {
-              MTDEtlZnegD2 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              meETLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
-              numMTDEtlvalidhits++;
-            }
-            if ((ETLHit.zside() == 1) && (ETLHit.nDisc() == 1)) {
-              MTDEtlZposD1 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              meETLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
-              numMTDEtlvalidhits++;
-            }
-            if ((ETLHit.zside() == 1) && (ETLHit.nDisc() == 2)) {
-              MTDEtlZposD2 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              meETLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
-              numMTDEtlvalidhits++;
-            }
-          }
-
-          if (topo1Dis) {
-            if (ETLHit.zside() == -1) {
-              MTDEtlZnegD1 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              numMTDEtlvalidhits++;
-            }
-            if (ETLHit.zside() == 1) {
-              MTDEtlZposD1 = true;
-              meETLTrackRPTime_->Fill(track.t0());
-              numMTDEtlvalidhits++;
-            }
-          }
-        }
-      }
-      meTrackNumHits_->Fill(-numMTDEtlvalidhits);
-
-      // --- keeping only tracks with last hit in MTD ---
-      if ((track.eta() < -trackMinEtlEta_) && (track.eta() > -trackMaxEtlEta_)) {
-        if ((MTDEtlZnegD1 == true) || (MTDEtlZnegD2 == true)) {
-          meETLTrackEffEtaMtd_[0]->Fill(track.eta());
-          meETLTrackEffPhiMtd_[0]->Fill(track.phi());
-          meETLTrackEffPtMtd_[0]->Fill(track.pt());
-        }
-      }
-      if ((track.eta() > trackMinEtlEta_) && (track.eta() < trackMaxEtlEta_)) {
-        if ((MTDEtlZposD1 == true) || (MTDEtlZposD2 == true)) {
-          meETLTrackEffEtaMtd_[1]->Fill(track.eta());
-          meETLTrackEffPhiMtd_[1]->Fill(track.phi());
-          meETLTrackEffPtMtd_[1]->Fill(track.pt());
-        }
-      }
-    }
-  }  //RECO tracks loop
 
   const auto& primRecoVtx = *(RecVertexHandle.product()->begin());
   double treco = primRecoVtx.t();
@@ -461,7 +292,10 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   auto pdt = iSetup.getHandle(particleTableToken_);
   const HepPDT::ParticleDataTable* pdTable = pdt.product();
 
-  std::vector<reco::TrackBase::Point> refPointDist;
+  std::vector<reco::Track> candTrk;
+  std::vector<reco::TrackRef> candRef;
+  std::vector<const HepMC::GenParticle*> candGen;
+  std::vector<int> candPid;
 
   // select events with reco vertex close to true simulated primary vertex
   if (std::abs(primRecoVtx.z() - zsim) < deltaZcut_) {
@@ -537,12 +371,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
         if (!genSelBPH(*genP)) {
           continue;
         }
+
+        candTrk.push_back(trackGen);
+        candRef.push_back(trackref);
+        candGen.push_back(genP);
         double dx = genP->production_vertex()->position().x() - (*(mc->vertices_begin()))->position().x();
         double dy = genP->production_vertex()->position().y() - (*(mc->vertices_begin()))->position().y();
         double dz = genP->production_vertex()->position().z() - (*(mc->vertices_begin()))->position().z();
         double ip3d = convertMmToCm(std::sqrt(dx * dx + dy * dy + dz * dz));
-
-        refPointDist.push_back(trackGen.referencePoint());
 
         double dbetaPi = c_cm_ns * (tMtd[trackref] - treco - tofPi[trackref]) / pathLength[trackref];
         double dbetaK = c_cm_ns * (tMtd[trackref] - treco - tofK[trackref]) / pathLength[trackref];
@@ -572,9 +408,20 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
               << " " << probP[trackref];
         }
 
+        //if ( noPID || isPi ) {
+        if (isPi) {
+          candPid.push_back(0);
+        } else if (isK) {
+          candPid.push_back(1);
+        } else if (isP) {
+          candPid.push_back(2);
+        } else {
+          candPid.push_back(3);
+        }
+
         if (std::abs(trackGen.eta()) < trackMaxBtlEta_) {
           meBarrelPIDp_->Fill(trackGen.p());
-          meBarrelPID3dip_->Fill(ip3d);
+          meBarrelPID3dip_->Fill(ip3d, trackGen.p());
           meBarrelNoPIDtype_->Fill(noPIDtype + 0.5);
           if (optionalPlots_) {
             if (std::abs((*tp_info)->pdgId()) == 211) {
@@ -629,7 +476,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           }
         } else if (std::abs(trackGen.eta()) > trackMinEtlEta_ && std::abs(trackGen.eta()) < trackMaxEtlEta_) {
           meEndcapPIDp_->Fill(trackGen.p());
-          meEndcapPID3dip_->Fill(ip3d);
+          meEndcapPID3dip_->Fill(ip3d, trackGen.p());
           meEndcapNoPIDtype_->Fill(noPIDtype + 0.5);
           if (optionalPlots_) {
             if (std::abs((*tp_info)->pdgId()) == 211) {
@@ -686,74 +533,146 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
       }
     }
 
-    if (refPointDist.size() == 2 ) {
-      double dx = refPointDist[0].X()-refPointDist[1].X();
-      double dy = refPointDist[0].Y()-refPointDist[1].Y();
-      double dz = refPointDist[0].Z()-refPointDist[1].Z();
-      meRefPointdist_->Fill(std::sqrt(dx*dx+dy*dy+dz*dz));
-    }
+    if (candRef.size() == 2) {
+      bool less3GeV = candTrk[0].p() < 3. && candTrk[1].p() < 3.;
 
+      // array on candidates, for each array of hyptheses (0 = pi, 1 = k)
+      std::array<std::array<double, 3>, 2> hypTof;
+      std::array<std::array<double, 3>, 2> hypUncTof;
+      std::array<unsigned int, 2> hypOk;
+
+      for (unsigned int index = 0; index < 2; index++) {
+        double dx =
+            convertMmToCm(candGen[index]->production_vertex()->position().x()) - candTrk[index].referencePoint().x();
+        double dy =
+            convertMmToCm(candGen[index]->production_vertex()->position().y()) - candTrk[index].referencePoint().y();
+        double dz =
+            convertMmToCm(candGen[index]->production_vertex()->position().z()) - candTrk[index].referencePoint().z();
+        double dscorr = std::sqrt(dx * dx + dy * dy + dz * dz);
+        double gammasq_pi = 1. + candTrk[index].p() * candTrk[index].p() * m_pi_inv2;
+        double beta_pi = std::sqrt(1. - 1. / gammasq_pi);
+        double dtcorr_pi = dscorr / beta_pi * c_inv;
+        double gammasq_k = 1. + candTrk[index].p() * candTrk[index].p() * m_k_inv2;
+        double beta_k = std::sqrt(1. - 1. / gammasq_k);
+        double dtcorr_k = dscorr / beta_k * c_inv;
+        double gammasq_p = 1. + candTrk[index].p() * candTrk[index].p() * m_p_inv2;
+        double beta_p = std::sqrt(1. - 1. / gammasq_p);
+        double dtcorr_p = dscorr / beta_p * c_inv;
+        std::array<double, 3> tof;
+        tof[0] = tMtd[candRef[index]] - tofPi[candRef[index]] + dtcorr_pi;
+        tof[1] = tMtd[candRef[index]] - tofK[candRef[index]] + dtcorr_k;
+        tof[2] = tMtd[candRef[index]] - tofP[candRef[index]] + dtcorr_p;
+        hypTof[index] = tof;
+        tof[0] = tMtd[candRef[index]] - tofPi[candRef[index]];
+        tof[1] = tMtd[candRef[index]] - tofK[candRef[index]];
+        tof[2] = tMtd[candRef[index]] - tofP[candRef[index]];
+        hypUncTof[index] = tof;
+        if (std::abs(candGen[index]->pdg_id()) == 211) {
+          hypOk[index] = 0;
+        } else if (std::abs(candGen[index]->pdg_id()) == 321) {
+          hypOk[index] = 1;
+        } else if (std::abs(candGen[index]->pdg_id()) == 2212) {
+          hypOk[index] = 2;
+        } else {
+          edm::LogWarning("MtdSecondaryPvValid") << "Not expected particle " << candGen[index]->pdg_id();
+        }
+      }
+
+      double sigmaDT =
+          std::sqrt(SigmatMtd[candRef[0]] * SigmatMtd[candRef[0]] + SigmatMtd[candRef[1]] * SigmatMtd[candRef[1]]);
+      double sigdtAtSV = 9999.;
+      unsigned int id1(3);
+      unsigned int id2(3);
+      bool idOK = false;
+      for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
+        for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
+          double sigdtTmp = std::abs((hypTof[0])[ihyp1] - (hypTof[1])[ihyp2]) / sigmaDT;
+          bool idOkTmp = (hypOk[0] == ihyp1 && hypOk[1] == ihyp2);
+          if (sigdtTmp < sigdtAtSV) {
+            sigdtAtSV = sigdtTmp;
+            idOK = idOkTmp;
+            id1 = ihyp1;
+            id2 = ihyp2;
+          }
+        }
+      }
+
+      if (idOK) {
+        meSVpid_->Fill(0.5);
+        if (less3GeV) {
+          me3GeVSVpid_->Fill(0.5);
+        }
+      } else {
+        meSVpid_->Fill(1.5);
+        if (less3GeV) {
+          me3GeVSVpid_->Fill(1.5);
+        }
+      }
+      if (std::abs(candGen[0]->pdg_id()) == 211) {
+        meSV_pi_vs_k_pid_->Fill(id2 + 0.5, id1 + 0.5);
+        if (less3GeV) {
+          me3GeVSV_pi_vs_k_pid_->Fill(id2 + 0.5, id1 + 0.5);
+        }
+      } else {
+        meSV_pi_vs_k_pid_->Fill(id1 + 0.5, id2 + 0.5);
+        if (less3GeV) {
+          me3GeVSV_pi_vs_k_pid_->Fill(id1 + 0.5, id2 + 0.5);
+        }
+      }
+
+      sigdtAtSV = 9999.;
+      id1 = 3;
+      id2 = 3;
+      idOK = false;
+      for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
+        for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
+          double sigdtTmp = std::abs((hypUncTof[0])[ihyp1] - (hypUncTof[1])[ihyp2]) / sigmaDT;
+          bool idOkTmp = (hypOk[0] == ihyp1 && hypOk[1] == ihyp2);
+          if (sigdtTmp < sigdtAtSV) {
+            sigdtAtSV = sigdtTmp;
+            idOK = idOkTmp;
+            id1 = ihyp1;
+            id2 = ihyp2;
+          }
+        }
+      }
+
+      if (std::abs(candGen[0]->pdg_id()) == 211) {
+        meSV_pi_vs_k_uncpid_->Fill(id2 + 0.5, id1 + 0.5);
+        if (less3GeV) {
+          me3GeVSV_pi_vs_k_uncpid_->Fill(id2 + 0.5, id1 + 0.5);
+        }
+      } else {
+        meSV_pi_vs_k_uncpid_->Fill(id1 + 0.5, id2 + 0.5);
+        if (less3GeV) {
+          me3GeVSV_pi_vs_k_uncpid_->Fill(id1 + 0.5, id2 + 0.5);
+        }
+      }
+
+      id1 = candPid[0];
+      id2 = candPid[1];
+      if (std::abs(candGen[0]->pdg_id()) == 211) {
+        meSV_pi_vs_k_4dpid_->Fill(id2 + 0.5, id1 + 0.5);
+        if (less3GeV) {
+          me3GeVSV_pi_vs_k_4dpid_->Fill(id2 + 0.5, id1 + 0.5);
+        }
+      } else {
+        meSV_pi_vs_k_4dpid_->Fill(id1 + 0.5, id2 + 0.5);
+        if (less3GeV) {
+          meSV_pi_vs_k_4dpid_->Fill(id1 + 0.5, id2 + 0.5);
+        }
+      }
+    }
   }
 }
 
 // ------------ method for histogram booking ------------
-void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
+void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
+                                              edm::Run const& run,
+                                              edm::EventSetup const& iSetup) {
   ibook.setCurrentFolder(folder_);
 
   // histogram booking
-  meBTLTrackRPTime_ = ibook.book1D("TrackBTLRPTime", "Track t0 with respect to R.P.;t0 [ns]", 100, -1, 3);
-  meBTLTrackEffEtaTot_ = ibook.book1D("TrackBTLEffEtaTot", "Track efficiency vs eta (Tot);#eta_{RECO}", 100, -1.6, 1.6);
-  meBTLTrackEffPhiTot_ =
-      ibook.book1D("TrackBTLEffPhiTot", "Track efficiency vs phi (Tot);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meBTLTrackEffPtTot_ = ibook.book1D("TrackBTLEffPtTot", "Track efficiency vs pt (Tot);pt_{RECO} [GeV]", 50, 0, 10);
-  meBTLTrackEffEtaMtd_ = ibook.book1D("TrackBTLEffEtaMtd", "Track efficiency vs eta (Mtd);#eta_{RECO}", 100, -1.6, 1.6);
-  meBTLTrackEffPhiMtd_ =
-      ibook.book1D("TrackBTLEffPhiMtd", "Track efficiency vs phi (Mtd);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meBTLTrackEffPtMtd_ = ibook.book1D("TrackBTLEffPtMtd", "Track efficiency vs pt (Mtd);pt_{RECO} [GeV]", 50, 0, 10);
-  meBTLTrackPtRes_ =
-      ibook.book1D("TrackBTLPtRes", "Track pT resolution  ;pT_{Gentrack}-pT_{MTDtrack}/pT_{Gentrack} ", 100, -0.1, 0.1);
-  meETLTrackRPTime_ = ibook.book1D("TrackETLRPTime", "Track t0 with respect to R.P.;t0 [ns]", 100, -1, 3);
-  meETLTrackEffEtaTot_[0] =
-      ibook.book1D("TrackETLEffEtaTotZneg", "Track efficiency vs eta (Tot) (-Z);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackEffEtaTot_[1] =
-      ibook.book1D("TrackETLEffEtaTotZpos", "Track efficiency vs eta (Tot) (+Z);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackEffPhiTot_[0] =
-      ibook.book1D("TrackETLEffPhiTotZneg", "Track efficiency vs phi (Tot) (-Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPhiTot_[1] =
-      ibook.book1D("TrackETLEffPhiTotZpos", "Track efficiency vs phi (Tot) (+Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPtTot_[0] =
-      ibook.book1D("TrackETLEffPtTotZneg", "Track efficiency vs pt (Tot) (-Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffPtTot_[1] =
-      ibook.book1D("TrackETLEffPtTotZpos", "Track efficiency vs pt (Tot) (+Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffEtaMtd_[0] =
-      ibook.book1D("TrackETLEffEtaMtdZneg", "Track efficiency vs eta (Mtd) (-Z);#eta_{RECO}", 100, -3.2, -1.4);
-  meETLTrackEffEtaMtd_[1] =
-      ibook.book1D("TrackETLEffEtaMtdZpos", "Track efficiency vs eta (Mtd) (+Z);#eta_{RECO}", 100, 1.4, 3.2);
-  meETLTrackEffPhiMtd_[0] =
-      ibook.book1D("TrackETLEffPhiMtdZneg", "Track efficiency vs phi (Mtd) (-Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPhiMtd_[1] =
-      ibook.book1D("TrackETLEffPhiMtdZpos", "Track efficiency vs phi (Mtd) (+Z);#phi_{RECO} [rad]", 100, -3.2, 3.2);
-  meETLTrackEffPtMtd_[0] =
-      ibook.book1D("TrackETLEffPtMtdZneg", "Track efficiency vs pt (Mtd) (-Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackEffPtMtd_[1] =
-      ibook.book1D("TrackETLEffPtMtdZpos", "Track efficiency vs pt (Mtd) (+Z);pt_{RECO} [GeV]", 50, 0, 10);
-  meETLTrackPtRes_ =
-      ibook.book1D("TrackETLPtRes", "Track pT resolution;pT_{Gentrack}-pT_{MTDtrack}/pT_{Gentrack} ", 100, -0.1, 0.1);
-
-  meTracktmtd_ = ibook.book1D("Tracktmtd", "Track time from TrackExtenderWithMTD;tmtd [ns]", 150, 1, 16);
-  meTrackt0Src_ = ibook.book1D("Trackt0Src", "Track time from TrackExtenderWithMTD;t0Src [ns]", 100, -1.5, 1.5);
-  meTrackSigmat0Src_ =
-      ibook.book1D("TrackSigmat0Src", "Time Error from TrackExtenderWithMTD; #sigma_{t0Src} [ns]", 100, 0, 0.1);
-
-  meTrackt0Pid_ = ibook.book1D("Trackt0Pid", "Track t0 as stored in TofPid;t0 [ns]", 100, -1, 1);
-  meTrackSigmat0Pid_ = ibook.book1D("TrackSigmat0Pid", "Sigmat0 as stored in TofPid; #sigma_{t0} [ns]", 100, 0, 0.1);
-  meTrackt0SafePid_ = ibook.book1D("Trackt0SafePID", "Track t0 Safe as stored in TofPid;t0 [ns]", 100, -1, 1);
-  meTrackSigmat0SafePid_ =
-      ibook.book1D("TrackSigmat0SafePID", "Sigmat0 Safe as stored in TofPid; #sigma_{t0} [ns]", 100, 0, 0.1);
-  meTrackNumHits_ = ibook.book1D("TrackNumHits", "Number of valid MTD hits per track ; Number of hits", 10, -5, 5);
-  meTrackMVAQual_ = ibook.book1D("TrackMVAQual", "Track MVA Quality as stored in Value Map ; MVAQual", 100, 0, 1);
-  meTrackPathLenghtvsEta_ = ibook.bookProfile(
-      "TrackPathLenghtvsEta", "MTD Track pathlength vs MTD track Eta;|#eta|;Pathlength", 100, 0, 3.2, 100.0, 400.0, "S");
   meMVATrackEffPtTot_ = ibook.book1D("MVAEffPtTot", "Pt of tracks associated to LV; track pt [GeV] ", 110, 0., 11.);
   meMVATrackMatchedEffPtTot_ =
       ibook.book1D("MVAMatchedEffPtTot", "Pt of tracks associated to LV matched to GEN; track pt [GeV] ", 110, 0., 11.);
@@ -774,10 +693,10 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run
   meBarrelPIDp_ = ibook.book1D("BarrelPIDp", "PID track with MTD momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
   meEndcapPIDp_ = ibook.book1D("EndcapPIDp", "PID track with MTD momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
 
-  meBarrelPID3dip_ = ibook.book1D("BarrelPID3dip", "PID track with MTD 3d ip, |eta| < 1.5;ip [cm]", 60, 0., 2.);
-  meEndcapPID3dip_ = ibook.book1D("EndcapPID3dip", "PID track with MTD 3d ip, |eta| > 1.6;ip [cm]", 60, 0., 2.);
-
-  meRefPointdist_ = ibook.book1D("RefPointdist","Reference point distance of decay products; [cm]",60,0., 2.);
+  meBarrelPID3dip_ = ibook.book2D(
+      "BarrelPID3dip", "PID track with MTD 3d p vs ip, |eta| < 1.5;ip [cm]; p [GeV]", 60, 0., 2., 25, 0., 10.);
+  meEndcapPID3dip_ = ibook.book2D(
+      "EndcapPID3dip", "PID track with MTD 3d p vs ip, |eta| > 1.6;ip [cm]; p [GeV]", 60, 0., 2., 25, 0., 10.);
 
   meBarrelNoPIDtype_ = ibook.book1D("BarrelNoPIDtype", "Barrel PID failure category", 4, 0., 4.);
   meEndcapNoPIDtype_ = ibook.book1D("EndcapNoPIDtype", "Endcap PID failure category", 4, 0., 4.);
@@ -847,6 +766,34 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run
         ibook.book1D("EndcapTruePAsK", "True p as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
     meEndcapTruePAsP_ =
         ibook.book1D("EndcapTruePAsP", "True p as p momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+
+    meSVpid_ = ibook.book1D("SVpid", "SV correct identification, 0.5 = OK", 2, 0., 2.);
+    meSV_pi_vs_k_pid_ =
+        ibook.book2D("SV_pi_vs_k_pid", "SV pi vs k correct identification, pi/k/p", 3, 0., 3., 3, 0., 3.);
+    meSV_pi_vs_k_uncpid_ =
+        ibook.book2D("SV_pi_vs_k_uncpid", "SV pi vs k correct identification no Sv corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
+    meSV_pi_vs_k_4dpid_ =
+        ibook.book2D("SV_pi_vs_k_4dpid", "SV pi vs k correct identification 4D corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
+
+    me3GeVSVpid_ = ibook.book1D("3GeVSVpid", "Sv correct identification, tracks p < 3 GeV, 0.5 = OK", 2, 0., 2.);
+    me3GeVSV_pi_vs_k_pid_ = ibook.book2D(
+        "3GeVSV_pi_vs_k_pid", "Sv pi vs k correct identification, tracks p < 3 GeV, pi/k/p", 3, 0., 3., 3, 0., 3.);
+    me3GeVSV_pi_vs_k_uncpid_ = ibook.book2D("3GeVSV_pi_vs_k_uncpid",
+                                            "Sv pi vs k correct identification no Sv corr, tracks p < 3 GeV, pi/k/p",
+                                            3,
+                                            0.,
+                                            3.,
+                                            3,
+                                            0.,
+                                            3.);
+    me3GeVSV_pi_vs_k_4dpid_ = ibook.book2D("3GeVSV_pi_vs_k_4dpid",
+                                           "Sv pi vs k correct identification 4D corr, tracks p < 3 GeV, pi/k/p",
+                                           3,
+                                           0.,
+                                           3.,
+                                           3,
+                                           0.,
+                                           3.);
   }
 }
 
@@ -855,7 +802,7 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run
 void MtdSecondaryPvValidation::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
 
-  desc.add<std::string>("folder", "MTD/Tracks");
+  desc.add<std::string>("folder", "MTD/SecondaryV");
   desc.add<edm::InputTag>("inputTagG", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("inputTagT", edm::InputTag("trackExtenderWithMTD"));
   desc.add<edm::InputTag>("inputTagV", edm::InputTag("offlinePrimaryVertices4D"));
@@ -887,7 +834,7 @@ void MtdSecondaryPvValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   desc.add<double>("minProbHeavy", 0.75);
   desc.addUntracked<bool>("optionalPlots", false);
 
-  descriptions.add("mtdTracksValid", desc);
+  descriptions.add("mtdSecondaryPvValid", desc);
 }
 
 const bool MtdSecondaryPvValidation::mvaGenSel(const HepMC::GenParticle& gp, const float& charge) {
@@ -900,9 +847,9 @@ const bool MtdSecondaryPvValidation::mvaGenSel(const HepMC::GenParticle& gp, con
 }
 
 const bool MtdSecondaryPvValidation::mvaRecSel(const reco::TrackBase& trk,
-                                          const reco::Vertex& vtx,
-                                          const double& t0,
-                                          const double& st0) {
+                                               const reco::Vertex& vtx,
+                                               const double& t0,
+                                               const double& st0) {
   bool match = false;
   match = trk.pt() > pTcut_ && std::abs(trk.eta()) < etacutREC_ && std::abs(trk.vz() - vtx.z()) <= deltaZcut_;
   if (st0 > 0.) {
@@ -912,8 +859,8 @@ const bool MtdSecondaryPvValidation::mvaRecSel(const reco::TrackBase& trk,
 }
 
 const bool MtdSecondaryPvValidation::mvaGenRecMatch(const HepMC::GenParticle& genP,
-                                               const double& zsim,
-                                               const reco::TrackBase& trk) {
+                                                    const double& zsim,
+                                                    const reco::TrackBase& trk) {
   bool match = false;
   double dR = reco::deltaR(genP.momentum(), trk.momentum());
   double genPT = genP.momentum().perp();
@@ -922,7 +869,8 @@ const bool MtdSecondaryPvValidation::mvaGenRecMatch(const HepMC::GenParticle& ge
   return match;
 }
 
-const edm::Ref<std::vector<TrackingParticle>>* MtdSecondaryPvValidation::getMatchedTP(const reco::TrackBaseRef& recoTrack) {
+const edm::Ref<std::vector<TrackingParticle>>* MtdSecondaryPvValidation::getMatchedTP(
+    const reco::TrackBaseRef& recoTrack) {
   auto found = r2s_->find(recoTrack);
 
   // no matching or no unique matching
