@@ -63,7 +63,8 @@ private:
   const bool mvaGenRecMatch(const HepMC::GenParticle&, const double&, const reco::TrackBase&);
 
   const edm::Ref<std::vector<TrackingParticle>>* getMatchedTP(const reco::TrackBaseRef&);
-  const bool genSelBPH(const HepMC::GenParticle&);
+  const bool genSelBPHkstar(const HepMC::GenParticle&);
+  const bool genSelBPHmu(const HepMC::GenParticle&);
 
   // ------------ member data ------------
 
@@ -187,11 +188,13 @@ private:
   MonitorElement* meSV_pi_vs_k_pid_;
   MonitorElement* meSV_pi_vs_k_uncpid_;
   MonitorElement* meSV_pi_vs_k_4dpid_;
+  MonitorElement* meSV_pi_vs_k_muconst_pid_;
 
   MonitorElement* me3GeVSVpid_;
   MonitorElement* me3GeVSV_pi_vs_k_pid_;
   MonitorElement* me3GeVSV_pi_vs_k_uncpid_;
   MonitorElement* me3GeVSV_pi_vs_k_4dpid_;
+  MonitorElement* me3GeVSV_pi_vs_k_muconst_pid_;
 };
 
 // ------------ constructor and destructor --------------
@@ -292,6 +295,9 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   auto pdt = iSetup.getHandle(particleTableToken_);
   const HepPDT::ParticleDataTable* pdTable = pdt.product();
 
+  std::vector<reco::Track> candTrkMu;
+  std::vector<reco::TrackRef> candRefMu;
+  std::vector<const HepMC::GenParticle*> candGenMu;
   std::vector<reco::Track> candTrk;
   std::vector<reco::TrackRef> candRef;
   std::vector<const HepMC::GenParticle*> candGen;
@@ -368,7 +374,13 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           continue;
         }
         const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
-        if (!genSelBPH(*genP)) {
+        if (genSelBPHmu(*genP)) {
+          candTrkMu.push_back(trackGen);
+          candRefMu.push_back(trackref);
+          candGenMu.push_back(genP);
+          continue;
+        }
+        if (!genSelBPHkstar(*genP)) {
           continue;
         }
 
@@ -533,7 +545,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
       }
     }
 
-    if (candRef.size() == 2) {
+    if (candRef.size() == 2 && candRefMu.size() == 2) {
       bool less3GeV = candTrk[0].p() < 3. && candTrk[1].p() < 3.;
 
       // array on candidates, for each array of hyptheses (0 = pi, 1 = k)
@@ -662,6 +674,44 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           meSV_pi_vs_k_4dpid_->Fill(id1 + 0.5, id2 + 0.5);
         }
       }
+
+        sigdtAtSV = 9999.;
+        id1 = 3;
+        id2 = 3;
+        double w1 = 1. / SigmatMtd[candRefMu[0]] / SigmatMtd[candRefMu[0]];
+        double t1 = tMtd[candRefMu[0]] - tofPi[candRefMu[0]];
+        double w2 = 1. / SigmatMtd[candRefMu[1]] / SigmatMtd[candRefMu[1]];
+        double t2 = tMtd[candRefMu[1]] - tofPi[candRefMu[1]];
+        for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
+          for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
+            double w3 = 1. / SigmatMtd[candRef[0]] / SigmatMtd[candRef[0]];
+            double t3 = (hypTof[0])[ihyp1];
+            double w4 = 1. / SigmatMtd[candRef[1]] / SigmatMtd[candRef[1]];
+            double t4 = (hypTof[1])[ihyp2];
+            double wave = (w1 * t1 + w2 * t2 + w3 * t3 + w4 * t4) / (w1 + w2 + w3 + w4);
+            double wstd = std::sqrt((w1 * (t1 - wave) * (t1 - wave) + w2 * (t2 - wave) * (t2 - wave) +
+                                     w3 * (t3 - wave) * (t3 - wave) + w4 * (t4 - wave) * (t4 - wave)) /
+                                    (3. / 4. * (w1 + w2 + w3 + w4)));
+            double sigdtTmp = wstd;
+            if (sigdtTmp < sigdtAtSV) {
+              sigdtAtSV = sigdtTmp;
+              id1 = ihyp1;
+              id2 = ihyp2;
+            }
+          }
+        }
+
+        if (std::abs(candGen[0]->pdg_id()) == 211) {
+          meSV_pi_vs_k_muconst_pid_->Fill(id2 + 0.5, id1 + 0.5);
+          if (less3GeV) {
+            me3GeVSV_pi_vs_k_muconst_pid_->Fill(id2 + 0.5, id1 + 0.5);
+          }
+        } else {
+          meSV_pi_vs_k_muconst_pid_->Fill(id1 + 0.5, id2 + 0.5);
+          if (less3GeV) {
+            me3GeVSV_pi_vs_k_muconst_pid_->Fill(id1 + 0.5, id2 + 0.5);
+          }
+        }
     }
   }
 }
@@ -774,6 +824,8 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
         ibook.book2D("SV_pi_vs_k_uncpid", "SV pi vs k correct identification no Sv corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
     meSV_pi_vs_k_4dpid_ =
         ibook.book2D("SV_pi_vs_k_4dpid", "SV pi vs k correct identification 4D corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
+    meSV_pi_vs_k_muconst_pid_ = ibook.book2D(
+        "SV_pi_vs_k_muconst_pid", "SV pi vs k correct identification mu constraint, pi/k/p", 3, 0., 3., 3, 0., 3.);
 
     me3GeVSVpid_ = ibook.book1D("3GeVSVpid", "Sv correct identification, tracks p < 3 GeV, 0.5 = OK", 2, 0., 2.);
     me3GeVSV_pi_vs_k_pid_ = ibook.book2D(
@@ -794,6 +846,15 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
                                            3,
                                            0.,
                                            3.);
+    me3GeVSV_pi_vs_k_muconst_pid_ =
+        ibook.book2D("3GeVSV_pi_vs_k_muconst_pid",
+                     "Sv pi vs k correct identification mu constraint, tracks p < 3 GeV, pi/k/p",
+                     3,
+                     0.,
+                     3.,
+                     3,
+                     0.,
+                     3.);
   }
 }
 
@@ -888,7 +949,7 @@ const edm::Ref<std::vector<TrackingParticle>>* MtdSecondaryPvValidation::getMatc
   return nullptr;
 }
 
-const bool MtdSecondaryPvValidation::genSelBPH(const HepMC::GenParticle& genP) {
+const bool MtdSecondaryPvValidation::genSelBPHkstar(const HepMC::GenParticle& genP) {
   bool match = false;
   if (genP.status() != 1 || (std::abs(genP.pdg_id()) != 211 && std::abs(genP.pdg_id()) != 321)) {
     return match;
@@ -899,6 +960,28 @@ const bool MtdSecondaryPvValidation::genSelBPH(const HepMC::GenParticle& genP) {
     if (orig1->particles_in_size() > 0 && std::abs((*orig1->particles_in_const_begin())->pdg_id()) == 511) {
       match = true;
       //edm::LogWarning("MtdSecondaryPvValidation") << genP.pdg_id() << " " << orig1->particles_in_size() << " " << std::abs((*orig0->particles_in_const_begin())->pdg_id()) << " " << std::abs((*orig1->particles_in_const_begin())->pdg_id());
+    }
+  }
+  return match;
+}
+
+const bool MtdSecondaryPvValidation::genSelBPHmu(const HepMC::GenParticle& genP) {
+  bool match = false;
+  if (genP.status() != 1 || std::abs(genP.pdg_id()) != 13) {
+    return match;
+  }
+  HepMC::GenVertex* orig0 = genP.production_vertex();
+  if (orig0->particles_in_size() > 0 && std::abs((*orig0->particles_in_const_begin())->pdg_id()) == 511) {
+    unsigned int count = 0;
+    for (HepMC::GenVertex::particles_out_const_iterator outP = orig0->particles_out_const_begin();
+         outP != orig0->particles_out_const_end();
+         outP++) {
+      if (std::abs((*outP)->pdg_id()) == 313 || std::abs((*outP)->pdg_id()) == 13) {
+        count++;
+      }
+    }
+    if (count == 3) {
+      match = true;
     }
   }
   return match;

@@ -131,9 +131,8 @@ void MtdSecondaryPvHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGet
   MonitorElement* meMVATrackMatchedEffEtaTot = igetter.get(folder_ + "MVAMatchedEffEtaTot");
   MonitorElement* meMVATrackMatchedEffEtaMtd = igetter.get(folder_ + "MVAMatchedEffEtaMtd");
 
-  if (!meMVATrackEffPtTot || !meMVATrackMatchedEffPtTot ||
-      !meMVATrackMatchedEffPtMtd || !meMVATrackEffEtaTot || !meMVATrackMatchedEffEtaTot ||
-      !meMVATrackMatchedEffEtaMtd) {
+  if (!meMVATrackEffPtTot || !meMVATrackMatchedEffPtTot || !meMVATrackMatchedEffPtMtd || !meMVATrackEffEtaTot ||
+      !meMVATrackMatchedEffEtaTot || !meMVATrackMatchedEffEtaMtd) {
     edm::LogError("MtdSecondaryPvHarvester") << "Monitoring histograms not found!" << std::endl;
     return;
   }
