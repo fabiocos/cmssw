@@ -1,3 +1,4 @@
+<use name="Validation/MtdValidation"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/ParameterSet"/>
 <use name="Geometry/MTDGeometryBuilder"/>
@@ -12,6 +13,11 @@
 <use name="Geometry/Records"/>
 <use name="SimDataFormats/TrackingAnalysis"/>
 <use name="SimTracker/VertexAssociation"/>
+<use name="RecoVertex/KinematicFit"/>
+<use name="RecoVertex/KinematicFitPrimitives"/>
+<use name="TrackingTools/IPTools"/>
+<use name="TrackingTools/Records"/>
+<use name="TrackingTools/TransientTrack"/>
 <use name="clhep"/>
 <use name="boost"/>
 <use name="hepmc"/>
