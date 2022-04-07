@@ -96,6 +96,10 @@ private:
   const bool genSelBPHkstar(const HepMC::GenParticle&);
   const bool genSelBPHmu(const HepMC::GenParticle&);
   std::string getMuCat(reco::Muon const&);
+  void MonteCarloStudies(const edm::Event&);
+  bool isAncestor(const reco::Candidate*, const reco::Candidate*);
+  bool skipOscillations(const reco::GenParticle&, edm::Handle<reco::GenParticleCollection>);
+  bool genSelB0kstarmumu(const reco::GenParticle&);
 
   // ------------ member data ------------
 
@@ -178,6 +182,7 @@ private:
   const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magFieldToken_;
 
   edm::EDGetTokenT<edm::HepMCProduct> HepMCProductToken_;
+  edm::EDGetTokenT<reco::GenParticleCollection> prunedGenToken_;
 
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleCollectionToken_;
   edm::EDGetTokenT<TrackingVertexCollection> trackingVertexCollectionToken_;
@@ -287,7 +292,7 @@ MtdSecondaryPvValidation::MtdSecondaryPvValidation(const edm::ParameterSet& iCon
       trackMaxEtlEta_(iConfig.getParameter<double>("trackMaximumEtlEta")),
       minProbHeavy_(iConfig.getParameter<double>("minProbHeavy")),
       optionalPlots_(iConfig.getUntrackedParameter<bool>("optionalPlots")),
-      printMsg_(iConfig.getUntrackedParameter<bool>("printMsg", false)),
+      printMsg_(iConfig.getUntrackedParameter<bool>("printMsg")),
       magFieldToken_(esConsumes()) {
   GenRecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagG"));
   RecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagT"));
@@ -295,6 +300,7 @@ MtdSecondaryPvValidation::MtdSecondaryPvValidation(const edm::ParameterSet& iCon
   muonToken_ = consumes<reco::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"));
   beamSpotToken_ = consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpot"));
   HepMCProductToken_ = consumes<edm::HepMCProduct>(iConfig.getParameter<edm::InputTag>("inputTagH"));
+  prunedGenToken_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("pruned"));
   trackingParticleCollectionToken_ =
       consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
   trackingVertexCollectionToken_ = consumes<TrackingVertexCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
@@ -386,13 +392,12 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   auto pdt = iSetup.getHandle(particleTableToken_);
   const HepPDT::ParticleDataTable* pdTable = pdt.product();
 
-  std::vector<reco::Track> candTrkMu;
-  std::vector<reco::TrackRef> candRefMu;
-  std::vector<const HepMC::GenParticle*> candGenMu;
-  std::vector<reco::Track> candTrk;
-  std::vector<reco::TrackRef> candRef;
-  std::vector<const HepMC::GenParticle*> candGen;
-  std::vector<int> candPid;
+  //std::vector<reco::Track> candTrkMu;
+  //std::vector<reco::TrackRef> candRefMu;
+  //std::vector<const HepMC::GenParticle*> candGenMu;
+  //std::vector<reco::Track> candTrk;
+  //std::vector<reco::TrackRef> candRef;
+  //std::vector<const HepMC::GenParticle*> candGen;
 
   // Get magnetic field
   auto bFieldHandle = iSetup.getHandle(magFieldToken_);
@@ -468,7 +473,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
 
   // Get PAT Tracks
   edm::Handle<reco::TrackCollection> tracks;
-  iEvent.getByToken(RecTrackToken_, tracks);
+  iEvent.getByToken(GenRecTrackToken_, tracks);
 
   //for (const pat::Muon &mum : *muons) {
   for (const reco::Muon& mum : *muons) {
@@ -1376,6 +1381,28 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
             NTuple->mumNMuonHits->push_back(0);
           NTuple->mumNMatchStation->push_back(mum.numberOfMatchedStations());
 
+          NTuple->trkrefMum->push_back(muTrackm);
+          reco::TrackBaseRef tbrTrk1(muTrackm);
+          auto tp_info = getMatchedTP(tbrTrk1);
+          bool isMatched = false;
+          if (tp_info != nullptr) {
+            // select for BPH
+            if ((*tp_info)->g4Tracks()[0].genpartIndex() != -1) {
+              const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
+              if (genSelBPHmu(*genP)) {
+                isMatched = true;
+                edm::LogPrint("MtdSecondaryPvValidation")
+                    << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+              }
+            }
+          }
+          if (isMatched) {
+            NTuple->matchMum->push_back(1);
+          } else {
+            NTuple->matchMum->push_back(0);
+          }
+
           //// #############
           //// # Save: mu+ #
           //// #############
@@ -1414,6 +1441,28 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
             NTuple->mupNMuonHits->push_back(0);
           NTuple->mupNMatchStation->push_back(mup.numberOfMatchedStations());
 
+          NTuple->trkrefMup->push_back(muTrackp);
+          reco::TrackBaseRef tbrTrk2(muTrackp);
+          tp_info = getMatchedTP(tbrTrk2);
+          isMatched = false;
+          if (tp_info != nullptr) {
+            // select for BPH
+            if ((*tp_info)->g4Tracks()[0].genpartIndex() != -1) {
+              const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
+              if (genSelBPHmu(*genP)) {
+                isMatched = true;
+                edm::LogPrint("MtdSecondaryPvValidation")
+                    << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+              }
+            }
+          }
+          if (isMatched) {
+            NTuple->matchMup->push_back(1);
+          } else {
+            NTuple->matchMup->push_back(0);
+          }
+
           //// ################
           //// # Save: Track- #
           //// ################
@@ -1449,6 +1498,28 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           NTuple->kstTrkmNTrkHits->push_back(tkm->hitPattern().numberOfValidTrackerHits());
           NTuple->kstTrkmNTrkLayers->push_back(tkm->hitPattern().trackerLayersWithMeasurement());
 
+          NTuple->trkrefTkm->push_back(tkm);
+          reco::TrackBaseRef tbrTrk3(tkm);
+          tp_info = getMatchedTP(tbrTrk3);
+          isMatched = false;
+          if (tp_info != nullptr) {
+            // select for BPH
+            if ((*tp_info)->g4Tracks()[0].genpartIndex() != -1) {
+              const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
+              if (genSelBPHkstar(*genP)) {
+                isMatched = true;
+                edm::LogPrint("MtdSecondaryPvValidation")
+                    << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+              }
+            }
+          }
+          if (isMatched) {
+            NTuple->matchTkm->push_back(1);
+          } else {
+            NTuple->matchTkm->push_back(0);
+          }
+
           // ################
           // # Save: Track+ #
           // ################
@@ -1480,6 +1551,28 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           NTuple->kstTrkpNPixLayers->push_back(tkp->hitPattern().pixelLayersWithMeasurement());
           NTuple->kstTrkpNTrkHits->push_back(tkp->hitPattern().numberOfValidTrackerHits());
           NTuple->kstTrkpNTrkLayers->push_back(tkp->hitPattern().trackerLayersWithMeasurement());
+
+          NTuple->trkrefTkp->push_back(tkp);
+          reco::TrackBaseRef tbrTrk4(tkp);
+          tp_info = getMatchedTP(tbrTrk4);
+          isMatched = false;
+          if (tp_info != nullptr) {
+            // select for BPH
+            if ((*tp_info)->g4Tracks()[0].genpartIndex() != -1) {
+              const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
+              if (genSelBPHkstar(*genP)) {
+                isMatched = true;
+                edm::LogPrint("MtdSecondaryPvValidation")
+                    << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+              }
+            }
+          }
+          if (isMatched) {
+            NTuple->matchTkp->push_back(1);
+          } else {
+            NTuple->matchTkp->push_back(0);
+          }
 
           NTuple->bPlusCosAlphaBS->push_back(bPcosAlphaBS);
           NTuple->bPlusVtxCL->push_back(bPlusVtxCL);
@@ -1576,8 +1669,9 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     NTuple->recoVtxN++;
   }
 
-  //MonteCarloStudies(iEvent) ;
+  MonteCarloStudies(iEvent);
 
+  /*
   // select events with reco vertex close to true simulated primary vertex
   if (std::abs(primRecoVtx.z() - zsim) < deltaZcut_) {
     index = 0;
@@ -1989,6 +2083,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
       }
     }
   }
+  */
 
   NTuple->ClearNTuple();
 }
@@ -2147,6 +2242,7 @@ void MtdSecondaryPvValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   desc.add<edm::InputTag>("muons", edm::InputTag("muons"));
   desc.add<edm::InputTag>("beamSpot", edm::InputTag("offlineBeamSpot"));
   desc.add<edm::InputTag>("inputTagH", edm::InputTag("generatorSmeared"));
+  desc.add<edm::InputTag>("pruned", edm::InputTag("genParticles"));
   desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
   desc.add<edm::InputTag>("tmtd", edm::InputTag("trackExtenderWithMTD:generalTracktmtd"));
@@ -2173,6 +2269,7 @@ void MtdSecondaryPvValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   desc.add<double>("trackMaximumEtlEta", 3.);
   desc.add<double>("minProbHeavy", 0.75);
   desc.addUntracked<bool>("optionalPlots", false);
+  desc.addUntracked<bool>("printMsg", false);
 
   descriptions.add("mtdSecondaryPvValid", desc);
 }
@@ -2309,6 +2406,280 @@ std::string MtdSecondaryPvValidation::getMuCat(reco::Muon const& muon) {
     muCat << " NotInTable";
 
   return muCat.str();
+}
+
+void MtdSecondaryPvValidation::MonteCarloStudies(const edm::Event& iEvent) {
+  if (iEvent.isRealData()) {
+    return;
+  }
+
+  edm::Handle<reco::GenParticleCollection> pruned;
+  iEvent.getByToken(prunedGenToken_, pruned);
+
+  //edm::Handle<pat::PackedGenParticleCollection> packed;
+  //iEvent.getByToken(packedGenToken_,packed);
+
+  double deltaEtaPhi;
+
+  //     const reco::Candidate* genPsi = NULL;
+  const reco::Candidate* genMum = NULL;
+  const reco::Candidate* genMup = NULL;
+  //     const reco::Candidate* genKst = NULL;
+  const reco::Candidate* genTrkm = NULL;
+  const reco::Candidate* genTrkp = NULL;
+  //  const reco::Candidate* genB0save = NULL;
+
+  bool found_mum = false;
+  bool found_mup = false;
+  bool found_trkp = false;
+  bool found_trkm = false;
+
+  for (const reco::GenParticle& bMeson : *pruned) {
+    if (abs(bMeson.pdgId()) == 511) {
+      if (skipOscillations(bMeson, pruned))
+        continue;
+      // select only B0 -> K0* mu mu decays
+      if (!genSelB0kstarmumu(bMeson)) {
+        continue;
+      }
+      if (printMsg_)
+        std::cout << "PdgID: " << bMeson.pdgId() << " pt " << bMeson.pt() << " eta: " << bMeson.eta()
+                  << " phi: " << bMeson.phi() << "mother: " << bMeson.mother(0)->pdgId() << std::endl;
+
+      genMum = NULL;
+      genMup = NULL;
+      genTrkm = NULL;
+      genTrkp = NULL;
+
+      found_mum = false;
+      found_mup = false;
+      found_trkp = false;
+      found_trkm = false;
+
+      //for (const pat::PackedGenParticle &dau : *packed) {
+      for (const reco::GenParticle& dau : *pruned) {
+        //get the pointer to the first survied ancestor of a given packed GenParticle in the prunedCollection
+        const reco::Candidate* motherInPrunedCollection = dau.mother(0);
+        if (motherInPrunedCollection != nullptr && isAncestor(&bMeson, motherInPrunedCollection)) {
+          if (printMsg_)
+            std::cout << "     PdgID: " << dau.pdgId() << " pt " << dau.pt() << " eta: " << dau.eta()
+                      << " phi: " << dau.phi() << std::endl;
+
+          if (dau.pdgId() == 13 && fabs(dau.eta()) < 2.5 && dau.pt() > 2.5) {
+            found_mum = true;
+            genMum = &dau;
+          } else if (dau.pdgId() == -13 && fabs(dau.eta()) < 2.5 && dau.pt() > 2.5) {
+            found_mup = true;
+            genMup = &dau;
+          } else if ((dau.pdgId() == 211 || dau.pdgId() == 321) && fabs(dau.eta()) < 2.5 && dau.pt() > 0.4) {
+            found_trkp = true;
+            genTrkp = &dau;
+          } else if ((dau.pdgId() == -211 || dau.pdgId() == -321) && fabs(dau.eta()) < 2.5 && dau.pt() > 0.4) {
+            found_trkm = true;
+            genTrkm = &dau;
+          }
+        }
+      }
+
+      if (found_mup && found_mum && found_trkp && found_trkm) {
+        NTuple->genMumPx = genMum->px();
+        NTuple->genMumPy = genMum->py();
+        NTuple->genMumPz = genMum->pz();
+
+        NTuple->genMupPx = genMup->px();
+        NTuple->genMupPy = genMup->py();
+        NTuple->genMupPz = genMup->pz();
+
+        NTuple->genKstTrkmID = genTrkm->pdgId();
+        NTuple->genKstTrkmPx = genTrkm->px();
+        NTuple->genKstTrkmPy = genTrkm->py();
+        NTuple->genKstTrkmPz = genTrkm->pz();
+
+        NTuple->genKstTrkpID = genTrkp->pdgId();
+        NTuple->genKstTrkpPx = genTrkp->px();
+        NTuple->genKstTrkpPy = genTrkp->py();
+        NTuple->genKstTrkpPz = genTrkp->pz();
+
+        NTuple->genKstPx = genTrkm->px() + genTrkp->px();
+        NTuple->genKstPy = genTrkm->py() + genTrkp->py();
+        NTuple->genKstPz = genTrkm->pz() + genTrkp->pz();
+        NTuple->genKstMass = Utility->computeInvMass(genTrkm->px(),
+                                                     genTrkm->py(),
+                                                     genTrkm->pz(),
+                                                     genTrkm->mass(),
+                                                     genTrkp->px(),
+                                                     genTrkp->py(),
+                                                     genTrkp->pz(),
+                                                     genTrkp->mass());
+
+        if (genTrkp->pdgId() == 321)
+          NTuple->genSignal = 1;
+        else if (genTrkp->pdgId() == 211)
+          NTuple->genSignal = 2;
+
+        NTuple->genB0Mass = bMeson.mass();
+        NTuple->genB0Px = bMeson.px();
+        NTuple->genB0Py = bMeson.py();
+        NTuple->genB0Pz = bMeson.pz();
+        NTuple->genB0VtxX = bMeson.vx();
+        NTuple->genB0VtxY = bMeson.vy();
+        NTuple->genB0VtxZ = bMeson.vz();
+
+        //                 genB0save = &bMeson;
+      }
+    }
+  }
+
+  // ####################################
+  // # Perform matching with candidates #
+  // ####################################
+  if (printMsg_) {
+    edm::LogPrint("MtdSecondaryPvValidation") << "nB candidates reconstructed # " << NTuple->nB;
+  }
+  for (unsigned int i = 0; i < NTuple->nB; i++) {
+    deltaEtaPhi = Utility->computeEtaPhiDistance(NTuple->genMumPx,
+                                                 NTuple->genMumPy,
+                                                 NTuple->genMumPz,
+                                                 NTuple->mumPx->at(i),
+                                                 NTuple->mumPy->at(i),
+                                                 NTuple->mumPz->at(i));
+    NTuple->mumDeltaRwithMC->push_back(deltaEtaPhi);
+    //if (deltaEtaPhi < RCUTMU) {
+    if (NTuple->matchMum->at(i)) {
+      NTuple->truthMatchMum->push_back(1);
+      if (printMsg_)
+        std::cout << __LINE__ << " : found matched mu-" << std::endl;
+    } else
+      NTuple->truthMatchMum->push_back(0);
+
+    deltaEtaPhi = Utility->computeEtaPhiDistance(NTuple->genMupPx,
+                                                 NTuple->genMupPy,
+                                                 NTuple->genMupPz,
+                                                 NTuple->mupPx->at(i),
+                                                 NTuple->mupPy->at(i),
+                                                 NTuple->mupPz->at(i));
+    NTuple->mupDeltaRwithMC->push_back(deltaEtaPhi);
+    //if (deltaEtaPhi < RCUTMU) {
+    if (NTuple->matchMup->at(i)) {
+      NTuple->truthMatchMup->push_back(1);
+      if (printMsg_)
+        std::cout << __LINE__ << " : found matched mu+" << std::endl;
+    } else
+      NTuple->truthMatchMup->push_back(0);
+
+    deltaEtaPhi = Utility->computeEtaPhiDistance(NTuple->genKstTrkmPx,
+                                                 NTuple->genKstTrkmPy,
+                                                 NTuple->genKstTrkmPz,
+                                                 NTuple->kstTrkmPx->at(i),
+                                                 NTuple->kstTrkmPy->at(i),
+                                                 NTuple->kstTrkmPz->at(i));
+    NTuple->kstTrkmDeltaRwithMC->push_back(deltaEtaPhi);
+    //if (deltaEtaPhi < RCUTTRK) {
+    if (NTuple->matchTkm->at(i)) {
+      NTuple->truthMatchTrkm->push_back(1);
+      if (printMsg_)
+        std::cout << __LINE__ << " : found matched track-" << std::endl;
+    } else
+      NTuple->truthMatchTrkm->push_back(0);
+
+    deltaEtaPhi = Utility->computeEtaPhiDistance(NTuple->genKstTrkpPx,
+                                                 NTuple->genKstTrkpPy,
+                                                 NTuple->genKstTrkpPz,
+                                                 NTuple->kstTrkpPx->at(i),
+                                                 NTuple->kstTrkpPy->at(i),
+                                                 NTuple->kstTrkpPz->at(i));
+    NTuple->kstTrkpDeltaRwithMC->push_back(deltaEtaPhi);
+    //if (deltaEtaPhi < RCUTTRK) {
+    if (NTuple->matchTkp->at(i)) {
+      NTuple->truthMatchTrkp->push_back(1);
+      if (printMsg_)
+        std::cout << __LINE__ << " : found matched track+" << std::endl;
+    } else
+      NTuple->truthMatchTrkp->push_back(0);
+
+    // ####################################################
+    // # Check matching with B0 --> track+ track- mu+ mu- #
+    // ####################################################
+    if ((NTuple->truthMatchTrkm->back() == 1) && (NTuple->truthMatchTrkp->back() == 1) &&
+        (NTuple->truthMatchMum->back() == 1) && (NTuple->truthMatchMup->back() == 1)) {
+      NTuple->truthMatchSignal->push_back(1);
+      if (printMsg_)
+        std::cout << __LINE__ << " : @@@ Found matched B0 --> track+ track- mu+ mu- @@@" << std::endl;
+    } else
+      NTuple->truthMatchSignal->push_back(0);
+  }
+  //   else
+  //     for (unsigned int i = 0; i < NTuple->nB; i++)
+  //       {
+  //     NTuple->mumDeltaRwithMC->push_back(-1.0);
+  //     NTuple->mupDeltaRwithMC->push_back(-1.0);
+  //     NTuple->kstTrkmDeltaRwithMC->push_back(-1.0);
+  //     NTuple->kstTrkpDeltaRwithMC->push_back(-1.0);
+  //
+  //     NTuple->truthMatchMum->push_back(0);
+  //     NTuple->truthMatchMup->push_back(0);
+  //     NTuple->truthMatchTrkm->push_back(0);
+  //     NTuple->truthMatchTrkp->push_back(0);
+  //     NTuple->truthMatchSignal->push_back(0);
+}
+
+bool MtdSecondaryPvValidation::genSelB0kstarmumu(const reco::GenParticle& bMeson) {
+  bool match = false;
+  unsigned int count(0);
+  for (unsigned int i = 0; i < bMeson.numberOfDaughters(); i++) {
+    if (std::abs(bMeson.daughter(i)->pdgId()) == 313 || std::abs(bMeson.daughter(i)->pdgId()) == 13) {
+      count++;
+    }
+    //if (printMsg_) {
+    //std::cout << "B meson daughther ID " << bMeson.daughter(i)->pdgId() << " count = " << count << std::endl;
+    //}
+  }
+  if (count == 3) {
+    match = true;
+  }
+  return match;
+}
+
+bool MtdSecondaryPvValidation::skipOscillations(const reco::GenParticle& bMeson,
+                                                edm::Handle<reco::GenParticleCollection> pruned) {
+  for (unsigned int i = 0; i < bMeson.numberOfDaughters(); i++) {
+    if (bMeson.daughter(i)->pdgId() == 511 || bMeson.daughter(i)->pdgId() == 531 || bMeson.daughter(i)->pdgId() == 5122)
+      return true;
+    // std::cout << "oscillating to:     PdgID: " << bMeson.daughter(i)->pdgId() << " pt " << bMeson.daughter(i)->pt() << " eta: " << bMeson.daughter(i)->eta() << " phi: " << bMeson.daughter(i)->phi() << std::endl;
+  }
+
+  for (const reco::GenParticle& bMother : *pruned) {
+    if (fabs(bMother.pdgId()) == 511) {
+      const reco::Candidate* mother = bMother.mother(0);
+      if (mother != nullptr && isAncestor(&bMeson, mother))
+        return true;
+    }
+  }
+
+  //     if ( fabs(bMeson.mother(0)->pdgId()) == 511) return true;
+  //   if (abs(Mother->pdgId()) != 521)
+  //     for (unsigned int i = 0; i < Mother->numberOfDaughters(); i++)
+  //       if ((abs(Mother->daughter(i)->pdgId()) == 511) || (abs(Mother->daughter(i)->pdgId()) == 531) || (abs(Mother->daughter(i)->pdgId()) == 5122))
+  //       {
+  //         if (printMsg_) std::cout << __LINE__ << " : @@@ Found oscillating B0/B0bar OR Bs/Bsbar OR Lambda_b/Lambda_bbar @@@" << std::endl;
+  //         Mother = Mother->daughter(i);
+  //       }
+
+  return false;
+}
+
+bool MtdSecondaryPvValidation::isAncestor(const reco::Candidate* ancestor, const reco::Candidate* particle) {
+  //particle is already the ancestor
+  if (ancestor == particle)
+    return true;
+
+  //otherwise loop on mothers, if any and return true if the ancestor is found
+  for (size_t i = 0; i < particle->numberOfMothers(); i++) {
+    if (isAncestor(ancestor, particle->mother(i)))
+      return true;
+  }
+  //if we did not return yet, then particle and ancestor are not relatives
+  return false;
 }
 
 DEFINE_FWK_MODULE(MtdSecondaryPvValidation);

@@ -24,51 +24,36 @@
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 
+class B0Isolation {
+public:
+  B0Isolation(reco::Vertex,
+              edm::Handle<reco::TrackCollection>,
+              edm::ESHandle<MagneticField>,
+              ClosestApproachInRPhi,
+              reco::BeamSpot,
+              const pat::Muon&,
+              const pat::Muon&,
+              //                 reco::TrackRef , // muon -
+              //                 reco::TrackRef , // muon +
+              uint,  // trk minus index
+              uint,  // trk plus index
+              const reco::TransientTrack,
+              const reco::TransientTrack,
+              const reco::TransientTrack,
+              const reco::TransientTrack);
+  ~B0Isolation(){};
 
-
-class B0Isolation
-{
- public:
- 
-   B0Isolation( reco::Vertex, 
-                edm::Handle<reco::TrackCollection>,
-                edm::ESHandle<MagneticField> , 
-                ClosestApproachInRPhi,
-                reco::BeamSpot ,
-                const pat::Muon&, 
-                const pat::Muon&, 
-//                 reco::TrackRef , // muon -
-//                 reco::TrackRef , // muon +
-                uint , // trk minus index
-                uint ,  // trk plus index
-                const reco::TransientTrack, 
-                const reco::TransientTrack,
-                const reco::TransientTrack,
-                const reco::TransientTrack
-                );
-  ~B0Isolation() {};
- 
   std::vector<float> mum_isovec, mup_isovec, trkm_isovec, trkp_isovec;
-  std::vector<float> mum_isopts, mup_isopts, trkm_isopts, trkp_isopts; 
-  std::vector<float> mum_isodr,  mup_isodr,  trkm_isodr,  trkp_isodr; 
+  std::vector<float> mum_isopts, mup_isopts, trkm_isopts, trkp_isopts;
+  std::vector<float> mum_isodr, mup_isodr, trkm_isodr, trkp_isodr;
 
+private:
+  const ParticleMass muonMass = 0.10565837;
+  const ParticleMass pionMass = 0.13957018;
+  const ParticleMass kaonMass = 0.493677;
+  float mumasserr = 3.5e-9;
 
- private:
-
-    const ParticleMass muonMass =   0.10565837;
-    const ParticleMass pionMass =   0.13957018;
-    const ParticleMass kaonMass =   0.493677;
-    float mumasserr = 3.5e-9;
-
-    float LHCbIsolation( ClosestApproachInRPhi , 
-                         reco::TransientTrack , 
-                         reco::TransientTrack ,
-                         const ParticleMass ,
-                         float ,
-                         float ,
-                         float 
-                         );
-
-
+  float LHCbIsolation(
+      ClosestApproachInRPhi, reco::TransientTrack, reco::TransientTrack, const ParticleMass, float, float, float);
 };
 #endif
