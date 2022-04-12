@@ -100,6 +100,7 @@ private:
   bool isAncestor(const reco::Candidate*, const reco::Candidate*);
   bool skipOscillations(const reco::GenParticle&, edm::Handle<reco::GenParticleCollection>);
   bool genSelB0kstarmumu(const reco::GenParticle&);
+  const void pidFromTrackRef(double, double, double, unsigned int&, bool&, bool&, bool&, bool&);
 
   // ------------ member data ------------
 
@@ -110,7 +111,6 @@ private:
   const float trackMaxEtlEta_;
   const float minProbHeavy_;
 
-  bool optionalPlots_;
   bool printMsg_;
 
   static constexpr double etacutGEN_ = 4.;     // |eta| < 4;
@@ -213,71 +213,93 @@ private:
   const reco::RecoToSimCollection* r2s_;
   const reco::SimToRecoCollection* s2r_;
 
-  MonitorElement* meMVATrackEffPtTot_;
-  MonitorElement* meMVATrackMatchedEffPtTot_;
-  MonitorElement* meMVATrackMatchedEffPtMtd_;
-  MonitorElement* meMVATrackEffEtaTot_;
-  MonitorElement* meMVATrackMatchedEffEtaTot_;
-  MonitorElement* meMVATrackMatchedEffEtaMtd_;
-  MonitorElement* meMVATrackResTot_;
-  MonitorElement* meMVATrackPullTot_;
-  MonitorElement* meMVATrackZposResTot_;
+  MonitorElement* meKstar_;
+  MonitorElement* meKstarBar_;
+  MonitorElement* meKstarM_;
+  MonitorElement* meKstarBarM_;
+  MonitorElement* meKstarT_;
+  MonitorElement* meKstarBarT_;
 
-  MonitorElement* meBarrelPiDBetavsp_;
-  MonitorElement* meEndcapPiDBetavsp_;
-  MonitorElement* meBarrelKDBetavsp_;
-  MonitorElement* meEndcapKDBetavsp_;
-  MonitorElement* meBarrelPDBetavsp_;
-  MonitorElement* meEndcapPDBetavsp_;
+  MonitorElement* meKaonp_;
+  MonitorElement* meKaoneta_;
+  MonitorElement* meKaonIP_;
+  MonitorElement* meKaonpM_;
+  MonitorElement* meKaonetaM_;
+  MonitorElement* meKaonIPM_;
+  MonitorElement* meKaonpT_;
+  MonitorElement* meKaonetaT_;
+  MonitorElement* meKaonIPT_;
 
-  MonitorElement* meBarrelPIDp_;
-  MonitorElement* meEndcapPIDp_;
+  MonitorElement* mePionp_;
+  MonitorElement* mePioneta_;
+  MonitorElement* mePionIP_;
+  MonitorElement* mePionpM_;
+  MonitorElement* mePionetaM_;
+  MonitorElement* mePionIPM_;
+  MonitorElement* mePionpT_;
+  MonitorElement* mePionetaT_;
+  MonitorElement* mePionIPT_;
 
-  MonitorElement* meBarrelPID3dip_;
-  MonitorElement* meEndcapPID3dip_;
+  MonitorElement* mePIDKstar_;
+  MonitorElement* mePIDKstarBar_;
+  MonitorElement* mePIDKstarM_;
+  MonitorElement* mePIDKstarBarM_;
+  MonitorElement* mePIDKstarT_;
+  MonitorElement* mePIDKstarBarT_;
+
+  MonitorElement* meCombKstar_;
+  MonitorElement* meCombKstarBar_;
+  MonitorElement* meCombKstarM_;
+  MonitorElement* meCombKstarBarM_;
+  MonitorElement* meCombKstarT_;
+  MonitorElement* meCombKstarBarT_;
+
+  MonitorElement* mePIDKaonp_;
+  MonitorElement* mePIDKaoneta_;
+  MonitorElement* mePIDKaonIP_;
+  MonitorElement* mePIDKaonpM_;
+  MonitorElement* mePIDKaonetaM_;
+  MonitorElement* mePIDKaonIPM_;
+  MonitorElement* mePIDKaonpT_;
+  MonitorElement* mePIDKaonetaT_;
+  MonitorElement* mePIDKaonIPT_;
+
+  MonitorElement* mePIDPionp_;
+  MonitorElement* mePIDPioneta_;
+  MonitorElement* mePIDPionIP_;
+  MonitorElement* mePIDPionpM_;
+  MonitorElement* mePIDPionetaM_;
+  MonitorElement* mePIDPionIPM_;
+  MonitorElement* mePIDPionpT_;
+  MonitorElement* mePIDPionetaT_;
+  MonitorElement* mePIDPionIPT_;
+
+  MonitorElement* meSVip_;
+  MonitorElement* meBarrelPCASVdiff_;
+  MonitorElement* meEndcapPCASVdiff_;
 
   MonitorElement* meBarrelNoPIDtype_;
   MonitorElement* meEndcapNoPIDtype_;
 
-  MonitorElement* meBarrelTruePiNoPID_;
-  MonitorElement* meBarrelTrueKNoPID_;
-  MonitorElement* meBarrelTruePNoPID_;
-  MonitorElement* meEndcapTruePiNoPID_;
-  MonitorElement* meEndcapTrueKNoPID_;
-  MonitorElement* meEndcapTruePNoPID_;
+  MonitorElement* meBarrelRecoPiNoPID_;
+  MonitorElement* meBarrelRecoKNoPID_;
+  MonitorElement* meEndcapRecoPiNoPID_;
+  MonitorElement* meEndcapRecoKNoPID_;
 
-  MonitorElement* meBarrelTruePiAsPi_;
-  MonitorElement* meBarrelTruePiAsK_;
-  MonitorElement* meBarrelTruePiAsP_;
-  MonitorElement* meEndcapTruePiAsPi_;
-  MonitorElement* meEndcapTruePiAsK_;
-  MonitorElement* meEndcapTruePiAsP_;
+  MonitorElement* meBarrelRecoPiAsPi_;
+  MonitorElement* meBarrelRecoPiAsOth_;
+  MonitorElement* meEndcapRecoPiAsPi_;
+  MonitorElement* meEndcapRecoPiAsOth_;
 
-  MonitorElement* meBarrelTrueKAsPi_;
-  MonitorElement* meBarrelTrueKAsK_;
-  MonitorElement* meBarrelTrueKAsP_;
-  MonitorElement* meEndcapTrueKAsPi_;
-  MonitorElement* meEndcapTrueKAsK_;
-  MonitorElement* meEndcapTrueKAsP_;
+  MonitorElement* meBarrelRecoKAsOth_;
+  MonitorElement* meBarrelRecoKAsK_;
+  MonitorElement* meEndcapRecoKAsOth_;
+  MonitorElement* meEndcapRecoKAsK_;
 
-  MonitorElement* meBarrelTruePAsPi_;
-  MonitorElement* meBarrelTruePAsK_;
-  MonitorElement* meBarrelTruePAsP_;
-  MonitorElement* meEndcapTruePAsPi_;
-  MonitorElement* meEndcapTruePAsK_;
-  MonitorElement* meEndcapTruePAsP_;
-
-  MonitorElement* meSVpid_;
   MonitorElement* meSV_pi_vs_k_pid_;
   MonitorElement* meSV_pi_vs_k_uncpid_;
   MonitorElement* meSV_pi_vs_k_4dpid_;
   MonitorElement* meSV_pi_vs_k_muconst_pid_;
-
-  MonitorElement* me3GeVSVpid_;
-  MonitorElement* me3GeVSV_pi_vs_k_pid_;
-  MonitorElement* me3GeVSV_pi_vs_k_uncpid_;
-  MonitorElement* me3GeVSV_pi_vs_k_4dpid_;
-  MonitorElement* me3GeVSV_pi_vs_k_muconst_pid_;
 
   B0KstMuMuTreeContent* NTuple;
   Utils* Utility;
@@ -291,7 +313,6 @@ MtdSecondaryPvValidation::MtdSecondaryPvValidation(const edm::ParameterSet& iCon
       trackMinEtlEta_(iConfig.getParameter<double>("trackMinimumEtlEta")),
       trackMaxEtlEta_(iConfig.getParameter<double>("trackMaximumEtlEta")),
       minProbHeavy_(iConfig.getParameter<double>("minProbHeavy")),
-      optionalPlots_(iConfig.getUntrackedParameter<bool>("optionalPlots")),
       printMsg_(iConfig.getUntrackedParameter<bool>("printMsg")),
       magFieldToken_(esConsumes()) {
   GenRecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagG"));
@@ -343,9 +364,6 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   using namespace geant_units::operators;
   using namespace std;
 
-  auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
-  const MTDTopology* topology = topologyHandle.product();
-
   auto GenRecTrackHandle = makeValid(iEvent.getHandle(GenRecTrackToken_));
   auto RecVertexHandle = makeValid(iEvent.getHandle(RecVertexToken_));
 
@@ -367,16 +385,11 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   const auto& probK = iEvent.get(probKToken_);
   const auto& probP = iEvent.get(probPToken_);
 
-  unsigned int index = 0;
-
-  const auto& primRecoVtx = *(RecVertexHandle.product()->begin());
-  double treco = primRecoVtx.t();
-
   // generator level information (HepMC format)
   auto GenEventHandle = makeValid(iEvent.getHandle(HepMCProductToken_));
   const HepMC::GenEvent* mc = GenEventHandle->GetEvent();
-  double zsim = convertMmToCm((*(mc->vertices_begin()))->position().z());
-  double tsim = (*(mc->vertices_begin()))->position().t() * CLHEP::mm / CLHEP::c_light;
+  //double zsim = convertMmToCm((*(mc->vertices_begin()))->position().z());
+  //double tsim = (*(mc->vertices_begin()))->position().t() * CLHEP::mm / CLHEP::c_light;
 
   // TrackingParticle collections and association maps
   //auto tpCollectionH = makeValid(iEvent.getHandle(trackingParticleCollectionToken_));
@@ -1292,6 +1305,9 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           NTuple->bVtxY->push_back(b_KV->position().y());
           NTuple->bVtxZ->push_back(b_KV->position().z());
 
+          //edm::LogPrint("MtdSecondaryPvValidation") << "B0    vtx = " << b_KV->position();
+          //edm::LogPrint("MtdSecondaryPvValidation") << "B0bar vtx = " << bBar_KV->position();
+
           NTuple->bCosAlphaBS->push_back(cosAlphaBS);
           NTuple->bCosAlphaBSE->push_back(cosAlphaBSErr);
 
@@ -1671,419 +1687,457 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
 
   MonteCarloStudies(iEvent);
 
-  /*
-  // select events with reco vertex close to true simulated primary vertex
-  if (std::abs(primRecoVtx.z() - zsim) < deltaZcut_) {
-    index = 0;
-    for (const auto& trackGen : *GenRecTrackHandle) {
-      const reco::TrackRef trackref(iEvent.getHandle(GenRecTrackToken_), index);
-      index++;
+  for (size_t iB = 0; iB < NTuple->nB; iB++) {
+    double pimom(0.);
+    double kmom(0.);
+    double pieta(0.);
+    double keta(0.);
+    double pionip(0.);
+    double kaonip(0.);
+    double distPi(0.);
+    double distK(0.);
 
-      // select the reconstructed track
+    unsigned int noPIDtype_Pi(0);
+    bool isNoPID_Pi(false);
+    bool isPi_Pi(false);
+    bool isK_Pi(false);
+    bool isP_Pi(false);
+    unsigned int noPIDtype_K(0);
+    bool isNoPID_K(false);
+    bool isPi_K(false);
+    bool isK_K(false);
+    bool isP_K(false);
 
-      if (trackAssoc[trackref] == -1) {
-        continue;
+    bool isTrue(false);
+
+    reco::Vertex::Point secVtx(NTuple->bVtxX->at(iB), NTuple->bVtxY->at(iB), NTuple->bPz->at(iB));
+
+    double kstar_mass(0.);
+    double kstarbar_mass(0.);
+
+    if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
+        std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
+      kstar_mass = NTuple->kstMass->at(iB);
+      meKstar_->Fill(kstar_mass);
+      pimom = std::sqrt(NTuple->kstTrkmPx->at(iB) * NTuple->kstTrkmPx->at(iB) +
+                        NTuple->kstTrkmPy->at(iB) * NTuple->kstTrkmPy->at(iB) +
+                        NTuple->kstTrkmPz->at(iB) * NTuple->kstTrkmPz->at(iB));
+      kmom = std::sqrt(NTuple->kstTrkpPx->at(iB) * NTuple->kstTrkpPx->at(iB) +
+                       NTuple->kstTrkpPy->at(iB) * NTuple->kstTrkpPy->at(iB) +
+                       NTuple->kstTrkpPz->at(iB) * NTuple->kstTrkpPz->at(iB));
+      pieta = std::abs(
+          Utility->computeEta(NTuple->kstTrkmPx->at(iB), NTuple->kstTrkmPy->at(iB), NTuple->kstTrkmPz->at(iB)));
+      keta = std::abs(
+          Utility->computeEta(NTuple->kstTrkpPx->at(iB), NTuple->kstTrkpPy->at(iB), NTuple->kstTrkpPz->at(iB)));
+      pionip = NTuple->kstTrkmMinIPS->at(iB);
+      kaonip = NTuple->kstTrkpMinIPS->at(iB);
+      auto trackref_pi = NTuple->trkrefTkm->at(iB);
+      auto trackref_k = NTuple->trkrefTkp->at(iB);
+      distPi = std::sqrt((secVtx - (*trackref_pi).referencePoint()).mag2());
+      distK = std::sqrt((secVtx - (*trackref_k).referencePoint()).mag2());
+      pidFromTrackRef((double)probPi[trackref_pi],
+                      (double)probK[trackref_pi],
+                      (double)probP[trackref_pi],
+                      noPIDtype_Pi,
+                      isNoPID_Pi,
+                      isPi_Pi,
+                      isK_Pi,
+                      isP_Pi);
+      pidFromTrackRef((double)probPi[trackref_k],
+                      (double)probK[trackref_k],
+                      (double)probP[trackref_k],
+                      noPIDtype_K,
+                      isNoPID_K,
+                      isPi_K,
+                      isK_K,
+                      isP_K);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        meKstarM_->Fill(kstar_mass);
+        if (std::abs(NTuple->genKstTrkmID) == 211 && std::abs(NTuple->genKstTrkpID) == 321) {
+          isTrue = true;
+          meKstarT_->Fill(kstar_mass);
+        }
       }
-
-      bool noCrack = std::abs(trackGen.eta()) < trackMaxBtlEta_ || std::abs(trackGen.eta()) > trackMinEtlEta_;
-
-      // reco-gen matching used for MVA quality flag
-      if (mvaRecSel(trackGen, primRecoVtx, t0Safe[trackref], Sigmat0Safe[trackref])) {
-        if (noCrack) {
-          meMVATrackEffPtTot_->Fill(trackGen.pt());
+    } else {
+      kstarbar_mass = NTuple->kstBarMass->at(iB);
+      meKstarBar_->Fill(kstarbar_mass);
+      kmom = std::sqrt(NTuple->kstTrkmPx->at(iB) * NTuple->kstTrkmPx->at(iB) +
+                       NTuple->kstTrkmPy->at(iB) * NTuple->kstTrkmPy->at(iB) +
+                       NTuple->kstTrkmPz->at(iB) * NTuple->kstTrkmPz->at(iB));
+      pimom = std::sqrt(NTuple->kstTrkpPx->at(iB) * NTuple->kstTrkpPx->at(iB) +
+                        NTuple->kstTrkpPy->at(iB) * NTuple->kstTrkpPy->at(iB) +
+                        NTuple->kstTrkpPz->at(iB) * NTuple->kstTrkpPz->at(iB));
+      keta = Utility->computeEta(NTuple->kstTrkmPx->at(iB), NTuple->kstTrkmPy->at(iB), NTuple->kstTrkmPz->at(iB));
+      pieta = Utility->computeEta(NTuple->kstTrkpPx->at(iB), NTuple->kstTrkpPy->at(iB), NTuple->kstTrkpPz->at(iB));
+      kaonip = NTuple->kstTrkmMinIPS->at(iB);
+      pionip = NTuple->kstTrkpMinIPS->at(iB);
+      auto trackref_k = NTuple->trkrefTkm->at(iB);
+      auto trackref_pi = NTuple->trkrefTkp->at(iB);
+      distPi = std::sqrt((secVtx - (*trackref_pi).referencePoint()).mag2());
+      distK = std::sqrt((secVtx - (*trackref_k).referencePoint()).mag2());
+      pidFromTrackRef((double)probPi[trackref_pi],
+                      (double)probK[trackref_pi],
+                      (double)probP[trackref_pi],
+                      noPIDtype_Pi,
+                      isNoPID_Pi,
+                      isPi_Pi,
+                      isK_Pi,
+                      isP_Pi);
+      pidFromTrackRef((double)probPi[trackref_k],
+                      (double)probK[trackref_k],
+                      (double)probP[trackref_k],
+                      noPIDtype_K,
+                      isNoPID_K,
+                      isPi_K,
+                      isK_K,
+                      isP_K);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        meKstarBarM_->Fill(kstarbar_mass);
+        if (std::abs(NTuple->genKstTrkmID) == 321 && std::abs(NTuple->genKstTrkpID) == 211) {
+          isTrue = true;
+          meKstarBarT_->Fill(kstarbar_mass);
         }
-        meMVATrackEffEtaTot_->Fill(std::abs(trackGen.eta()));
+      }
+    }
+    mePionp_->Fill(pimom);
+    meKaonp_->Fill(kmom);
+    mePioneta_->Fill(pieta);
+    meKaoneta_->Fill(keta);
+    mePionIP_->Fill(pionip);
+    meKaonIP_->Fill(kaonip);
+    if (NTuple->matchTkm->at(iB) && NTuple->matchTkp->at(iB)) {
+      mePionpM_->Fill(pimom);
+      meKaonpM_->Fill(kmom);
+      mePionetaM_->Fill(pieta);
+      meKaonetaM_->Fill(keta);
+      mePionIPM_->Fill(pionip);
+      meKaonIPM_->Fill(kaonip);
+      if (isTrue) {
+        mePionpT_->Fill(pimom);
+        meKaonpT_->Fill(kmom);
+        mePionetaT_->Fill(pieta);
+        meKaonetaT_->Fill(keta);
+        mePionIPT_->Fill(pionip);
+        meKaonIPT_->Fill(kaonip);
+      }
+    }
+    double dx = NTuple->bVtxX->at(iB) - bestVtx.x();
+    double dy = NTuple->bVtxY->at(iB) - bestVtx.y();
+    double dz = NTuple->bVtxZ->at(iB) - bestVtx.z();
+    meSVip_->Fill(std::sqrt(dx * dx + dy * dy + dz * dz));
 
-        double dZ = trackGen.vz() - zsim;
-        double dT(-9999.);
-        double pullT(-9999.);
-        if (Sigmat0Safe[trackref] != -1.) {
-          dT = t0Safe[trackref] - tsim;
-          pullT = dT / Sigmat0Safe[trackref];
-        }
-        for (const auto& genP : mc->particle_range()) {
-          // select status 1 genParticles and match them to the reconstructed track
+    if (pieta < 1.5) {
+      meBarrelPCASVdiff_->Fill(distPi);
+      meBarrelNoPIDtype_->Fill(noPIDtype_Pi);
+      if (isNoPID_Pi) {
+        meBarrelRecoPiNoPID_->Fill(pimom);
+      } else if (isPi_Pi) {
+        meBarrelRecoPiAsPi_->Fill(pimom);
+      } else {
+        meBarrelRecoPiAsOth_->Fill(pimom);
+      }
+    } else if (pieta > 1.6) {
+      meEndcapPCASVdiff_->Fill(distPi);
+      meEndcapNoPIDtype_->Fill(noPIDtype_Pi);
+      if (isNoPID_Pi) {
+        meEndcapRecoPiNoPID_->Fill(pimom);
+      } else if (isPi_Pi) {
+        meEndcapRecoPiAsPi_->Fill(pimom);
+      } else {
+        meEndcapRecoPiAsOth_->Fill(pimom);
+      }
+    }
+    if (keta < 1.5) {
+      meBarrelPCASVdiff_->Fill(distK);
+      meBarrelNoPIDtype_->Fill(noPIDtype_K);
+      if (isNoPID_K) {
+        meBarrelRecoKNoPID_->Fill(kmom);
+      } else if (isK_K) {
+        meBarrelRecoKAsK_->Fill(kmom);
+      } else {
+        meBarrelRecoKAsOth_->Fill(kmom);
+      }
+    } else if (keta > 1.6) {
+      meEndcapPCASVdiff_->Fill(distK);
+      meEndcapNoPIDtype_->Fill(noPIDtype_K);
+      if (isNoPID_K) {
+        meEndcapRecoKNoPID_->Fill(kmom);
+      } else if (isK_K) {
+        meEndcapRecoKAsK_->Fill(kmom);
+      } else {
+        meEndcapRecoKAsOth_->Fill(kmom);
+      }
+    }
 
-          float charge = pdTable->particle(HepPDT::ParticleID(genP->pdg_id())) != nullptr
-                             ? pdTable->particle(HepPDT::ParticleID(genP->pdg_id()))->charge()
-                             : 0.f;
-          if (mvaGenSel(*genP, charge)) {
-            if (mvaGenRecMatch(*genP, zsim, trackGen)) {
-              meMVATrackZposResTot_->Fill(dZ);
-              if (noCrack) {
-                meMVATrackMatchedEffPtTot_->Fill(trackGen.pt());
-              }
-              meMVATrackMatchedEffEtaTot_->Fill(std::abs(trackGen.eta()));
-              if (pullT > -9999.) {
-                meMVATrackResTot_->Fill(dT);
-                meMVATrackPullTot_->Fill(pullT);
-                if (noCrack) {
-                  meMVATrackMatchedEffPtMtd_->Fill(trackGen.pt());
-                }
-                meMVATrackMatchedEffEtaMtd_->Fill(std::abs(trackGen.eta()));
-              }
-              break;
-            }
+    // Tof for secondary vertex
+    // compute time at secondary vertex for muon candidates
+
+    auto trackref_mum = NTuple->trkrefMum->at(iB);
+    //if (Sigmat0Safe[trackref_mum] == -1.) {
+    //continue;
+    //}
+    //if (mtdQualMVA[trackref_mum] < 0.5) {
+    //continue;
+    //}
+    auto trackref_mup = NTuple->trkrefMup->at(iB);
+    //if (Sigmat0Safe[trackref_mup] == -1.) {
+    //continue;
+    //}
+    //if (mtdQualMVA[trackref_mup] < 0.5) {
+    //continue;
+    //}
+    auto trackref_tkm = NTuple->trkrefTkm->at(iB);
+    auto trackref_tkp = NTuple->trkrefTkp->at(iB);
+    if (Sigmat0Safe[trackref_tkm] == -1. || mtdQualMVA[trackref_tkm] < 0.5 || Sigmat0Safe[trackref_tkp] == -1. ||
+        mtdQualMVA[trackref_tkp] < 0.5) {
+      if (kstar_mass > 0.) {
+        meCombKstar_->Fill(kstar_mass);
+        if (NTuple->truthMatchSignal->at(iB)) {
+          meCombKstarM_->Fill(kstar_mass);
+          if (isTrue) {
+            meCombKstarT_->Fill(kstar_mass);
           }
         }
-      }
-
-      // for PID study select only high purity tracks with associated time information with good MVA quality
-
-      if (!trackGen.quality(reco::TrackBase::TrackQuality::highPurity) || Sigmat0Safe[trackref] == -1. ||
-          mtdQualMVA[trackref] < mvaSel_) {
-        continue;
-      }
-
-      reco::TrackBaseRef tbrTrk(trackref);
-      auto tp_info = getMatchedTP(tbrTrk);
-      if (tp_info != nullptr) {
-        // select for BPH
-        if ((*tp_info)->g4Tracks()[0].genpartIndex() == -1) {
-          continue;
-        }
-        const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
-        if (genSelBPHmu(*genP)) {
-          candTrkMu.push_back(trackGen);
-          candRefMu.push_back(trackref);
-          candGenMu.push_back(genP);
-          continue;
-        }
-        if (!genSelBPHkstar(*genP)) {
-          continue;
-        }
-
-        candTrk.push_back(trackGen);
-        candRef.push_back(trackref);
-        candGen.push_back(genP);
-        double dx = genP->production_vertex()->position().x() - (*(mc->vertices_begin()))->position().x();
-        double dy = genP->production_vertex()->position().y() - (*(mc->vertices_begin()))->position().y();
-        double dz = genP->production_vertex()->position().z() - (*(mc->vertices_begin()))->position().z();
-        double ip3d = convertMmToCm(std::sqrt(dx * dx + dy * dy + dz * dz));
-
-        double dbetaPi = c_cm_ns * (tMtd[trackref] - treco - tofPi[trackref]) / pathLength[trackref];
-        double dbetaK = c_cm_ns * (tMtd[trackref] - treco - tofK[trackref]) / pathLength[trackref];
-        double dbetaP = c_cm_ns * (tMtd[trackref] - treco - tofP[trackref]) / pathLength[trackref];
-
-        unsigned int noPIDtype = 0;
-        if (probPi[trackref] == -1) {
-          noPIDtype = 1;
-        } else if (isnan(probPi[trackref])) {
-          noPIDtype = 2;
-        } else if (probPi[trackref] == 1 && probK[trackref] == 0 && probP[trackref] == 0) {
-          noPIDtype = 3;
-        }
-        bool noPID = noPIDtype > 0;
-        bool isPi = !noPID && 1. - probPi[trackref] < minProbHeavy_;
-        bool isK = !noPID && !isPi && probK[trackref] > probP[trackref];
-        bool isP = !noPID && !isPi && !isK;
-
-        if ((isPi && std::abs(tMtd[trackref] - tofPi[trackref] - t0Pid[trackref]) > tol_) ||
-            (isK && std::abs(tMtd[trackref] - tofK[trackref] - t0Pid[trackref]) > tol_) ||
-            (isP && std::abs(tMtd[trackref] - tofP[trackref] - t0Pid[trackref]) > tol_)) {
-          edm::LogWarning("MtdSecondaryPvValidation")
-              << "No match between mass hyp. and time: " << std::abs((*tp_info)->pdgId()) << " mass hyp pi/k/p " << isPi
-              << " " << isK << " " << isP << " t0/t0safe " << t0Pid[trackref] << " " << t0Safe[trackref]
-              << " tMtd - tof pi/K/p " << tMtd[trackref] - tofPi[trackref] << " " << tMtd[trackref] - tofK[trackref]
-              << " " << tMtd[trackref] - tofP[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref]
-              << " " << probP[trackref];
-        }
-
-        //if ( noPID || isPi ) {
-        if (isPi) {
-          candPid.push_back(0);
-        } else if (isK) {
-          candPid.push_back(1);
-        } else if (isP) {
-          candPid.push_back(2);
-        } else {
-          candPid.push_back(3);
-        }
-
-        if (std::abs(trackGen.eta()) < trackMaxBtlEta_) {
-          meBarrelPIDp_->Fill(trackGen.p());
-          meBarrelPID3dip_->Fill(ip3d, trackGen.p());
-          meBarrelNoPIDtype_->Fill(noPIDtype + 0.5);
-          if (optionalPlots_) {
-            if (std::abs((*tp_info)->pdgId()) == 211) {
-              meBarrelPiDBetavsp_->Fill(trackGen.p(), dbetaPi);
-              if (noPID) {
-                meBarrelTruePiNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meBarrelTruePiAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meBarrelTruePiAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meBarrelTruePiAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            } else if (std::abs((*tp_info)->pdgId()) == 321) {
-              meBarrelKDBetavsp_->Fill(trackGen.p(), dbetaK);
-              if (noPID) {
-                meBarrelTrueKNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meBarrelTrueKAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meBarrelTrueKAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meBarrelTrueKAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            } else if (std::abs((*tp_info)->pdgId()) == 2212) {
-              meBarrelPDBetavsp_->Fill(trackGen.p(), dbetaP);
-              if (noPID) {
-                meBarrelTruePNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meBarrelTruePAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meBarrelTruePAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meBarrelTruePAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            }
+      } else if (kstarbar_mass > 0.) {
+        meCombKstarBar_->Fill(kstarbar_mass);
+        if (NTuple->truthMatchSignal->at(iB)) {
+          meCombKstarBarM_->Fill(kstarbar_mass);
+          if (isTrue) {
+            meCombKstarBarT_->Fill(kstarbar_mass);
           }
-        } else if (std::abs(trackGen.eta()) > trackMinEtlEta_ && std::abs(trackGen.eta()) < trackMaxEtlEta_) {
-          meEndcapPIDp_->Fill(trackGen.p());
-          meEndcapPID3dip_->Fill(ip3d, trackGen.p());
-          meEndcapNoPIDtype_->Fill(noPIDtype + 0.5);
-          if (optionalPlots_) {
-            if (std::abs((*tp_info)->pdgId()) == 211) {
-              meEndcapPiDBetavsp_->Fill(trackGen.p(), dbetaPi);
-              if (noPID) {
-                meEndcapTruePiNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meEndcapTruePiAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meEndcapTruePiAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meEndcapTruePiAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            } else if (std::abs((*tp_info)->pdgId()) == 321) {
-              meEndcapKDBetavsp_->Fill(trackGen.p(), dbetaK);
-              if (noPID) {
-                meEndcapTrueKNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meEndcapTrueKAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meEndcapTrueKAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meEndcapTrueKAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            } else if (std::abs((*tp_info)->pdgId()) == 2212) {
-              meEndcapPDBetavsp_->Fill(trackGen.p(), dbetaP);
-              if (noPID) {
-                meEndcapTruePNoPID_->Fill(trackGen.p());
-              } else if (isPi) {
-                meEndcapTruePAsPi_->Fill(trackGen.p());
-              } else if (isK) {
-                meEndcapTruePAsK_->Fill(trackGen.p());
-              } else if (isP) {
-                meEndcapTruePAsP_->Fill(trackGen.p());
-              } else {
-                edm::LogWarning("MtdSecondaryPvValidation")
-                    << "No PID class: " << std::abs((*tp_info)->pdgId()) << " t0/t0safe " << t0Pid[trackref] << " "
-                    << t0Safe[trackref] << " Prob pi/K/p " << probPi[trackref] << " " << probK[trackref] << " "
-                    << probP[trackref];
-              }
-            }
+        }
+      } else {
+        edm::LogError("MtdSecondaryPvValidation") << "Not reconstructed K0*/bar mass when needed";
+      }
+      continue;
+    }
+
+    double mummom =
+        std::sqrt(NTuple->mumPx->at(iB) * NTuple->mumPx->at(iB) + NTuple->mumPy->at(iB) * NTuple->mumPy->at(iB) +
+                  NTuple->mumPz->at(iB) * NTuple->mumPz->at(iB));
+
+    double gammasq_mum = 1. + mummom * mummom * m_pi_inv2;
+    double beta_mum = std::sqrt(1. - 1. / gammasq_mum);
+    double distMum = std::sqrt((secVtx - (*trackref_mum).referencePoint()).mag2());
+    double corrtofMum = distMum / beta_mum * c_inv;
+    double crossMum = (secVtx.x() - (*trackref_mum).referencePoint().x()) * NTuple->mumPx->at(iB) +
+                      (secVtx.y() - (*trackref_mum).referencePoint().y()) * NTuple->mumPy->at(iB) +
+                      (secVtx.z() - (*trackref_mum).referencePoint().z()) * NTuple->mumPz->at(iB);
+    int signMum = crossMum > 0. ? 1. : -1;
+    double t1 = tMtd[trackref_mum] - tofPi[trackref_mum] + signMum * corrtofMum;
+    double w1 = 1. / SigmatMtd[trackref_mum] / SigmatMtd[trackref_mum];
+    if (Sigmat0Safe[trackref_mum] == -1. || mtdQualMVA[trackref_mum] < 0.5) {
+      t1 = 0.;
+      w1 = 0.;
+    }
+
+    double mupmom =
+        std::sqrt(NTuple->mupPx->at(iB) * NTuple->mupPx->at(iB) + NTuple->mupPy->at(iB) * NTuple->mupPy->at(iB) +
+                  NTuple->mupPz->at(iB) * NTuple->mupPz->at(iB));
+    double gammasq_mup = 1. + mupmom * mupmom * m_pi_inv2;
+    double beta_mup = std::sqrt(1. - 1. / gammasq_mup);
+    double distMup = std::sqrt((secVtx - (*trackref_mup).referencePoint()).mag2());
+    double corrtofMup = distMup / beta_mup * c_inv;
+    double crossMup = (secVtx.x() - (*trackref_mup).referencePoint().x()) * NTuple->mupPx->at(iB) +
+                      (secVtx.y() - (*trackref_mup).referencePoint().y()) * NTuple->mupPy->at(iB) +
+                      (secVtx.z() - (*trackref_mup).referencePoint().z()) * NTuple->mupPz->at(iB);
+    int signMup = crossMup > 0. ? 1. : -1;
+    double t2 = tMtd[trackref_mup] - tofPi[trackref_mup] + signMup * corrtofMup;
+    double w2 = 1. / SigmatMtd[trackref_mup] / SigmatMtd[trackref_mup];
+    if (Sigmat0Safe[trackref_mup] == -1. || mtdQualMVA[trackref_mup] < 0.5) {
+      t2 = 0.;
+      w2 = 0.;
+    }
+
+    // compute time at secondary vertex for negative and positive tracks in different hypothesis
+
+    std::array<std::array<double, 3>, 2> hypTof;
+    std::array<double, 3> tof;
+
+    double tkmmom = std::sqrt(NTuple->kstTrkmPx->at(iB) * NTuple->kstTrkmPx->at(iB) +
+                              NTuple->kstTrkmPy->at(iB) * NTuple->kstTrkmPy->at(iB) +
+                              NTuple->kstTrkmPz->at(iB) * NTuple->kstTrkmPz->at(iB));
+    double tkmeta =
+        std::abs(Utility->computeEta(NTuple->kstTrkmPx->at(iB), NTuple->kstTrkmPy->at(iB), NTuple->kstTrkmPz->at(iB)));
+    double tkmip = NTuple->kstTrkmMinIPS->at(iB);
+    double distTkm = std::sqrt((secVtx - (*trackref_tkm).referencePoint()).mag2());
+    double crossTkm = (secVtx.x() - (*trackref_tkm).referencePoint().x()) * NTuple->kstTrkmPx->at(iB) +
+                      (secVtx.y() - (*trackref_tkm).referencePoint().y()) * NTuple->kstTrkmPy->at(iB) +
+                      (secVtx.z() - (*trackref_tkm).referencePoint().z()) * NTuple->kstTrkmPz->at(iB);
+    int signTkm = crossTkm > 0. ? 1. : -1;
+
+    double gammasq_pi_tkm = 1. + tkmmom * tkmmom * m_pi_inv2;
+    double beta_pi_tkm = std::sqrt(1. - 1. / gammasq_pi_tkm);
+    double corrtof_pi_tkm = distTkm / beta_pi_tkm * c_inv;
+    double gammasq_k_tkm = 1. + tkmmom * tkmmom * m_k_inv2;
+    double beta_k_tkm = std::sqrt(1. - 1. / gammasq_k_tkm);
+    double corrtof_k_tkm = distTkm / beta_k_tkm * c_inv;
+    double gammasq_p_tkm = 1. + tkmmom * tkmmom * m_p_inv2;
+    double beta_p_tkm = std::sqrt(1. - 1. / gammasq_p_tkm);
+    double corrtof_p_tkm = distTkm / beta_p_tkm * c_inv;
+    tof[0] = tMtd[trackref_tkm] - tofPi[trackref_tkm] + signTkm * corrtof_pi_tkm;
+    tof[1] = tMtd[trackref_tkm] - tofK[trackref_tkm] + signTkm * corrtof_k_tkm;
+    tof[2] = tMtd[trackref_tkm] - tofP[trackref_tkm] + signTkm * corrtof_p_tkm;
+    hypTof[0] = tof;
+
+    double tkpmom = std::sqrt(NTuple->kstTrkpPx->at(iB) * NTuple->kstTrkpPx->at(iB) +
+                              NTuple->kstTrkpPy->at(iB) * NTuple->kstTrkpPy->at(iB) +
+                              NTuple->kstTrkpPz->at(iB) * NTuple->kstTrkpPz->at(iB));
+    double tkpeta =
+        std::abs(Utility->computeEta(NTuple->kstTrkpPx->at(iB), NTuple->kstTrkpPy->at(iB), NTuple->kstTrkpPz->at(iB)));
+    double tkpip = NTuple->kstTrkpMinIPS->at(iB);
+    double distTkp = std::sqrt((secVtx - (*trackref_tkp).referencePoint()).mag2());
+    double crossTkp = (secVtx.x() - (*trackref_tkp).referencePoint().x()) * NTuple->kstTrkpPx->at(iB) +
+                      (secVtx.y() - (*trackref_tkp).referencePoint().y()) * NTuple->kstTrkpPy->at(iB) +
+                      (secVtx.z() - (*trackref_tkp).referencePoint().z()) * NTuple->kstTrkpPz->at(iB);
+    int signTkp = crossTkp > 0. ? 1. : -1;
+
+    double gammasq_pi_tkp = 1. + tkpmom * tkpmom * m_pi_inv2;
+    double beta_pi_tkp = std::sqrt(1. - 1. / gammasq_pi_tkp);
+    double corrtof_pi_tkp = distTkp / beta_pi_tkp * c_inv;
+    double gammasq_k_tkp = 1. + tkpmom * tkpmom * m_k_inv2;
+    double beta_k_tkp = std::sqrt(1. - 1. / gammasq_k_tkp);
+    double corrtof_k_tkp = distTkp / beta_k_tkp * c_inv;
+    double gammasq_p_tkp = 1. + tkpmom * tkpmom * m_p_inv2;
+    double beta_p_tkp = std::sqrt(1. - 1. / gammasq_p_tkp);
+    double corrtof_p_tkp = distTkp / beta_p_tkp * c_inv;
+    tof[0] = tMtd[trackref_tkp] - tofPi[trackref_tkp] + signTkp * corrtof_pi_tkp;
+    tof[1] = tMtd[trackref_tkp] - tofK[trackref_tkp] + signTkp * corrtof_k_tkp;
+    tof[2] = tMtd[trackref_tkp] - tofP[trackref_tkp] + signTkp * corrtof_p_tkp;
+    hypTof[1] = tof;
+
+    // Use PID only if pion/kaon hypothesis at least 1 sigma away
+
+    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) > SigmatMtd[trackref_tkm] ||
+        std::abs((hypTof[1])[0] - (hypTof[1])[1]) > SigmatMtd[trackref_tkp]) {
+      if (kstar_mass > 0.) {
+        meCombKstar_->Fill(kstar_mass);
+        if (NTuple->truthMatchSignal->at(iB)) {
+          meCombKstarM_->Fill(kstar_mass);
+          if (isTrue) {
+            meCombKstarT_->Fill(kstar_mass);
           }
+        }
+      } else if (kstarbar_mass > 0.) {
+        meCombKstarBar_->Fill(kstarbar_mass);
+        if (NTuple->truthMatchSignal->at(iB)) {
+          meCombKstarBarM_->Fill(kstarbar_mass);
+          if (isTrue) {
+            meCombKstarBarT_->Fill(kstarbar_mass);
+          }
+        }
+      } else {
+        edm::LogError("MtdSecondaryPvValidation") << "Not reconstructed K0*/bar mass when needed";
+      }
+      continue;
+    }
+
+    double sigdtAtSV = 9999.;
+    unsigned int id1 = 3;
+    unsigned int id2 = 3;
+    for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
+      for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
+        double w3 = 1. / SigmatMtd[trackref_tkm] / SigmatMtd[trackref_tkm];
+        double t3 = (hypTof[0])[ihyp1];
+        double w4 = 1. / SigmatMtd[trackref_tkp] / SigmatMtd[trackref_tkp];
+        double t4 = (hypTof[1])[ihyp2];
+        double wave = (w1 * t1 + w2 * t2 + w3 * t3 + w4 * t4) / (w1 + w2 + w3 + w4);
+        double wstd = std::sqrt((w1 * (t1 - wave) * (t1 - wave) + w2 * (t2 - wave) * (t2 - wave) +
+                                 w3 * (t3 - wave) * (t3 - wave) + w4 * (t4 - wave) * (t4 - wave)) /
+                                (3. / 4. * (w1 + w2 + w3 + w4)));
+        double sigdtTmp = wstd;
+        if (sigdtTmp < sigdtAtSV) {
+          sigdtAtSV = sigdtTmp;
+          id1 = ihyp1;
+          id2 = ihyp2;
         }
       }
     }
 
-    if (candRef.size() == 2 && candRefMu.size() == 2) {
-      bool less3GeV = candTrk[0].p() < 3. && candTrk[1].p() < 3.;
+    // only pion - kaon pairs are considered
 
-      // array on candidates, for each array of hyptheses (0 = pi, 1 = k)
-      std::array<std::array<double, 3>, 2> hypTof;
-      std::array<std::array<double, 3>, 2> hypUncTof;
-      std::array<unsigned int, 2> hypOk;
+    if (id1 > 1 || id2 > 1 || id1 == id2) {
+      continue;
+    }
 
-      for (unsigned int index = 0; index < 2; index++) {
-        double dx =
-            convertMmToCm(candGen[index]->production_vertex()->position().x()) - candTrk[index].referencePoint().x();
-        double dy =
-            convertMmToCm(candGen[index]->production_vertex()->position().y()) - candTrk[index].referencePoint().y();
-        double dz =
-            convertMmToCm(candGen[index]->production_vertex()->position().z()) - candTrk[index].referencePoint().z();
-        double dscorr = std::sqrt(dx * dx + dy * dy + dz * dz);
-        double gammasq_pi = 1. + candTrk[index].p() * candTrk[index].p() * m_pi_inv2;
-        double beta_pi = std::sqrt(1. - 1. / gammasq_pi);
-        double dtcorr_pi = dscorr / beta_pi * c_inv;
-        double gammasq_k = 1. + candTrk[index].p() * candTrk[index].p() * m_k_inv2;
-        double beta_k = std::sqrt(1. - 1. / gammasq_k);
-        double dtcorr_k = dscorr / beta_k * c_inv;
-        double gammasq_p = 1. + candTrk[index].p() * candTrk[index].p() * m_p_inv2;
-        double beta_p = std::sqrt(1. - 1. / gammasq_p);
-        double dtcorr_p = dscorr / beta_p * c_inv;
-        std::array<double, 3> tof;
-        tof[0] = tMtd[candRef[index]] - tofPi[candRef[index]] + dtcorr_pi;
-        tof[1] = tMtd[candRef[index]] - tofK[candRef[index]] + dtcorr_k;
-        tof[2] = tMtd[candRef[index]] - tofP[candRef[index]] + dtcorr_p;
-        hypTof[index] = tof;
-        tof[0] = tMtd[candRef[index]] - tofPi[candRef[index]];
-        tof[1] = tMtd[candRef[index]] - tofK[candRef[index]];
-        tof[2] = tMtd[candRef[index]] - tofP[candRef[index]];
-        hypUncTof[index] = tof;
-        if (std::abs(candGen[index]->pdg_id()) == 211) {
-          hypOk[index] = 0;
-        } else if (std::abs(candGen[index]->pdg_id()) == 321) {
-          hypOk[index] = 1;
-        } else if (std::abs(candGen[index]->pdg_id()) == 2212) {
-          hypOk[index] = 2;
-        } else {
-          edm::LogWarning("MtdSecondaryPvValid") << "Not expected particle " << candGen[index]->pdg_id();
+    // tkm == pion && tkp == kaon, i.e. K0*
+
+    if (id1 == 0 && id2 == 1) {
+      mePIDKstar_->Fill(NTuple->kstMass->at(iB));
+      meCombKstar_->Fill(NTuple->kstMass->at(iB));
+      mePIDPionp_->Fill(tkmmom);
+      mePIDKaonp_->Fill(tkpmom);
+      mePIDPioneta_->Fill(tkmeta);
+      mePIDKaoneta_->Fill(tkpeta);
+      mePIDPionIP_->Fill(tkmip);
+      mePIDKaonIP_->Fill(tkpip);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        mePIDKstarM_->Fill(NTuple->kstMass->at(iB));
+        meCombKstarM_->Fill(NTuple->kstMass->at(iB));
+        if (std::abs(NTuple->genKstTrkmID) == 211 && std::abs(NTuple->genKstTrkpID) == 321) {
+          mePIDKstarT_->Fill(NTuple->kstMass->at(iB));
+          meCombKstarT_->Fill(NTuple->kstMass->at(iB));
+        }
+      }
+      if (NTuple->matchTkm->at(iB) && NTuple->matchTkp->at(iB)) {
+        mePIDPionpM_->Fill(tkmmom);
+        mePIDPionpM_->Fill(tkmmom);
+        mePIDKaonpM_->Fill(tkpmom);
+        mePIDPionetaM_->Fill(tkmeta);
+        mePIDKaonetaM_->Fill(tkpeta);
+        mePIDPionIPM_->Fill(tkmip);
+        mePIDKaonIPM_->Fill(tkpip);
+        if (std::abs(NTuple->genKstTrkmID) == 211 && std::abs(NTuple->genKstTrkpID) == 321) {
+          mePIDPionpT_->Fill(tkmmom);
+          mePIDKaonpT_->Fill(tkpmom);
+          mePIDPionetaT_->Fill(tkmeta);
+          mePIDKaonetaT_->Fill(tkpeta);
+          mePIDPionIPT_->Fill(tkmip);
+          mePIDKaonIPT_->Fill(tkpip);
         }
       }
 
-      double sigmaDT =
-          std::sqrt(SigmatMtd[candRef[0]] * SigmatMtd[candRef[0]] + SigmatMtd[candRef[1]] * SigmatMtd[candRef[1]]);
-      double sigdtAtSV = 9999.;
-      unsigned int id1(3);
-      unsigned int id2(3);
-      bool idOK = false;
-      for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
-        for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
-          double sigdtTmp = std::abs((hypTof[0])[ihyp1] - (hypTof[1])[ihyp2]) / sigmaDT;
-          bool idOkTmp = (hypOk[0] == ihyp1 && hypOk[1] == ihyp2);
-          if (sigdtTmp < sigdtAtSV) {
-            sigdtAtSV = sigdtTmp;
-            idOK = idOkTmp;
-            id1 = ihyp1;
-            id2 = ihyp2;
-          }
+      // tkm == kaon && tkp == pion, i.e. K0*bar
+
+    } else if (id1 == 1 && id2 == 0) {
+      mePIDKstarBar_->Fill(NTuple->kstMass->at(iB));
+      meCombKstarBar_->Fill(NTuple->kstMass->at(iB));
+      mePIDPionp_->Fill(tkpmom);
+      mePIDKaonp_->Fill(tkmmom);
+      mePIDPioneta_->Fill(tkpeta);
+      mePIDKaoneta_->Fill(tkmeta);
+      mePIDPionIP_->Fill(tkpip);
+      mePIDKaonIP_->Fill(tkmip);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        mePIDKstarBarM_->Fill(NTuple->kstBarMass->at(iB));
+        meCombKstarBarM_->Fill(NTuple->kstBarMass->at(iB));
+        if (std::abs(NTuple->genKstTrkmID) == 321 && std::abs(NTuple->genKstTrkpID) == 211) {
+          mePIDKstarBarT_->Fill(NTuple->kstBarMass->at(iB));
+          meCombKstarBarT_->Fill(NTuple->kstBarMass->at(iB));
+        }
+      }
+      if (NTuple->matchTkm->at(iB) && NTuple->matchTkp->at(iB)) {
+        mePIDPionpM_->Fill(tkpmom);
+        mePIDKaonpM_->Fill(tkmmom);
+        mePIDPionetaM_->Fill(tkpeta);
+        mePIDKaonetaM_->Fill(tkmeta);
+        mePIDPionIPM_->Fill(tkpip);
+        mePIDKaonIPM_->Fill(tkmip);
+        if (std::abs(NTuple->genKstTrkmID) == 321 && std::abs(NTuple->genKstTrkpID) == 211) {
+          mePIDPionpT_->Fill(tkpmom);
+          mePIDKaonpT_->Fill(tkmmom);
+          mePIDPionetaT_->Fill(tkpeta);
+          mePIDKaonetaT_->Fill(tkmeta);
+          mePIDPionIPT_->Fill(tkpip);
+          mePIDKaonIPT_->Fill(tkmip);
         }
       }
 
-      if (idOK) {
-        meSVpid_->Fill(0.5);
-        if (less3GeV) {
-          me3GeVSVpid_->Fill(0.5);
-        }
-      } else {
-        meSVpid_->Fill(1.5);
-        if (less3GeV) {
-          me3GeVSVpid_->Fill(1.5);
-        }
-      }
-      if (std::abs(candGen[0]->pdg_id()) == 211) {
-        meSV_pi_vs_k_pid_->Fill(id2 + 0.5, id1 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_pid_->Fill(id2 + 0.5, id1 + 0.5);
-        }
-      } else {
-        meSV_pi_vs_k_pid_->Fill(id1 + 0.5, id2 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_pid_->Fill(id1 + 0.5, id2 + 0.5);
-        }
-      }
-
-      sigdtAtSV = 9999.;
-      id1 = 3;
-      id2 = 3;
-      idOK = false;
-      for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
-        for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
-          double sigdtTmp = std::abs((hypUncTof[0])[ihyp1] - (hypUncTof[1])[ihyp2]) / sigmaDT;
-          bool idOkTmp = (hypOk[0] == ihyp1 && hypOk[1] == ihyp2);
-          if (sigdtTmp < sigdtAtSV) {
-            sigdtAtSV = sigdtTmp;
-            idOK = idOkTmp;
-            id1 = ihyp1;
-            id2 = ihyp2;
-          }
-        }
-      }
-
-      if (std::abs(candGen[0]->pdg_id()) == 211) {
-        meSV_pi_vs_k_uncpid_->Fill(id2 + 0.5, id1 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_uncpid_->Fill(id2 + 0.5, id1 + 0.5);
-        }
-      } else {
-        meSV_pi_vs_k_uncpid_->Fill(id1 + 0.5, id2 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_uncpid_->Fill(id1 + 0.5, id2 + 0.5);
-        }
-      }
-
-      id1 = candPid[0];
-      id2 = candPid[1];
-      if (std::abs(candGen[0]->pdg_id()) == 211) {
-        meSV_pi_vs_k_4dpid_->Fill(id2 + 0.5, id1 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_4dpid_->Fill(id2 + 0.5, id1 + 0.5);
-        }
-      } else {
-        meSV_pi_vs_k_4dpid_->Fill(id1 + 0.5, id2 + 0.5);
-        if (less3GeV) {
-          meSV_pi_vs_k_4dpid_->Fill(id1 + 0.5, id2 + 0.5);
-        }
-      }
-
-      sigdtAtSV = 9999.;
-      id1 = 3;
-      id2 = 3;
-      double w1 = 1. / SigmatMtd[candRefMu[0]] / SigmatMtd[candRefMu[0]];
-      double t1 = tMtd[candRefMu[0]] - tofPi[candRefMu[0]];
-      double w2 = 1. / SigmatMtd[candRefMu[1]] / SigmatMtd[candRefMu[1]];
-      double t2 = tMtd[candRefMu[1]] - tofPi[candRefMu[1]];
-      for (unsigned int ihyp1 = 0; ihyp1 < 3; ihyp1++) {
-        for (unsigned int ihyp2 = 0; ihyp2 < 3; ihyp2++) {
-          double w3 = 1. / SigmatMtd[candRef[0]] / SigmatMtd[candRef[0]];
-          double t3 = (hypTof[0])[ihyp1];
-          double w4 = 1. / SigmatMtd[candRef[1]] / SigmatMtd[candRef[1]];
-          double t4 = (hypTof[1])[ihyp2];
-          double wave = (w1 * t1 + w2 * t2 + w3 * t3 + w4 * t4) / (w1 + w2 + w3 + w4);
-          double wstd = std::sqrt((w1 * (t1 - wave) * (t1 - wave) + w2 * (t2 - wave) * (t2 - wave) +
-                                   w3 * (t3 - wave) * (t3 - wave) + w4 * (t4 - wave) * (t4 - wave)) /
-                                  (3. / 4. * (w1 + w2 + w3 + w4)));
-          double sigdtTmp = wstd;
-          if (sigdtTmp < sigdtAtSV) {
-            sigdtAtSV = sigdtTmp;
-            id1 = ihyp1;
-            id2 = ihyp2;
-          }
-        }
-      }
-
-      if (std::abs(candGen[0]->pdg_id()) == 211) {
-        meSV_pi_vs_k_muconst_pid_->Fill(id2 + 0.5, id1 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_muconst_pid_->Fill(id2 + 0.5, id1 + 0.5);
-        }
-      } else {
-        meSV_pi_vs_k_muconst_pid_->Fill(id1 + 0.5, id2 + 0.5);
-        if (less3GeV) {
-          me3GeVSV_pi_vs_k_muconst_pid_->Fill(id1 + 0.5, id2 + 0.5);
-        }
-      }
+    } else {
+      edm::LogError("MtdSecondaryPvValidation") << "Incorrect ID combination found!!! " << id1 << " " << id2;
+      continue;
     }
   }
-  */
 
   NTuple->ClearNTuple();
 }
@@ -2094,140 +2148,108 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
                                               edm::EventSetup const& iSetup) {
   ibook.setCurrentFolder(folder_);
 
-  // histogram booking
-  meMVATrackEffPtTot_ = ibook.book1D("MVAEffPtTot", "Pt of tracks associated to LV; track pt [GeV] ", 110, 0., 11.);
-  meMVATrackMatchedEffPtTot_ =
-      ibook.book1D("MVAMatchedEffPtTot", "Pt of tracks associated to LV matched to GEN; track pt [GeV] ", 110, 0., 11.);
-  meMVATrackMatchedEffPtMtd_ = ibook.book1D(
-      "MVAMatchedEffPtMtd", "Pt of tracks associated to LV matched to GEN with time; track pt [GeV] ", 110, 0., 11.);
-  meMVATrackEffEtaTot_ = ibook.book1D("MVAEffEtaTot", "Pt of tracks associated to LV; track eta ", 66, 0., 3.3);
-  meMVATrackMatchedEffEtaTot_ =
-      ibook.book1D("MVAMatchedEffEtaTot", "Pt of tracks associated to LV matched to GEN; track eta ", 66, 0., 3.3);
-  meMVATrackMatchedEffEtaMtd_ = ibook.book1D(
-      "MVAMatchedEffEtaMtd", "Pt of tracks associated to LV matched to GEN with time; track eta ", 66, 0., 3.3);
-  meMVATrackResTot_ = ibook.book1D(
-      "MVATrackRes", "t_{rec} - t_{sim} for LV associated tracks; t_{rec} - t_{sim} [ns] ", 120, -0.15, 0.15);
-  meMVATrackPullTot_ =
-      ibook.book1D("MVATrackPull", "Pull for associated tracks; (t_{rec}-t_{sim})/#sigma_{t}", 50, -5., 5.);
-  meMVATrackZposResTot_ = ibook.book1D(
-      "MVATrackZposResTot", "Z_{PCA} - Z_{sim} for associated tracks;Z_{PCA} - Z_{sim} [cm] ", 100, -0.1, 0.1);
+  meKstar_ = ibook.book1D("Kstar", "Kstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meKstarBar_ = ibook.book1D("KstarBar", "KstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meKstarM_ = ibook.book1D("KstarM", "Matched Kstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meKstarBarM_ = ibook.book1D("KstarBarM", "Matched KstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meKstarT_ = ibook.book1D("KstarT", "True Kstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meKstarBarT_ = ibook.book1D("KstarBarT", "True KstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
 
-  meBarrelPIDp_ = ibook.book1D("BarrelPIDp", "PID track with MTD momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-  meEndcapPIDp_ = ibook.book1D("EndcapPIDp", "PID track with MTD momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  mePionp_ = ibook.book1D("Pionp", "Pion candidate p; p [GeV]", 25, 0., 10.);
+  mePionpM_ = ibook.book1D("PionpM", "Matched Pion candidate p; p [GeV]", 25, 0., 10.);
+  mePionpT_ = ibook.book1D("PionpT", "True Pion candidate p; p [GeV]", 25, 0., 10.);
+  meKaonp_ = ibook.book1D("Kaonp", "Kaon candidate p; p [GeV]", 25, 0., 10.);
+  meKaonpM_ = ibook.book1D("KaonpM", "Matched Kaon candidate p; p [GeV]", 25, 0., 10.);
+  meKaonpT_ = ibook.book1D("KaonpT", "True Kaon candidate p; p [GeV]", 25, 0., 10.);
 
-  meBarrelPID3dip_ = ibook.book2D(
-      "BarrelPID3dip", "PID track with MTD 3d p vs ip, |eta| < 1.5;ip [cm]; p [GeV]", 60, 0., 2., 25, 0., 10.);
-  meEndcapPID3dip_ = ibook.book2D(
-      "EndcapPID3dip", "PID track with MTD 3d p vs ip, |eta| > 1.6;ip [cm]; p [GeV]", 60, 0., 2., 25, 0., 10.);
+  mePioneta_ = ibook.book1D("Pioneta", "Pion candidate eta; eta", 66, 0., 3.3);
+  mePionetaM_ = ibook.book1D("PionetaM", "Matched Pion candidate eta; eta", 66, 0., 3.3);
+  mePionetaT_ = ibook.book1D("PionetaT", "True Pion candidate eta; eta", 66, 0., 3.3);
+  meKaoneta_ = ibook.book1D("Kaoneta", "Kaon candidate eta; eta", 66, 0., 3.3);
+  meKaonetaM_ = ibook.book1D("KaonetaM", "Matched Kaon candidate eta; eta", 66, 0., 3.3);
+  meKaonetaT_ = ibook.book1D("KaonetaT", "True Kaon candidate eta; eta", 66, 0., 3.3);
+
+  mePionIP_ = ibook.book1D("PionIP", "Pion candidate min IP; IP [cm]", 100, 0., 20.);
+  mePionIPM_ = ibook.book1D("PionIPM", "Matched Pion candidate min IP; IP [cm]", 100, 0., 20.);
+  mePionIPT_ = ibook.book1D("PionIPT", "True Pion candidate min IP; IP [cm]", 100, 0., 20.);
+  meKaonIP_ = ibook.book1D("KaonIP", "Kaon candidate min IP; IP [cm]", 100, 0., 20.);
+  meKaonIPM_ = ibook.book1D("KaonIPM", "Matched Kaon candidate min IP; IP [cm]", 100, 0., 20.);
+  meKaonIPT_ = ibook.book1D("KaonIPT", "True Kaon candidate min IP; IP [cm]", 100, 0., 20.);
+
+  mePIDKstar_ = ibook.book1D("PIDKstar", "PIDKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  mePIDKstarBar_ = ibook.book1D("PIDKstarBar", "PIDKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  mePIDKstarM_ = ibook.book1D("PIDKstarM", "Matched PIDKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  mePIDKstarBarM_ = ibook.book1D("PIDKstarBarM", "Matched PIDKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  mePIDKstarT_ = ibook.book1D("PIDKstarT", "True PIDKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  mePIDKstarBarT_ = ibook.book1D("PIDKstarBarT", "True PIDKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+
+  meCombKstar_ = ibook.book1D("CombKstar", "CombKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meCombKstarBar_ = ibook.book1D("CombKstarBar", "CombKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meCombKstarM_ = ibook.book1D("CombKstarM", "Matched CombKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meCombKstarBarM_ = ibook.book1D("CombKstarBarM", "Matched CombKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meCombKstarT_ = ibook.book1D("CombKstarT", "True CombKstar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+  meCombKstarBarT_ = ibook.book1D("CombKstarBarT", "True CombKstarBar candidate mass; mass [GeV]", 50, 0.65, 1.15);
+
+  mePIDPionp_ = ibook.book1D("PIDPionp", "PIDPion candidate p; p [GeV]", 25, 0., 10.);
+  mePIDPionpM_ = ibook.book1D("PIDPionpM", "Matched PIDPion candidate p; p [GeV]", 25, 0., 10.);
+  mePIDPionpT_ = ibook.book1D("PIDPionpT", "True PIDPion candidate p; p [GeV]", 25, 0., 10.);
+  mePIDKaonp_ = ibook.book1D("PIDKaonp", "PIDKaon candidate p; p [GeV]", 25, 0., 10.);
+  mePIDKaonpM_ = ibook.book1D("PIDKaonpM", "Matched PIDKaon candidate p; p [GeV]", 25, 0., 10.);
+  mePIDKaonpT_ = ibook.book1D("PIDKaonpT", "True PIDKaon candidate p; p [GeV]", 25, 0., 10.);
+
+  mePIDPioneta_ = ibook.book1D("PIDPioneta", "PIDPion candidate eta; eta", 66, 0., 3.3);
+  mePIDPionetaM_ = ibook.book1D("PIDPionetaM", "Matched PIDPion candidate eta; eta", 66, 0., 3.3);
+  mePIDPionetaT_ = ibook.book1D("PIDPionetaT", "True PIDPion candidate eta; eta", 66, 0., 3.3);
+  mePIDKaoneta_ = ibook.book1D("PIDKaoneta", "PIDKaon candidate eta; eta", 66, 0., 3.3);
+  mePIDKaonetaM_ = ibook.book1D("PIDKaonetaM", "Matched PIDKaon candidate eta; eta", 66, 0., 3.3);
+  mePIDKaonetaT_ = ibook.book1D("PIDKaonetaT", "True PIDKaon candidate eta; eta", 66, 0., 3.3);
+
+  mePIDPionIP_ = ibook.book1D("PIDPionIP", "PIDPion candidate min IP; IP [cm]", 100, 0., 20.);
+  mePIDPionIPM_ = ibook.book1D("PIDPionIPM", "Matched PIDPion candidate min IP; IP [cm]", 100, 0., 20.);
+  mePIDPionIPT_ = ibook.book1D("PIDPionIPT", "True PIDPion candidate min IP; IP [cm]", 100, 0., 20.);
+  mePIDKaonIP_ = ibook.book1D("PIDKaonIP", "PIDKaon candidate min IP; IP [cm]", 100, 0., 20.);
+  mePIDKaonIPM_ = ibook.book1D("PIDKaonIPM", "Matched PIDKaon candidate min IP; IP [cm]", 100, 0., 20.);
+  mePIDKaonIPT_ = ibook.book1D("PIDKaonIPT", "True PIDKaon candidate min IP; IP [cm]", 100, 0., 20.);
+
+  meSVip_ = ibook.book1D("SVip", "Secondary vtx distance from PV; ip [cm]", 100, 0., 2.);
+  meBarrelPCASVdiff_ = ibook.book1D("BarrelPCASVdiff", "PCA - SV distance, |eta| < 1.5; dist [cm]", 100, 0., 2.);
+  meEndcapPCASVdiff_ = ibook.book1D("EndcapPCASVdiff", "PCA - SV distance, |eta| > 1.6; dist [cm]", 100, 0., 2.);
 
   meBarrelNoPIDtype_ = ibook.book1D("BarrelNoPIDtype", "Barrel PID failure category", 4, 0., 4.);
   meEndcapNoPIDtype_ = ibook.book1D("EndcapNoPIDtype", "Endcap PID failure category", 4, 0., 4.);
 
-  if (optionalPlots_) {
-    meBarrelPiDBetavsp_ = ibook.book2D(
-        "BarrelPiDBetavsp", "DeltaBeta true pi as pi vs p, |eta| < 1.5;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
-    meEndcapPiDBetavsp_ = ibook.book2D(
-        "EndcapPiDBetavsp", "DeltaBeta true pi as pi vs p, |eta| > 1.6;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
-    meBarrelKDBetavsp_ = ibook.book2D(
-        "BarrelKDBetavsp", "DeltaBeta true K as K vs p, |eta| < 1.5;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
-    meEndcapKDBetavsp_ = ibook.book2D(
-        "EndcapKDBetavsp", "DeltaBeta true K as K vs p, |eta| > 1.6;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
-    meBarrelPDBetavsp_ = ibook.book2D(
-        "BarrelPDBetavsp", "DeltaBeta true p as p vs p, |eta| < 1.5;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
-    meEndcapPDBetavsp_ = ibook.book2D(
-        "EndcapPDBetavsp", "DeltaBeta true p as p vs p, |eta| > 1.6;p [GeV]; dBeta", 25, 0., 10., 50, -0.1, 0.1);
+  meBarrelRecoPiNoPID_ =
+      ibook.book1D("BarrelRecoPiNoPID", "Reco pi NoPID momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meBarrelRecoKNoPID_ =
+      ibook.book1D("BarrelRecoKNoPID", "Reco k NoPID momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meEndcapRecoPiNoPID_ =
+      ibook.book1D("EndcapRecoPiNoPID", "Reco pi NoPID momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  meEndcapRecoKNoPID_ =
+      ibook.book1D("EndcapRecoKNoPID", "Reco k NoPID momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
 
-    meBarrelTruePiNoPID_ =
-        ibook.book1D("BarrelTruePiNoPID", "True pi NoPID momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTrueKNoPID_ =
-        ibook.book1D("BarrelTrueKNoPID", "True k NoPID momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTruePNoPID_ =
-        ibook.book1D("BarrelTruePNoPID", "True p NoPID momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meEndcapTruePiNoPID_ =
-        ibook.book1D("EndcapTruePiNoPID", "True NoPIDpi momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTrueKNoPID_ =
-        ibook.book1D("EndcapTrueKNoPID", "True k NoPID momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTruePNoPID_ =
-        ibook.book1D("EndcapTruePNoPID", "True p NoPID momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  meBarrelRecoPiAsPi_ =
+      ibook.book1D("BarrelRecoPiAsPi", "Reco pi as pi momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meBarrelRecoPiAsOth_ =
+      ibook.book1D("BarrelRecoPiAsOth", "Reco pi as other momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meEndcapRecoPiAsPi_ =
+      ibook.book1D("EndcapRecoPiAsPi", "Reco pi as pi momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  meEndcapRecoPiAsOth_ =
+      ibook.book1D("EndcapRecoPiAsOth", "Reco pi as other momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
 
-    meBarrelTruePiAsPi_ =
-        ibook.book1D("BarrelTruePiAsPi", "True pi as pi momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTruePiAsK_ =
-        ibook.book1D("BarrelTruePiAsK", "True pi as k momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTruePiAsP_ =
-        ibook.book1D("BarrelTruePiAsP", "True pi as p momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meEndcapTruePiAsPi_ =
-        ibook.book1D("EndcapTruePiAsPi", "True pi as pi momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTruePiAsK_ =
-        ibook.book1D("EndcapTruePiAsK", "True pi as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTruePiAsP_ =
-        ibook.book1D("EndcapTruePiAsP", "True pi as p momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  meBarrelRecoKAsOth_ =
+      ibook.book1D("BarrelRecoKAsOth", "Reco k as other momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meBarrelRecoKAsK_ = ibook.book1D("BarrelRecoKAsK", "Reco k as k momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
+  meEndcapRecoKAsOth_ =
+      ibook.book1D("EndcapRecoKAsOth", "Reco k as other momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
+  meEndcapRecoKAsK_ = ibook.book1D("EndcapRecoKAsK", "Reco k as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
 
-    meBarrelTrueKAsPi_ =
-        ibook.book1D("BarrelTrueKAsPi", "True k as pi momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTrueKAsK_ =
-        ibook.book1D("BarrelTrueKAsK", "True k as k momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTrueKAsP_ =
-        ibook.book1D("BarrelTrueKAsP", "True k as p momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meEndcapTrueKAsPi_ =
-        ibook.book1D("EndcapTrueKAsPi", "True k as pi momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTrueKAsK_ =
-        ibook.book1D("EndcapTrueKAsK", "True k as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTrueKAsP_ =
-        ibook.book1D("EndcapTrueKAsP", "True k as p momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-
-    meBarrelTruePAsPi_ =
-        ibook.book1D("BarrelTruePAsPi", "True p as pi momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTruePAsK_ =
-        ibook.book1D("BarrelTruePAsK", "True p as k momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meBarrelTruePAsP_ =
-        ibook.book1D("BarrelTruePAsP", "True p as p momentum spectrum, |eta| < 1.5;p [GeV]", 25, 0., 10.);
-    meEndcapTruePAsPi_ =
-        ibook.book1D("EndcapTruePAsPi", "True p as pi momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTruePAsK_ =
-        ibook.book1D("EndcapTruePAsK", "True p as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-    meEndcapTruePAsP_ =
-        ibook.book1D("EndcapTruePAsP", "True p as p momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-
-    meSVpid_ = ibook.book1D("SVpid", "SV correct identification, 0.5 = OK", 2, 0., 2.);
-    meSV_pi_vs_k_pid_ =
-        ibook.book2D("SV_pi_vs_k_pid", "SV pi vs k correct identification, pi/k/p", 3, 0., 3., 3, 0., 3.);
-    meSV_pi_vs_k_uncpid_ =
-        ibook.book2D("SV_pi_vs_k_uncpid", "SV pi vs k correct identification no Sv corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
-    meSV_pi_vs_k_4dpid_ =
-        ibook.book2D("SV_pi_vs_k_4dpid", "SV pi vs k correct identification 4D corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
-    meSV_pi_vs_k_muconst_pid_ = ibook.book2D(
-        "SV_pi_vs_k_muconst_pid", "SV pi vs k correct identification mu constraint, pi/k/p", 3, 0., 3., 3, 0., 3.);
-
-    me3GeVSVpid_ = ibook.book1D("3GeVSVpid", "Sv correct identification, tracks p < 3 GeV, 0.5 = OK", 2, 0., 2.);
-    me3GeVSV_pi_vs_k_pid_ = ibook.book2D(
-        "3GeVSV_pi_vs_k_pid", "Sv pi vs k correct identification, tracks p < 3 GeV, pi/k/p", 3, 0., 3., 3, 0., 3.);
-    me3GeVSV_pi_vs_k_uncpid_ = ibook.book2D("3GeVSV_pi_vs_k_uncpid",
-                                            "Sv pi vs k correct identification no Sv corr, tracks p < 3 GeV, pi/k/p",
-                                            3,
-                                            0.,
-                                            3.,
-                                            3,
-                                            0.,
-                                            3.);
-    me3GeVSV_pi_vs_k_4dpid_ = ibook.book2D("3GeVSV_pi_vs_k_4dpid",
-                                           "Sv pi vs k correct identification 4D corr, tracks p < 3 GeV, pi/k/p",
-                                           3,
-                                           0.,
-                                           3.,
-                                           3,
-                                           0.,
-                                           3.);
-    me3GeVSV_pi_vs_k_muconst_pid_ =
-        ibook.book2D("3GeVSV_pi_vs_k_muconst_pid",
-                     "Sv pi vs k correct identification mu constraint, tracks p < 3 GeV, pi/k/p",
-                     3,
-                     0.,
-                     3.,
-                     3,
-                     0.,
-                     3.);
-  }
+  meSV_pi_vs_k_pid_ = ibook.book2D("SV_pi_vs_k_pid", "SV pi vs k correct identification, pi/k/p", 3, 0., 3., 3, 0., 3.);
+  meSV_pi_vs_k_uncpid_ =
+      ibook.book2D("SV_pi_vs_k_uncpid", "SV pi vs k correct identification no Sv corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
+  meSV_pi_vs_k_4dpid_ =
+      ibook.book2D("SV_pi_vs_k_4dpid", "SV pi vs k correct identification 4D corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
+  meSV_pi_vs_k_muconst_pid_ = ibook.book2D(
+      "SV_pi_vs_k_muconst_pid", "SV pi vs k correct identification mu constraint, pi/k/p", 3, 0., 3., 3, 0., 3.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -2268,7 +2290,6 @@ void MtdSecondaryPvValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   desc.add<double>("trackMinimumEtlEta", 1.6);
   desc.add<double>("trackMaximumEtlEta", 3.);
   desc.add<double>("minProbHeavy", 0.75);
-  desc.addUntracked<bool>("optionalPlots", false);
   desc.addUntracked<bool>("printMsg", false);
 
   descriptions.add("mtdSecondaryPvValid", desc);
@@ -2680,6 +2701,23 @@ bool MtdSecondaryPvValidation::isAncestor(const reco::Candidate* ancestor, const
   }
   //if we did not return yet, then particle and ancestor are not relatives
   return false;
+}
+
+const void MtdSecondaryPvValidation::pidFromTrackRef(
+    double probpi, double probk, double probp, unsigned int& noPIDtype, bool& noPID, bool& isPi, bool& isK, bool& isP) {
+  noPIDtype = 0;
+  if (probpi == -1) {
+    noPIDtype = 1;
+  } else if (isnan(probpi)) {
+    noPIDtype = 2;
+  } else if (probpi == 1 && probk == 0 && probp == 0) {
+    noPIDtype = 3;
+  }
+
+  noPID = noPIDtype > 0;
+  isPi = !noPID && 1. - probpi < minProbHeavy_;
+  isK = !noPID && !isPi && probk > probp;
+  isP = !noPID && !isPi && !isK;
 }
 
 DEFINE_FWK_MODULE(MtdSecondaryPvValidation);
