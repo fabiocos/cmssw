@@ -274,6 +274,34 @@ private:
   MonitorElement* mePIDPionetaT_;
   MonitorElement* mePIDPionIPT_;
 
+  MonitorElement* meKaonpR1_;
+  MonitorElement* meKaonetaR1_;
+  MonitorElement* meKaonpMR1_;
+  MonitorElement* meKaonetaMR1_;
+  MonitorElement* meKaonpTR1_;
+  MonitorElement* meKaonetaTR1_;
+
+  MonitorElement* mePionpR1_;
+  MonitorElement* mePionetaR1_;
+  MonitorElement* mePionpMR1_;
+  MonitorElement* mePionetaMR1_;
+  MonitorElement* mePionpTR1_;
+  MonitorElement* mePionetaTR1_;
+
+  MonitorElement* meKaonpR2_;
+  MonitorElement* meKaonetaR2_;
+  MonitorElement* meKaonpMR2_;
+  MonitorElement* meKaonetaMR2_;
+  MonitorElement* meKaonpTR2_;
+  MonitorElement* meKaonetaTR2_;
+
+  MonitorElement* mePionpR2_;
+  MonitorElement* mePionetaR2_;
+  MonitorElement* mePionpMR2_;
+  MonitorElement* mePionetaMR2_;
+  MonitorElement* mePionpTR2_;
+  MonitorElement* mePionetaTR2_;
+
   MonitorElement* meSVip_;
   MonitorElement* meBarrelPCASVdiff_;
   MonitorElement* meEndcapPCASVdiff_;
@@ -295,11 +323,6 @@ private:
   MonitorElement* meBarrelRecoKAsK_;
   MonitorElement* meEndcapRecoKAsOth_;
   MonitorElement* meEndcapRecoKAsK_;
-
-  MonitorElement* meSV_pi_vs_k_pid_;
-  MonitorElement* meSV_pi_vs_k_uncpid_;
-  MonitorElement* meSV_pi_vs_k_4dpid_;
-  MonitorElement* meSV_pi_vs_k_muconst_pid_;
 
   B0KstMuMuTreeContent* NTuple;
   Utils* Utility;
@@ -1407,9 +1430,11 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
               const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
               if (genSelBPHmu(*genP)) {
                 isMatched = true;
-                edm::LogPrint("MtdSecondaryPvValidation")
-                    << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
-                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                if (printMsg_) {
+                  edm::LogPrint("MtdSecondaryPvValidation")
+                      << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                      << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                }
               }
             }
           }
@@ -1467,9 +1492,11 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
               const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
               if (genSelBPHmu(*genP)) {
                 isMatched = true;
-                edm::LogPrint("MtdSecondaryPvValidation")
-                    << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
-                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                if (printMsg_) {
+                  edm::LogPrint("MtdSecondaryPvValidation")
+                      << "Mu- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                      << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                }
               }
             }
           }
@@ -1524,9 +1551,11 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
               const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
               if (genSelBPHkstar(*genP)) {
                 isMatched = true;
-                edm::LogPrint("MtdSecondaryPvValidation")
-                    << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
-                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                if (printMsg_) {
+                  edm::LogPrint("MtdSecondaryPvValidation")
+                      << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                      << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                }
               }
             }
           }
@@ -1578,9 +1607,11 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
               const HepMC::GenParticle* genP = mc->barcode_to_particle((*tp_info)->g4Tracks()[0].genpartIndex());
               if (genSelBPHkstar(*genP)) {
                 isMatched = true;
-                edm::LogPrint("MtdSecondaryPvValidation")
-                    << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
-                    << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                if (printMsg_) {
+                  edm::LogPrint("MtdSecondaryPvValidation")
+                      << "Trk- matched " << genP->pdg_id() << " pt " << genP->momentum().perp() << " eta "
+                      << genP->momentum().eta() << " phi " << genP->momentum().phi();
+                }
               }
             }
           }
@@ -1715,6 +1746,10 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     double kstar_mass(0.);
     double kstarbar_mass(0.);
 
+    bool pionFail1(false);
+    bool kaonFail1(false);
+    bool pionFail2(false);
+    bool kaonFail2(false);
     if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
         std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
       kstar_mass = NTuple->kstMass->at(iB);
@@ -1751,6 +1786,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
                       isPi_K,
                       isK_K,
                       isP_K);
+      pionFail1 = Sigmat0Safe[trackref_pi] == -1 || mtdQualMVA[trackref_pi] < 0.5;
+      kaonFail1 = Sigmat0Safe[trackref_k] == -1 || mtdQualMVA[trackref_k] < 0.5;
       if (NTuple->truthMatchSignal->at(iB)) {
         meKstarM_->Fill(kstar_mass);
         if (std::abs(NTuple->genKstTrkmID) == 211 && std::abs(NTuple->genKstTrkpID) == 321) {
@@ -1791,6 +1828,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
                       isPi_K,
                       isK_K,
                       isP_K);
+      pionFail1 = Sigmat0Safe[trackref_pi] == -1. || mtdQualMVA[trackref_pi] < 0.5;
+      kaonFail1 = Sigmat0Safe[trackref_k] == -1. || mtdQualMVA[trackref_k] < 0.5;
       if (NTuple->truthMatchSignal->at(iB)) {
         meKstarBarM_->Fill(kstarbar_mass);
         if (std::abs(NTuple->genKstTrkmID) == 321 && std::abs(NTuple->genKstTrkpID) == 211) {
@@ -1803,6 +1842,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     meKaonp_->Fill(kmom);
     mePioneta_->Fill(pieta);
     meKaoneta_->Fill(keta);
+    if (pionFail1) {
+      mePionpR1_->Fill(pimom);
+      mePionetaR1_->Fill(pieta);
+    }
+    if (kaonFail1) {
+      meKaonpR1_->Fill(kmom);
+      meKaonetaR1_->Fill(keta);
+    }
     mePionIP_->Fill(pionip);
     meKaonIP_->Fill(kaonip);
     if (NTuple->matchTkm->at(iB) && NTuple->matchTkp->at(iB)) {
@@ -1812,6 +1859,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
       meKaonetaM_->Fill(keta);
       mePionIPM_->Fill(pionip);
       meKaonIPM_->Fill(kaonip);
+      if (pionFail1) {
+        mePionpMR1_->Fill(pimom);
+        mePionetaMR1_->Fill(pieta);
+      }
+      if (kaonFail1) {
+        meKaonpMR1_->Fill(kmom);
+        meKaonetaMR1_->Fill(keta);
+      }
       if (isTrue) {
         mePionpT_->Fill(pimom);
         meKaonpT_->Fill(kmom);
@@ -1819,6 +1874,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
         meKaonetaT_->Fill(keta);
         mePionIPT_->Fill(pionip);
         meKaonIPT_->Fill(kaonip);
+        if (pionFail1) {
+          mePionpTR1_->Fill(pimom);
+          mePionetaTR1_->Fill(pieta);
+        }
+        if (kaonFail1) {
+          meKaonpTR1_->Fill(kmom);
+          meKaonetaTR1_->Fill(keta);
+        }
       }
     }
     double dx = NTuple->bVtxX->at(iB) - bestVtx.x();
@@ -1980,6 +2043,12 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     tof[2] = tMtd[trackref_tkm] - tofP[trackref_tkm] + signTkm * corrtof_p_tkm;
     hypTof[0] = tof;
 
+    if (printMsg_) {
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track- tof pi/k/p " << tof[0] << " " << tof[1] << " " << tof[2] << " corr " << corrtof_pi_tkm << " "
+          << corrtof_k_tkm << " " << corrtof_p_tkm << " sigmatMtd " << SigmatMtd[trackref_tkm];
+    }
+
     double tkpmom = std::sqrt(NTuple->kstTrkpPx->at(iB) * NTuple->kstTrkpPx->at(iB) +
                               NTuple->kstTrkpPy->at(iB) * NTuple->kstTrkpPy->at(iB) +
                               NTuple->kstTrkpPz->at(iB) * NTuple->kstTrkpPz->at(iB));
@@ -2006,11 +2075,60 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     tof[2] = tMtd[trackref_tkp] - tofP[trackref_tkp] + signTkp * corrtof_p_tkp;
     hypTof[1] = tof;
 
+    if (printMsg_) {
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track+ tof pi/k/p " << tof[0] << " " << tof[1] << " " << tof[2] << " corr " << corrtof_pi_tkp << " "
+          << corrtof_k_tkp << " " << corrtof_p_tkp << " sigmatMtd " << SigmatMtd[trackref_tkp];
+    }
+
     // Use PID only if pion/kaon hypothesis at least 1 sigma away
+
+    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) > SigmatMtd[trackref_tkm]) {
+      if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
+          std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
+        pionFail2 = true;
+      } else {
+        kaonFail2 = true;
+      }
+    }
+    if (std::abs((hypTof[1])[0] - (hypTof[1])[1]) > SigmatMtd[trackref_tkp]) {
+      if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
+          std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
+        kaonFail2 = true;
+      } else {
+        pionFail2 = true;
+      }
+    }
+
+    if (pionFail2) {
+      mePionpR2_->Fill(pimom);
+      mePionetaR2_->Fill(pieta);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        mePionpMR2_->Fill(pimom);
+        mePionetaMR2_->Fill(pieta);
+        if (isTrue) {
+          mePionpTR2_->Fill(pimom);
+          mePionetaTR2_->Fill(pieta);
+        }
+      }
+    }
+    if (kaonFail2) {
+      meKaonpR2_->Fill(kmom);
+      meKaonetaR2_->Fill(keta);
+      if (NTuple->truthMatchSignal->at(iB)) {
+        meKaonpMR2_->Fill(kmom);
+        meKaonetaMR2_->Fill(keta);
+        if (isTrue) {
+          meKaonpTR2_->Fill(kmom);
+          meKaonetaTR2_->Fill(keta);
+        }
+      }
+    }
 
     if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) > SigmatMtd[trackref_tkm] ||
         std::abs((hypTof[1])[0] - (hypTof[1])[1]) > SigmatMtd[trackref_tkp]) {
-      if (kstar_mass > 0.) {
+      if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
+          std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
         meCombKstar_->Fill(kstar_mass);
         if (NTuple->truthMatchSignal->at(iB)) {
           meCombKstarM_->Fill(kstar_mass);
@@ -2018,7 +2136,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
             meCombKstarT_->Fill(kstar_mass);
           }
         }
-      } else if (kstarbar_mass > 0.) {
+      } else if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) >
+                 std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
         meCombKstarBar_->Fill(kstarbar_mass);
         if (NTuple->truthMatchSignal->at(iB)) {
           meCombKstarBarM_->Fill(kstarbar_mass);
@@ -2211,6 +2330,34 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
   mePIDKaonIPM_ = ibook.book1D("PIDKaonIPM", "Matched PIDKaon candidate min IP; IP [cm]", 100, 0., 20.);
   mePIDKaonIPT_ = ibook.book1D("PIDKaonIPT", "True PIDKaon candidate min IP; IP [cm]", 100, 0., 20.);
 
+  mePionpR1_ = ibook.book1D("PionpR1", "Pion candidate p rejected 1; p [GeV]", 25, 0., 10.);
+  mePionpMR1_ = ibook.book1D("PionpMR1", "Matched Pion candidate p rejected 1; p [GeV]", 25, 0., 10.);
+  mePionpTR1_ = ibook.book1D("PionpTR1", "True Pion candidate p rejected 1; p [GeV]", 25, 0., 10.);
+  meKaonpR1_ = ibook.book1D("KaonpR1", "Kaon candidate p rejected 1; p [GeV]", 25, 0., 10.);
+  meKaonpMR1_ = ibook.book1D("KaonpMR1", "Matched Kaon candidate p rejected 1; p [GeV]", 25, 0., 10.);
+  meKaonpTR1_ = ibook.book1D("KaonpTR1", "True Kaon candidate p rejected 1; p [GeV]", 25, 0., 10.);
+
+  mePionetaR1_ = ibook.book1D("PionetaR1", "Pion candidate eta rejected 1; eta", 66, 0., 3.3);
+  mePionetaMR1_ = ibook.book1D("PionetaMR1", "Matched Pion candidate eta rejected 1; eta", 66, 0., 3.3);
+  mePionetaTR1_ = ibook.book1D("PionetaTR1", "True Pion candidate eta rejected 1; eta", 66, 0., 3.3);
+  meKaonetaR1_ = ibook.book1D("KaonetaR1", "Kaon candidate eta rejected 1; eta", 66, 0., 3.3);
+  meKaonetaMR1_ = ibook.book1D("KaonetaMR1", "Matched Kaon candidate eta rejected 1; eta", 66, 0., 3.3);
+  meKaonetaTR1_ = ibook.book1D("KaonetaTR1", "True Kaon candidate eta rejected 1; eta", 66, 0., 3.3);
+
+  mePionpR2_ = ibook.book1D("PionpR2", "Pion candidate p rejected 2; p [GeV]", 25, 0., 10.);
+  mePionpMR2_ = ibook.book1D("PionpMR2", "Matched Pion candidate p rejected 2; p [GeV]", 25, 0., 10.);
+  mePionpTR2_ = ibook.book1D("PionpTR2", "True Pion candidate p rejected 2; p [GeV]", 25, 0., 10.);
+  meKaonpR2_ = ibook.book1D("KaonpR2", "Kaon candidate p rejected 2; p [GeV]", 25, 0., 10.);
+  meKaonpMR2_ = ibook.book1D("KaonpMR2", "Matched Kaon candidate p rejected 2; p [GeV]", 25, 0., 10.);
+  meKaonpTR2_ = ibook.book1D("KaonpTR2", "True Kaon candidate p rejected 2; p [GeV]", 25, 0., 10.);
+
+  mePionetaR2_ = ibook.book1D("PionetaR2", "Pion candidate eta rejected 2; eta", 66, 0., 3.3);
+  mePionetaMR2_ = ibook.book1D("PionetaMR2", "Matched Pion candidate eta rejected 2; eta", 66, 0., 3.3);
+  mePionetaTR2_ = ibook.book1D("PionetaTR2", "True Pion candidate eta rejected 2; eta", 66, 0., 3.3);
+  meKaonetaR2_ = ibook.book1D("KaonetaR2", "Kaon candidate eta rejected 2; eta", 66, 0., 3.3);
+  meKaonetaMR2_ = ibook.book1D("KaonetaMR2", "Matched Kaon candidate eta rejected 2; eta", 66, 0., 3.3);
+  meKaonetaTR2_ = ibook.book1D("KaonetaTR2", "True Kaon candidate eta rejected 2; eta", 66, 0., 3.3);
+
   meSVip_ = ibook.book1D("SVip", "Secondary vtx distance from PV; ip [cm]", 100, 0., 2.);
   meBarrelPCASVdiff_ = ibook.book1D("BarrelPCASVdiff", "PCA - SV distance, |eta| < 1.5; dist [cm]", 100, 0., 2.);
   meEndcapPCASVdiff_ = ibook.book1D("EndcapPCASVdiff", "PCA - SV distance, |eta| > 1.6; dist [cm]", 100, 0., 2.);
@@ -2242,14 +2389,6 @@ void MtdSecondaryPvValidation::bookHistograms(DQMStore::IBooker& ibook,
   meEndcapRecoKAsOth_ =
       ibook.book1D("EndcapRecoKAsOth", "Reco k as other momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
   meEndcapRecoKAsK_ = ibook.book1D("EndcapRecoKAsK", "Reco k as k momentum spectrum, |eta| > 1.6;p [GeV]", 25, 0., 10.);
-
-  meSV_pi_vs_k_pid_ = ibook.book2D("SV_pi_vs_k_pid", "SV pi vs k correct identification, pi/k/p", 3, 0., 3., 3, 0., 3.);
-  meSV_pi_vs_k_uncpid_ =
-      ibook.book2D("SV_pi_vs_k_uncpid", "SV pi vs k correct identification no Sv corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
-  meSV_pi_vs_k_4dpid_ =
-      ibook.book2D("SV_pi_vs_k_4dpid", "SV pi vs k correct identification 4D corr, pi/k/p", 3, 0., 3., 3, 0., 3.);
-  meSV_pi_vs_k_muconst_pid_ = ibook.book2D(
-      "SV_pi_vs_k_muconst_pid", "SV pi vs k correct identification mu constraint, pi/k/p", 3, 0., 3., 3, 0., 3.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
