@@ -2139,7 +2139,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
 
     // Use PID only if pion/kaon hypothesis at least 1 sigma away
 
-    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) > SigmatMtd[trackref_tkm]) {
+    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) < SigmatMtd[trackref_tkm]) {
       if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
           std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
         pionFail2 = true;
@@ -2147,7 +2147,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
         kaonFail2 = true;
       }
     }
-    if (std::abs((hypTof[1])[0] - (hypTof[1])[1]) > SigmatMtd[trackref_tkp]) {
+    if (std::abs((hypTof[1])[0] - (hypTof[1])[1]) < SigmatMtd[trackref_tkp]) {
       if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
           std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
         kaonFail2 = true;
@@ -2181,8 +2181,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
       }
     }
 
-    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) > SigmatMtd[trackref_tkm] ||
-        std::abs((hypTof[1])[0] - (hypTof[1])[1]) > SigmatMtd[trackref_tkp]) {
+    if (std::abs((hypTof[0])[0] - (hypTof[0])[1]) < SigmatMtd[trackref_tkm] ||
+        std::abs((hypTof[1])[0] - (hypTof[1])[1]) < SigmatMtd[trackref_tkp]) {
       if (std::abs(NTuple->kstMass->at(iB) - Utility->kstMass) <
           std::abs(NTuple->kstBarMass->at(iB) - Utility->kstMass)) {
         meCombKstar_->Fill(kstar_mass);
