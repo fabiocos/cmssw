@@ -102,6 +102,7 @@ public:
   std::vector<std::vector<float>> *mumIso, *mumIsoPt, *mumIsodR;
   std::vector<bool> *matchMum;
   std::vector<reco::TrackRef> *trkrefMum;
+  std::vector<double> *mumPathToVtx;
 
   // #######
   // # mu+ #
@@ -118,6 +119,7 @@ public:
   std::vector<std::vector<float>> *mupIso, *mupIsoPt, *mupIsodR;
   std::vector<bool> *matchMup;
   std::vector<reco::TrackRef> *trkrefMup;
+  std::vector<double> *mupPathToVtx;
 
   // ##############
   // # K*0 track- #
@@ -135,6 +137,7 @@ public:
   std::vector<std::vector<float>> *kstTrkmIso, *kstTrkmIsoPt, *kstTrkmIsodR;
   std::vector<bool> *matchTkm;
   std::vector<reco::TrackRef> *trkrefTkm;
+  std::vector<double> *trkmPathToVtx;
 
   // ##############
   // # K*0 track+ #
@@ -152,6 +155,7 @@ public:
   std::vector<std::vector<float>> *kstTrkpIso, *kstTrkpIsoPt, *kstTrkpIsodR;
   std::vector<bool> *matchTkp;
   std::vector<reco::TrackRef> *trkrefTkp;
+  std::vector<double> *trkpPathToVtx;
 
   // ##########
   // # B0 -1 trk Vtx #

@@ -324,6 +324,7 @@ void B0KstMuMuTreeContent::Init() {
   mumIsodR = new std::vector<std::vector<float> >;
   matchMum = new std::vector<bool>;
   trkrefMum = new std::vector<reco::TrackRef>;
+  mumPathToVtx = new std::vector<double>;
 
   // ### mu+ ###
   //   mupHighPurity    = new std::vector<int>;
@@ -358,6 +359,7 @@ void B0KstMuMuTreeContent::Init() {
   mupIsodR = new std::vector<std::vector<float> >;
   matchMup = new std::vector<bool>;
   trkrefMup = new std::vector<reco::TrackRef>;
+  mupPathToVtx = new std::vector<double>;
 
   // ### K*0 track- ###
   //   kstTrkmHighPurity   = new std::vector<int>;
@@ -395,6 +397,7 @@ void B0KstMuMuTreeContent::Init() {
   kstTrkmIsodR = new std::vector<std::vector<float> >;
   matchTkm = new std::vector<bool>;
   trkrefTkm = new std::vector<reco::TrackRef>;
+  trkmPathToVtx = new std::vector<double>;
 
   // ### K*0 track+ ###
   //   kstTrkpHighPurity   = new std::vector<int>;
@@ -432,6 +435,7 @@ void B0KstMuMuTreeContent::Init() {
   kstTrkpIsodR = new std::vector<std::vector<float> >;
   matchTkp = new std::vector<bool>;
   trkrefTkp = new std::vector<reco::TrackRef>;
+  trkpPathToVtx = new std::vector<double>;
 
   rawmumPt = new std::vector<double>;
   rawmumPhi = new std::vector<double>;
@@ -562,6 +566,7 @@ B0KstMuMuTreeContent::~B0KstMuMuTreeContent() {
   delete mumIsodR;
   delete matchMum;
   delete trkrefMum;
+  delete mumPathToVtx;
 
   // ### mu+ ###
   delete mupHighPurity;
@@ -595,6 +600,7 @@ B0KstMuMuTreeContent::~B0KstMuMuTreeContent() {
   delete mupIsodR;
   delete matchMup;
   delete trkrefMup;
+  delete mupPathToVtx;
 
   // ### K*0 track- ###
   delete kstTrkmHighPurity;
@@ -631,6 +637,7 @@ B0KstMuMuTreeContent::~B0KstMuMuTreeContent() {
   delete kstTrkmIsodR;
   delete matchTkm;
   delete trkrefTkm;
+  delete trkmPathToVtx;
 
   // ### K*0 track+ ###
   delete kstTrkpHighPurity;
@@ -667,6 +674,7 @@ B0KstMuMuTreeContent::~B0KstMuMuTreeContent() {
   delete kstTrkpIsodR;
   delete matchTkp;
   delete trkrefTkp;
+  delete trkpPathToVtx;
 
   delete rawmumPt;
   delete rawmumPhi;
@@ -884,6 +892,7 @@ void B0KstMuMuTreeContent::ClearVectors() {
   mumIsodR->clear();
   matchMum->clear();
   trkrefMum->clear();
+  mumPathToVtx->clear();
 
   // ### mu+ ###
   mupHighPurity->clear();
@@ -917,6 +926,7 @@ void B0KstMuMuTreeContent::ClearVectors() {
   mupIsodR->clear();
   matchMup->clear();
   trkrefMup->clear();
+  mupPathToVtx->clear();
 
   // ### K*0 track- ###
   kstTrkmHighPurity->clear();

@@ -53,6 +53,11 @@
 #include "TrackingTools/PatternTools/interface/ClosestApproachInRPhi.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "TrackingTools/GeomPropagators/interface/Propagator.h"
+#include "TrackingTools/PatternTools/interface/TSCBLBuilderWithPropagator.h"
+#include "DataFormats/GeometrySurface/interface/Cylinder.h"
+
 #include "TMath.h"
 #include "TLorentzVector.h"
 
@@ -180,6 +185,7 @@ private:
   edm::EDGetTokenT<reco::MuonCollection> muonToken_;
   edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
   const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magFieldToken_;
+  edm::ESGetToken<Propagator, TrackingComponentsRecord> propToken_;
 
   edm::EDGetTokenT<edm::HepMCProduct> HepMCProductToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenToken_;
@@ -343,6 +349,7 @@ MtdSecondaryPvValidation::MtdSecondaryPvValidation(const edm::ParameterSet& iCon
   RecVertexToken_ = consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("inputTagV"));
   muonToken_ = consumes<reco::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"));
   beamSpotToken_ = consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpot"));
+  propToken_ = esConsumes<Propagator, TrackingComponentsRecord>(edm::ESInputTag("", "PropagatorWithMaterialForMTD"));
   HepMCProductToken_ = consumes<edm::HepMCProduct>(iConfig.getParameter<edm::InputTag>("inputTagH"));
   prunedGenToken_ = consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("pruned"));
   trackingParticleCollectionToken_ =
@@ -442,6 +449,9 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   iEvent.getByToken(beamSpotToken_, beamSpotH);
   reco::BeamSpot beamSpot = *beamSpotH;
 
+  auto propH = iSetup.getTransientHandle(propToken_);
+  const Propagator* thePropagator = propH.product();
+
   reco::TrackRef muTrackm;
   reco::TrackRef muTrackp;
 
@@ -462,6 +472,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
   double bPlusVtxCL;
 
   TrajectoryStateClosestToPoint theDCAXBS;
+  FreeTrajectoryState theDCAXBL;
   ClosestApproachInRPhi ClosestApp;
   GlobalPoint XingPoint;
 
@@ -1302,6 +1313,24 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
             }
           }
 
+          // Compute path from PCA to fitted secondary vertex for all the candidate tracks
+
+          Cylinder::PositionType pos(0, 0, 0);
+          Cylinder::RotationType rot;
+          Cylinder::CylinderPointer myCylinder = Cylinder::build(pos, rot, b_KV->position().perp());
+
+          theDCAXBL = muTrackmTT.stateAtBeamLine().trackStateAtPCA();
+          double mumPathCorr = thePropagator->propagateWithPath(theDCAXBL, *myCylinder).second;
+
+          theDCAXBL = muTrackpTT.stateAtBeamLine().trackStateAtPCA();
+          double mupPathCorr = thePropagator->propagateWithPath(theDCAXBL, *myCylinder).second;
+
+          theDCAXBL = TrackmTT.stateAtBeamLine().trackStateAtPCA();
+          double tkmPathCorr = thePropagator->propagateWithPath(theDCAXBL, *myCylinder).second;
+
+          theDCAXBL = TrackpTT.stateAtBeamLine().trackStateAtPCA();
+          double tkpPathCorr = thePropagator->propagateWithPath(theDCAXBL, *myCylinder).second;
+
           // #######################################
           // # @@@ Fill B0-candidate variables @@@ #
           // #######################################
@@ -1443,6 +1472,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           } else {
             NTuple->matchMum->push_back(0);
           }
+          NTuple->mumPathToVtx->push_back(mumPathCorr);
 
           //// #############
           //// # Save: mu+ #
@@ -1505,6 +1535,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           } else {
             NTuple->matchMup->push_back(0);
           }
+          NTuple->mupPathToVtx->push_back(mupPathCorr);
 
           //// ################
           //// # Save: Track- #
@@ -1564,6 +1595,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           } else {
             NTuple->matchTkm->push_back(0);
           }
+          NTuple->trkmPathToVtx->push_back(tkmPathCorr);
 
           // ################
           // # Save: Track+ #
@@ -1620,6 +1652,7 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
           } else {
             NTuple->matchTkp->push_back(0);
           }
+          NTuple->trkpPathToVtx->push_back(tkpPathCorr);
 
           NTuple->bPlusCosAlphaBS->push_back(bPcosAlphaBS);
           NTuple->bPlusVtxCL->push_back(bPlusVtxCL);
@@ -1742,6 +1775,9 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     bool isTrue(false);
 
     reco::Vertex::Point secVtx(NTuple->bVtxX->at(iB), NTuple->bVtxY->at(iB), NTuple->bPz->at(iB));
+    if (printMsg_) {
+      edm::LogPrint("MtsSecondaryPvValidation") << "SecVtx rho/z " << secVtx.rho() << " " << secVtx.z();
+    }
 
     double kstar_mass(0.);
     double kstarbar_mass(0.);
@@ -1951,6 +1987,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     //}
     auto trackref_tkm = NTuple->trkrefTkm->at(iB);
     auto trackref_tkp = NTuple->trkrefTkp->at(iB);
+    auto trackref_tkm_mtd = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref_tkm]);
+    auto trackref_tkp_mtd = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref_tkp]);
     if (Sigmat0Safe[trackref_tkm] == -1. || mtdQualMVA[trackref_tkm] < 0.5 || Sigmat0Safe[trackref_tkp] == -1. ||
         mtdQualMVA[trackref_tkp] < 0.5) {
       if (kstar_mass > 0.) {
@@ -1981,7 +2019,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
 
     double gammasq_mum = 1. + mummom * mummom * m_pi_inv2;
     double beta_mum = std::sqrt(1. - 1. / gammasq_mum);
-    double distMum = std::sqrt((secVtx - (*trackref_mum).referencePoint()).mag2());
+    //double distMum = std::sqrt((secVtx - (*trackref_mum).referencePoint()).mag2());
+    double distMum = NTuple->mumPathToVtx->at(iB);
     double corrtofMum = distMum / beta_mum * c_inv;
     double crossMum = (secVtx.x() - (*trackref_mum).referencePoint().x()) * NTuple->mumPx->at(iB) +
                       (secVtx.y() - (*trackref_mum).referencePoint().y()) * NTuple->mumPy->at(iB) +
@@ -1999,7 +2038,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
                   NTuple->mupPz->at(iB) * NTuple->mupPz->at(iB));
     double gammasq_mup = 1. + mupmom * mupmom * m_pi_inv2;
     double beta_mup = std::sqrt(1. - 1. / gammasq_mup);
-    double distMup = std::sqrt((secVtx - (*trackref_mup).referencePoint()).mag2());
+    //double distMup = std::sqrt((secVtx - (*trackref_mup).referencePoint()).mag2());
+    double distMup = NTuple->mupPathToVtx->at(iB);
     double corrtofMup = distMup / beta_mup * c_inv;
     double crossMup = (secVtx.x() - (*trackref_mup).referencePoint().x()) * NTuple->mupPx->at(iB) +
                       (secVtx.y() - (*trackref_mup).referencePoint().y()) * NTuple->mupPy->at(iB) +
@@ -2023,7 +2063,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     double tkmeta =
         std::abs(Utility->computeEta(NTuple->kstTrkmPx->at(iB), NTuple->kstTrkmPy->at(iB), NTuple->kstTrkmPz->at(iB)));
     double tkmip = NTuple->kstTrkmMinIPS->at(iB);
-    double distTkm = std::sqrt((secVtx - (*trackref_tkm).referencePoint()).mag2());
+    //double distTkm = std::sqrt((secVtx - (*trackref_tkm).referencePoint()).mag2());
+    double distTkm = NTuple->trkmPathToVtx->at(iB);
     double crossTkm = (secVtx.x() - (*trackref_tkm).referencePoint().x()) * NTuple->kstTrkmPx->at(iB) +
                       (secVtx.y() - (*trackref_tkm).referencePoint().y()) * NTuple->kstTrkmPy->at(iB) +
                       (secVtx.z() - (*trackref_tkm).referencePoint().z()) * NTuple->kstTrkmPz->at(iB);
@@ -2046,7 +2087,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     if (printMsg_) {
       edm::LogPrint("MtdSecondaryPvValidation")
           << "Track- tof pi/k/p " << tof[0] << " " << tof[1] << " " << tof[2] << " corr " << corrtof_pi_tkm << " "
-          << corrtof_k_tkm << " " << corrtof_p_tkm << " sigmatMtd " << SigmatMtd[trackref_tkm];
+          << corrtof_k_tkm << " " << corrtof_p_tkm << " dist corr " << distTkm << " sigmatMtd "
+          << SigmatMtd[trackref_tkm];
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track- orig x,y,z " << (*trackref_tkm).referencePoint().x() << " " << (*trackref_tkm).referencePoint().y()
+          << " " << (*trackref_tkm).referencePoint().z();
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track-  mtd x,y,z " << (*trackref_tkm_mtd).referencePoint().x() << " "
+          << (*trackref_tkm_mtd).referencePoint().y() << " " << (*trackref_tkm_mtd).referencePoint().z();
     }
 
     double tkpmom = std::sqrt(NTuple->kstTrkpPx->at(iB) * NTuple->kstTrkpPx->at(iB) +
@@ -2055,7 +2103,8 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     double tkpeta =
         std::abs(Utility->computeEta(NTuple->kstTrkpPx->at(iB), NTuple->kstTrkpPy->at(iB), NTuple->kstTrkpPz->at(iB)));
     double tkpip = NTuple->kstTrkpMinIPS->at(iB);
-    double distTkp = std::sqrt((secVtx - (*trackref_tkp).referencePoint()).mag2());
+    //double distTkp = std::sqrt((secVtx - (*trackref_tkp).referencePoint()).mag2());
+    double distTkp = NTuple->trkpPathToVtx->at(iB);
     double crossTkp = (secVtx.x() - (*trackref_tkp).referencePoint().x()) * NTuple->kstTrkpPx->at(iB) +
                       (secVtx.y() - (*trackref_tkp).referencePoint().y()) * NTuple->kstTrkpPy->at(iB) +
                       (secVtx.z() - (*trackref_tkp).referencePoint().z()) * NTuple->kstTrkpPz->at(iB);
@@ -2078,7 +2127,14 @@ void MtdSecondaryPvValidation::analyze(const edm::Event& iEvent, const edm::Even
     if (printMsg_) {
       edm::LogPrint("MtdSecondaryPvValidation")
           << "Track+ tof pi/k/p " << tof[0] << " " << tof[1] << " " << tof[2] << " corr " << corrtof_pi_tkp << " "
-          << corrtof_k_tkp << " " << corrtof_p_tkp << " sigmatMtd " << SigmatMtd[trackref_tkp];
+          << corrtof_k_tkp << " " << corrtof_p_tkp << " dist corr " << distTkp << " sigmatMtd "
+          << SigmatMtd[trackref_tkp];
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track+ orig x,y,z " << (*trackref_tkp).referencePoint().x() << " " << (*trackref_tkp).referencePoint().y()
+          << " " << (*trackref_tkp).referencePoint().z();
+      edm::LogPrint("MtdSecondaryPvValidation")
+          << "Track+  mtd x,y,z " << (*trackref_tkp_mtd).referencePoint().x() << " "
+          << (*trackref_tkp_mtd).referencePoint().y() << " " << (*trackref_tkp_mtd).referencePoint().z();
     }
 
     // Use PID only if pion/kaon hypothesis at least 1 sigma away
