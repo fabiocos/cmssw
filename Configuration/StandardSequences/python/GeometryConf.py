@@ -65,4 +65,8 @@ GeometryConf={
     'DD4hepExtended2026D96' : 'DD4hepExtended2026D96,DD4hepExtended2026D96Reco',
     'Extended2026D97' : 'Extended2026D97,Extended2026D97Reco',
     'DD4hepExtended2026D97' : 'DD4hepExtended2026D97,DD4hepExtended2026D97Reco',
+    'Extended2026D150' : 'Extended2026D150,Extended2026D150Reco',
+    'DD4hepExtended2026D150' : 'DD4hepExtended2026D150,DD4hepExtended2026D150Reco',
+    'Extended2026D151' : 'Extended2026D151,Extended2026D151Reco',
+    'DD4hepExtended2026D151' : 'DD4hepExtended2026D151,DD4hepExtended2026D151Reco',
     }
