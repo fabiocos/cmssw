@@ -134,7 +134,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
         return 0;
       }
 
-      if (1 > runitCopy || BTLDetId::kRUPerTypeV2 < runitCopy) {
+      if (1 > runitCopy || std::max(BTLDetId::kRUPerTypeV2,(uint32_t)3) < runitCopy) {
         edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
                                    << "****************** Bad readout unit copy = " << runitCopy
                                    << ", Volume Number = " << baseNumber.getCopyNumber(2);
@@ -200,7 +200,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
       return 0;
     }
 
-    if (1 > runitCopy || BTLDetId::kRUPerTypeV2 < runitCopy) {
+    if (1 > runitCopy || std::max(BTLDetId::kRUPerTypeV2,(uint32_t)3) < runitCopy) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
                                  << "****************** Bad readout unit copy = " << runitCopy
                                  << ", Volume Number = " << baseNumber.getCopyNumber(1);
