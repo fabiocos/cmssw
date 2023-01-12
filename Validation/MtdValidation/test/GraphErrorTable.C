@@ -4,9 +4,10 @@ void GraphErrorTable(Int_t iMark, Int_t iColor) {
   vector<float> y;
   vector<float> ex;
   vector<float> ey;
+  vector<float> ey1;
 
   Int_t npt = 0;
-  float a,b,ea,eb;
+  float a,b,ea,eb,eb1;
 
   // read data file
   ifstream in;
@@ -14,15 +15,14 @@ void GraphErrorTable(Int_t iMark, Int_t iColor) {
 
   while ( kTRUE ) {
 
-    in >> a >> ea >> b >> eb;
+    in >> a >> ea >> b >> eb >> eb1;
     x.push_back(a);
     ex.push_back(ea);
     y.push_back(b);
     ey.push_back(eb);
+    ey1.push_back(eb1);
 
     if ( ! in.good() ) break;
-
-      //cout << "x = " << x[npt] << " y = " << y[npt] << endl;
 
     npt++;
 
@@ -35,15 +35,16 @@ void GraphErrorTable(Int_t iMark, Int_t iColor) {
 
   for (Int_t i=0;i<npt;i++) {
 
-    if (std::abs(y[i]) > 0.5 ) { continue; }
-    if (std::abs(x[i]) > 0.3 ) { continue; }
-    if ( x[i] < 0.08 || x[i] > 0.09 ) { continue; }
-    if (ey[i] > 0.3 ) { y[i] = 0.; ey[i] = 0.; }
+    if (std::abs(y[i]) > 20. ) { continue; }
+    if (std::abs(x[i]) > 10. ) { continue; }
+//    if ( x[i] < 0.08 || x[i] > 0.09 ) { continue; }
+    if (ey[i] > 10. ) { y[i] = 0.; ey[i] = 0.; ey1[i] = 0.; }
 
     xx[index] = x[i];
     yy[index] = y[i];
     exx[index] = ex[i];
-    eyy[index] = ey[i];
+    //eyy[index] = ey[i];
+    eyy[index] = ey1[i];
     //cout << "# " << i+1 << " x = " << xx[i] << " ex = " << exx[i] << " y = " << yy[i] << " ey = " << eyy[i] << endl;
     index++;
   }   

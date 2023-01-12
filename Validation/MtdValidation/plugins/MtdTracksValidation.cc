@@ -54,8 +54,6 @@
 namespace {
 
   constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
-  constexpr float c_inv = 1.0f / c_cm_ns;
-//  constexpr float c_inv = 1.0f;
 
 }
 #endif
@@ -493,7 +491,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const bool isGoodVtx = std::abs(primRecoVtx.z() - zsim) < deltaZcut_ || primRecoVtx.isFake();
 
 #ifdef PRINTVTX
-      std::cout << "=============================================================================" << std::endl;
+      std::cout << "============================================================================= c(cm/ns) = "  << c_cm_ns << std::endl;
 #endif
 
   // --- Loop over all RECO tracks ---
@@ -533,9 +531,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 
 #ifdef PRINTVTX
       if ( SigmatMtd[trackref] < 0. ) {
-        std::cout << "PRINTVTX " << trackGen.vz()*c_inv << " " << trackGen.dzError()*c_inv << " " << 0. << " " << 0.4 << std::endl;
+        std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << 0. << " " << 0.4*c_cm_ns << " " << 0.4*c_cm_ns << std::endl;
       } else {
-        std::cout << "PRINTVTX " << trackGen.vz()*c_inv << " " << trackGen.dzError()*c_inv << " " << t0Src[trackref] << " " << SigmatMtd[trackref] << std::endl;
+        std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << t0Src[trackref]*c_cm_ns << " " << SigmatMtd[trackref]*c_cm_ns << " " << Sigmat0Src[trackref]*c_cm_ns << std::endl;
       }
 #endif
 
