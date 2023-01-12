@@ -1,3 +1,5 @@
+#define PRINTVTX
+
 #include <string>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -46,6 +48,18 @@
 #include "CLHEP/Units/PhysicalConstants.h"
 #include "MTDHit.h"
 
+#ifdef PRINTVTX
+#include "DataFormats/Math/interface/GeantUnits.h"
+
+namespace {
+
+  constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
+  constexpr float c_inv = 1.0f / c_cm_ns;
+//  constexpr float c_inv = 1.0f;
+
+}
+#endif
+
 class MtdTracksValidation : public DQMEDAnalyzer {
 public:
   explicit MtdTracksValidation(const edm::ParameterSet&);
@@ -78,7 +92,6 @@ private:
   bool isETL(const double eta) const { return (std::abs(eta) > trackMinEtlEta_) && (std::abs(eta) < trackMaxEtlEta_); }
 
   // ------------ member data ------------
-
   const std::string folder_;
   const float trackMinPt_;
   const float trackMaxBtlEta_;
@@ -479,6 +492,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   // flag to select events with reco vertex close to true simulated primary vertex, or PV fake (particle guns)
   const bool isGoodVtx = std::abs(primRecoVtx.z() - zsim) < deltaZcut_ || primRecoVtx.isFake();
 
+#ifdef PRINTVTX
+      std::cout << "=============================================================================" << std::endl;
+#endif
+
   // --- Loop over all RECO tracks ---
   for (const auto& trackGen : *GenRecTrackHandle) {
     const reco::TrackRef trackref(iEvent.getHandle(GenRecTrackToken_), index);
@@ -513,6 +530,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       meTrackMVAQual_->Fill(mtdQualMVA[trackref]);
 
       meTrackPathLenghtvsEta_->Fill(std::abs(track.eta()), pathLength[trackref]);
+
+#ifdef PRINTVTX
+      if ( SigmatMtd[trackref] < 0. ) {
+        std::cout << "PRINTVTX " << trackGen.vz()*c_inv << " " << trackGen.dzError()*c_inv << " " << 0. << " " << 0.4 << std::endl;
+      } else {
+        std::cout << "PRINTVTX " << trackGen.vz()*c_inv << " " << trackGen.dzError()*c_inv << " " << t0Src[trackref] << " " << SigmatMtd[trackref] << std::endl;
+      }
+#endif
+
 
       if (std::abs(track.eta()) < trackMaxBtlEta_) {
         // --- all BTL tracks (with and without hit in MTD) ---
