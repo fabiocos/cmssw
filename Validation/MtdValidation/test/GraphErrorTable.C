@@ -37,14 +37,15 @@ void GraphErrorTable(Int_t iMark, Int_t iColor) {
 
     if (std::abs(y[i]) > 20. ) { continue; }
     if (std::abs(x[i]) > 10. ) { continue; }
-//    if ( x[i] < 0.08 || x[i] > 0.09 ) { continue; }
+    if ( x[i] < -0.8 || x[i] > -0.6 ) { continue; }
     if (ey[i] > 10. ) { y[i] = 0.; ey[i] = 0.; ey1[i] = 0.; }
+    //if (ey1[i] > 10. ) { continue; }
 
     xx[index] = x[i];
     yy[index] = y[i];
     exx[index] = ex[i];
-    //eyy[index] = ey[i];
-    eyy[index] = ey1[i];
+    eyy[index] = ey[i];
+    //eyy[index] = ey1[i];
     //cout << "# " << i+1 << " x = " << xx[i] << " ex = " << exx[i] << " y = " << yy[i] << " ey = " << eyy[i] << endl;
     index++;
   }   

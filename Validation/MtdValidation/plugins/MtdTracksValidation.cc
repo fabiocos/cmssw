@@ -137,6 +137,12 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> Sigmat0SafePidToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> trackMVAQualToken_;
 
+#ifdef PRINTVTX
+  edm::EDGetTokenT<edm::ValueMap<float>> tofPiToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> tofKToken_;
+  edm::EDGetTokenT<edm::ValueMap<float>> tofPToken_;
+#endif
+
   edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
   edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
   edm::ESGetToken<HepPDT::ParticleDataTable, edm::DefaultRecord> particleTableToken_;
@@ -231,6 +237,11 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   t0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("t0SafePID"));
   Sigmat0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmat0SafePID"));
   trackMVAQualToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("trackMVAQual"));
+#ifdef PRINTVTX
+  tofPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofPi"));
+  tofKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofK"));
+  tofPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofP"));
+#endif
   mtdgeoToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
   mtdtopoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
   particleTableToken_ = esConsumes<HepPDT::ParticleDataTable, edm::DefaultRecord>();
@@ -276,6 +287,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const auto& mtdQualMVA = iEvent.get(trackMVAQualToken_);
   const auto& trackAssoc = iEvent.get(trackAssocToken_);
   const auto& pathLength = iEvent.get(pathLengthToken_);
+
+#ifdef PRINTVTX
+  const auto& tofPi = iEvent.get(tofPiToken_);
+  const auto& tofK = iEvent.get(tofKToken_);
+  const auto& tofP = iEvent.get(tofPToken_);
+#endif
 
   const auto& primRecoVtx = *(RecVertexHandle.product()->begin());
 
@@ -535,6 +552,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       } else {
         std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << t0Src[trackref]*c_cm_ns << " " << SigmatMtd[trackref]*c_cm_ns << " " << Sigmat0Src[trackref]*c_cm_ns << std::endl;
       }
+      std::cout << trackGen.momentum().R() << " " << pathLength[trackref] << " " << tofPi[trackref] << " " << tofK[trackref] << " " << tofP[trackref] << std::endl;
 #endif
 
 
@@ -931,6 +949,11 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("sigmat0PID", edm::InputTag("tofPID:sigmat0"));
   desc.add<edm::InputTag>("t0PID", edm::InputTag("tofPID:t0"));
   desc.add<edm::InputTag>("trackMVAQual", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"));
+#ifdef PRINTVTX
+  desc.add<edm::InputTag>("tofPi", edm::InputTag("trackExtenderWithMTD:generalTrackTofPi"));
+  desc.add<edm::InputTag>("tofK", edm::InputTag("trackExtenderWithMTD:generalTrackTofK"));
+  desc.add<edm::InputTag>("tofP", edm::InputTag("trackExtenderWithMTD:generalTrackTofP"));
+#endif
   desc.add<double>("trackMinimumPt", 0.7);  // [GeV]
   desc.add<double>("trackMaximumBtlEta", 1.5);
   desc.add<double>("trackMinimumEtlEta", 1.6);
