@@ -50,6 +50,12 @@
 
 #ifdef PRINTVTX
 #include "DataFormats/Math/interface/GeantUnits.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "RecoVertex/VertexPrimitives/interface/VertexState.h"
 
 namespace {
 
@@ -141,6 +147,9 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> tofPiToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> tofKToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> tofPToken_;
+  edm::EDGetTokenT<reco::BeamSpot> bsToken;
+  TrackFilterForPVFinding* theTrackFilter;
+  edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> builderToken_;
 #endif
 
   edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
@@ -241,6 +250,9 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   tofPiToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofPi"));
   tofKToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofK"));
   tofPToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tofP"));
+  bsToken = consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpotLabel"));
+  theTrackFilter = new TrackFilterForPVFinding(iConfig.getParameter<edm::ParameterSet>("TkFilterParameters"));
+  builderToken_ = esConsumes<TransientTrackBuilder, TransientTrackRecord>(edm::ESInputTag("", "TransientTrackBuilder"));
 #endif
   mtdgeoToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
   mtdtopoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
@@ -292,6 +304,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const auto& tofPi = iEvent.get(tofPiToken_);
   const auto& tofK = iEvent.get(tofKToken_);
   const auto& tofP = iEvent.get(tofPToken_);
+  // get the BeamSpot, it will always be needed, even when not used as a constraint
+  reco::BeamSpot beamSpot;
+  edm::Handle<reco::BeamSpot> recoBeamSpotHandle;
+  iEvent.getByToken(bsToken, recoBeamSpotHandle);
+  if (recoBeamSpotHandle.isValid()) {
+    beamSpot = *recoBeamSpotHandle;
+  } else {
+    edm::LogError("UnusableBeamSpot") << "No beam spot available from EventSetup";
+  }
 #endif
 
   const auto& primRecoVtx = *(RecVertexHandle.product()->begin());
@@ -508,7 +529,10 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   const bool isGoodVtx = std::abs(primRecoVtx.z() - zsim) < deltaZcut_ || primRecoVtx.isFake();
 
 #ifdef PRINTVTX
-      std::cout << "============================================================================= c(cm/ns) = "  << c_cm_ns << std::endl;
+  std::cout << "============================================================================= c(cm/ns) = " << c_cm_ns
+            << std::endl;
+  // interface RECO tracks to vertex reconstruction
+  const auto& theB = &iSetup.getData(builderToken_);
 #endif
 
   // --- Loop over all RECO tracks ---
@@ -547,14 +571,20 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       meTrackPathLenghtvsEta_->Fill(std::abs(track.eta()), pathLength[trackref]);
 
 #ifdef PRINTVTX
-      if ( SigmatMtd[trackref] < 0. ) {
-        std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << 0. << " " << 0.4*c_cm_ns << " " << 0.4*c_cm_ns << std::endl;
-      } else {
-        std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << t0Src[trackref]*c_cm_ns << " " << SigmatMtd[trackref]*c_cm_ns << " " << Sigmat0Src[trackref]*c_cm_ns << std::endl;
+      reco::TransientTrack t_tks = (*theB).build(trackGen);
+      t_tks.setBeamSpot(beamSpot);
+      if (theTrackFilter->operator()(t_tks)) {
+        if (SigmatMtd[trackref] < 0.) {
+          std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << 0. << " " << 0.4 * c_cm_ns
+                    << " " << 0.4 * c_cm_ns << std::endl;
+        } else {
+          std::cout << "PRINTVTX " << trackGen.vz() << " " << trackGen.dzError() << " " << t0Src[trackref] * c_cm_ns
+                    << " " << SigmatMtd[trackref] * c_cm_ns << " " << Sigmat0Src[trackref] * c_cm_ns << std::endl;
+        }
+        std::cout << trackGen.momentum().R() << " " << pathLength[trackref] << " " << tofPi[trackref] << " "
+                  << tofK[trackref] << " " << tofP[trackref] << std::endl;
       }
-      std::cout << trackGen.momentum().R() << " " << pathLength[trackref] << " " << tofPi[trackref] << " " << tofK[trackref] << " " << tofP[trackref] << std::endl;
 #endif
-
 
       if (std::abs(track.eta()) < trackMaxBtlEta_) {
         // --- all BTL tracks (with and without hit in MTD) ---
@@ -953,6 +983,15 @@ void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descr
   desc.add<edm::InputTag>("tofPi", edm::InputTag("trackExtenderWithMTD:generalTrackTofPi"));
   desc.add<edm::InputTag>("tofK", edm::InputTag("trackExtenderWithMTD:generalTrackTofK"));
   desc.add<edm::InputTag>("tofP", edm::InputTag("trackExtenderWithMTD:generalTrackTofP"));
+  desc.add<edm::InputTag>("beamSpotLabel", edm::InputTag("offlineBeamSpot"));
+  {
+    edm::ParameterSetDescription psd0;
+    TrackFilterForPVFinding::fillPSetDescription(psd0);
+    psd0.add<int>("numTracksThreshold", 0);            // HI only
+    psd0.add<int>("maxNumTracksThreshold", 10000000);  // HI only
+    psd0.add<double>("minPtTight", 0.0);               // HI only
+    desc.add<edm::ParameterSetDescription>("TkFilterParameters", psd0);
+  }
 #endif
   desc.add<double>("trackMinimumPt", 0.7);  // [GeV]
   desc.add<double>("trackMaximumBtlEta", 1.5);

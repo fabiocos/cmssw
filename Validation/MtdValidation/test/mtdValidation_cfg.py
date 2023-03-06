@@ -18,10 +18,10 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 #Setup FWK for multithreaded
-process.options.numberOfThreads = 4
+process.options.numberOfThreads = 1
 process.options.numberOfStreams = 0
 process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
@@ -32,7 +32,7 @@ process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:step3.root'
+'/store/relval/CMSSW_13_0_0_pre4/RelValTTbar_14TeV/GEN-SIM-RECO/PU_130X_mcRun4_realistic_v2_2026D88PU200-v1/00000/54f2ba9d-7428-4884-97d9-53584fc9f40a.root',
     )
 )
 
@@ -72,6 +72,19 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     fileName = cms.untracked.string('file:step3_inDQM.root'),
     outputCommands = process.DQMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
+)
+
+process.mtdTracksValid.TkFilterParameters = cms.PSet(
+    algorithm = cms.string('filter'),
+    maxD0Error = cms.double(1.0),
+    maxD0Significance = cms.double(4.0),
+    maxDzError = cms.double(1.0),
+    maxEta = cms.double(4.0),
+    maxNormalizedChi2 = cms.double(10.0),
+    minPixelLayersWithHits = cms.int32(2),
+    minPt = cms.double(0.0),
+    minSiliconLayersWithHits = cms.int32(5),
+    trackQuality = cms.string('any')
 )
 
 process.p = cms.Path( process.mix + process.mtdTrackingRecHits + process.validation )
