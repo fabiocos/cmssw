@@ -1,7 +1,11 @@
 <lcgdict>
-   <class name="BTLSample"/>
+   <class name="BTLSample" ClassVersion="10">
+    <version ClassVersion="10" checksum="3083658876"/>
+   </class>
    <class name="std::vector<BTLSample>"/>
-   <class name="ETLSample"/>
+   <class name="ETLSample" ClassVersion="10">
+    <version ClassVersion="10" checksum="1790811181"/>
+   </class>
    <class name="std::vector<ETLSample>"/>
    <class name="BTLDataFrame"/>
    <class name="std::vector<BTLDataFrame>"/>
@@ -12,8 +16,12 @@
    <class name="ETLDigiCollection"/>
    <class name="edm::Wrapper<ETLDigiCollection>"/>
 
-   <class name="BTLDigi"/>
-   <class name="ETLDigi"/>
+   <class name="BTLDigi" ClassVersion="3">
+    <version ClassVersion="3" checksum="1337636029"/>
+   </class>
+   <class name="ETLDigi" ClassVersion="3">
+    <version ClassVersion="3" checksum="2475580828"/>
+   </class>
    <class name="NewBTLDataFrame"/>
    <class name="NewETLDataFrame"/>
    <class name="NewBTLDigiCollection"/>
@@ -21,7 +29,9 @@
    <class name="NewETLDigiCollection"/>
    <class name="edm::Wrapper<NewETLDigiCollection>"/>
 
-   <class name="PMTDSimAccumulator"/>
+   <class name="PMTDSimAccumulator" ClassVersion="10">
+    <version ClassVersion="10" checksum="674010020"/>
+   </class>
    <class name="PMTDSimAccumulator::Data"/>
    <class name="PMTDSimAccumulator::DetIdSize"/>
    <class name="std::vector<PMTDSimAccumulator::Data>"/>
