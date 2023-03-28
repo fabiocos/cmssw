@@ -7,11 +7,15 @@
     <version ClassVersion="10" checksum="1790811181"/>
    </class>
    <class name="std::vector<ETLSample>"/>
-   <class name="BTLDataFrame"/>
+   <class name="BTLDataFrame" ClassVersion="10">
+    <version ClassVersion="10" checksum="2322728756"/>
+   </class>
    <class name="std::vector<BTLDataFrame>"/>
    <class name="BTLDigiCollection"/>
    <class name="edm::Wrapper<BTLDigiCollection>"/>
-   <class name="ETLDataFrame"/>
+   <class name="ETLDataFrame" ClassVersion="10">
+    <version ClassVersion="10" checksum="3515121541"/>
+   </class>
    <class name="std::vector<ETLDataFrame>"/>
    <class name="ETLDigiCollection"/>
    <class name="edm::Wrapper<ETLDigiCollection>"/>
