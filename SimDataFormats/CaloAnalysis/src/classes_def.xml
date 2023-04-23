@@ -1,5 +1,5 @@
-<lcgdict>
-  <class name="CaloParticle"  ClassVersion="4">
+<lcgdict>                                                                                                                                                                                     <class name="CaloParticle"  ClassVersion="5">
+   <version ClassVersion="5" checksum="1448606389"/>
    <version ClassVersion="4" checksum="1423471036"/>
   </class>
   <class name="CaloParticleCollection"/>
@@ -8,9 +8,13 @@
   <class name="CaloParticleRefVector"/>
   <class name="CaloParticleRefProd"/>
   <class name="CaloParticleContainer"/>
-  <class name="SimCluster"  ClassVersion="4">
-    <version ClassVersion="4" checksum="3868743425"/>
-    <version ClassVersion="3" checksum="1773780587"/>
+<class name="std::pair<edm::ProductID,int>" />
+  <class name="SimCluster"  ClassVersion="7">
+   <version ClassVersion="7" checksum="1199466954"/>
+   <version ClassVersion="6" checksum="337554252"/>
+   <version ClassVersion="5" checksum="1671921505"/>
+   <version ClassVersion="4" checksum="3868743425"/>
+   <version ClassVersion="3" checksum="1773780587"/>
   </class>
   <class name="SimClusterCollection"/>
   <class name="edm::Wrapper<SimClusterCollection>"/>

@@ -84,7 +84,28 @@ run3_ecal_devel.toModify( theDigitizers,
 from SimFastTiming.Configuration.SimFastTiming_cff import mtdDigitizer
 from Configuration.Eras.Modifier_phase2_timing_layer_cff import phase2_timing_layer
 phase2_timing_layer.toModify( theDigitizers,
-                              fastTimingLayer = mtdDigitizer.clone() )
+                              fastTimingLayer = mtdDigitizer.clone(),
+                              MC_fastTimingLayer = mtdDigitizer.clone(
+    accumulatorType   = cms.string("MtdTruthAccumulator"),#  ("MTDDigiProducer"),
+    MinEnergy = cms.double(0.5),
+    MaxPseudoRapidity = cms.double(5.0),
+    premixStage1 = cms.bool(False),
+    maximumPreviousBunchCrossing = cms.uint32(0),
+    maximumSubsequentBunchCrossing = cms.uint32(0),
+
+    simHitCollections = cms.PSet(
+        mtd = cms.VInputTag(
+           cms.InputTag('g4SimHits','FastTimerHitsBarrel'),
+           cms.InputTag('g4SimHits','FastTimerHitsEndcap')
+       ),
+    ),
+    simTrackCollection = cms.InputTag('g4SimHits'),
+    simVertexCollection = cms.InputTag('g4SimHits'),
+    genParticleCollection = cms.InputTag('genParticles'),
+    allowDifferentSimHitProcesses = cms.bool(False),
+    HepMCProductLabel = cms.InputTag('generatorSmeared'),
+)
+)
 
 premix_stage2.toModify(theDigitizers,
     ecal = None,
@@ -100,10 +121,12 @@ premix_stage2.toModify(theDigitizers,
     hfnoseDigitizer = dict(premixStage1 = True),
 )
 (premix_stage2 & phase2_timing_layer).toModify(theDigitizers,
-    fastTimingLayer = dict(
-        barrelDigitizer = dict(premixStage1 = True),
-        endcapDigitizer = dict(premixStage1 = True)
-    )
+#    fastTimingLayer = dict(
+#        barrelDigitizer = dict(premixStage1 = True),
+#        endcapDigitizer = dict(premixStage1 = True)
+#    )
+    fastTimingLayer = dict(premixStage1 = True),
+    MC_fastTimingLayer = dict(premixStage1 = True),
 )
 
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker

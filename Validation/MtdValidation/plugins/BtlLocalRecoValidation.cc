@@ -28,6 +28,8 @@
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/TrackerRecHit2D/interface/MTDTrackingRecHit.h"
 
+#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/SimClusterFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
@@ -71,8 +73,9 @@ private:
 
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLUncalibratedRecHitCollection> btlUncalibRecHitsToken_;
-  edm::EDGetTokenT<CrossingFrame<PSimHit> > btlSimHitsToken_;
+  edm::EDGetTokenT<CrossingFrame<PSimHit>> btlSimHitsToken_;
   edm::EDGetTokenT<FTLClusterCollection> btlRecCluToken_;
+  edm::EDGetTokenT<SimClusterCollection> btlSimCluToken_;
   edm::EDGetTokenT<MTDTrackingDetSetVector> mtdTrackingHitToken_;
 
   const edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
@@ -220,8 +223,9 @@ BtlLocalRecoValidation::BtlLocalRecoValidation(const edm::ParameterSet& iConfig)
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("recHitsTag"));
   btlUncalibRecHitsToken_ =
       consumes<FTLUncalibratedRecHitCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsTag"));
-  btlSimHitsToken_ = consumes<CrossingFrame<PSimHit> >(iConfig.getParameter<edm::InputTag>("simHitsTag"));
+  btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
   btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTag"));
+  btlSimCluToken_ = consumes<SimClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
 }
 
@@ -244,6 +248,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   auto btlRecHitsHandle = makeValid(iEvent.getHandle(btlRecHitsToken_));
   auto btlSimHitsHandle = makeValid(iEvent.getHandle(btlSimHitsToken_));
   auto btlRecCluHandle = makeValid(iEvent.getHandle(btlRecCluToken_));
+  auto btlSimCluHandle = makeValid(iEvent.getHandle(btlSimCluToken_));
   auto mtdTrkHitHandle = makeValid(iEvent.getHandle(mtdTrackingHitToken_));
   MixCollection<PSimHit> btlSimHits(btlSimHitsHandle.product());
 
@@ -260,7 +265,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     }
   }
 #endif
-
+  std::cout << "BTL simhits list" << std::endl;
   // --- Loop over the BTL SIM hits
   std::unordered_map<uint32_t, MTDHit> m_btlSimHits;
   for (auto const& simHit : btlSimHits) {
@@ -269,12 +274,24 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       continue;
 
     DetId id = simHit.detUnitId();
+    BTLDetId detId = simHit.detUnitId();
+    DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+    const MTDGeomDet* thedet = geom->idToDet(geoId);
+    const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
+    const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+
+    Local3DPoint local_point(0., 0., 0.);
+    local_point = topo.pixelToModuleLocalPoint(local_point, detId.row(topo.nrows()), detId.column(topo.nrows()));
+    const auto& global_point = thedet->toGlobal(local_point);
 
     auto simHitIt = m_btlSimHits.emplace(id.rawId(), MTDHit()).first;
 
     // --- Accumulate the energy (in MeV) of SIM hits in the same detector cell
     (simHitIt->second).energy += convertUnitsTo(0.001_MeV, simHit.energyLoss());
 
+    std::cout << std::fixed << std::setprecision(3) << " hit id " << id.rawId() << " track " << simHit.trackId()
+              << "\n time (ns) " << simHit.tof() << " energy (MeV) " << convertUnitsTo(0.001_MeV, simHit.energyLoss())
+              << std::fixed << std::setprecision(2) << " global pos (cm) " << global_point << std::endl;
     // --- Get the time of the first SIM hit in the cell
     if ((simHitIt->second).time == 0 || simHit.tof() < (simHitIt->second).time) {
       (simHitIt->second).time = simHit.tof();
@@ -362,6 +379,45 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   if (n_reco_btl > 0)
     meNhits_->Fill(log10(n_reco_btl));
 
+  for (const auto& DetSetClu : *btlRecCluHandle) {
+    for (const auto& cluster : DetSetClu) {
+      BTLDetId cluId = cluster.id();
+      std::cout << "Recocluster in BTL " << cluster.id().rawId() << " with " << cluster.size() << " hits" << std::endl;
+      std::cout << "mtdSide " << cluId.mtdSide() << " mtdRR " << cluId.mtdRR() << std::endl;
+      for (int ihit = 0; ihit < cluster.size(); ++ihit) {
+        int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
+        int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
+
+        for (const auto& recHit : *btlRecHitsHandle) {
+          BTLDetId hitId(recHit.id().rawId());
+
+          if (hitId.mtdSide() != cluId.mtdSide() || hitId.mtdRR() != cluId.mtdRR() || recHit.row() != hit_row ||
+              recHit.column() != hit_col)
+            continue;
+
+          if (recHit.energy() != cluster.hitENERGY()[ihit] || recHit.time() != cluster.hitTIME()[ihit])
+            continue;
+
+          DetId geoId = hitId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
+          const MTDGeomDet* thedet = geom->idToDet(geoId);
+          const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
+          const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
+          Local3DPoint local_point(0., 0., 0.);
+          local_point = topo.pixelToModuleLocalPoint(local_point, hitId.row(topo.nrows()), hitId.column(topo.nrows()));
+          const auto& global_point = thedet->toGlobal(local_point);
+          std::cout << std::fixed << std::setprecision(3) << "hit " << recHit.id().rawId() << " in position " << hit_row
+                    << " " << hit_col << "\n"
+                    << "\n  energy " << recHit.energy() << "  time " << recHit.time() << std::fixed
+                    << std::setprecision(2) << "\n  local position " << local_point << "\n  global position "
+                    << global_point << std::endl;
+          break;
+        }
+      }
+      std::cout << "--------------\n";
+    }
+  }
+  std::cout << std::endl;
+
   // --- Loop over the BTL RECO clusters ---
   unsigned int n_clus_btl(0);
   for (const auto& DetSetClu : *btlRecCluHandle) {
@@ -402,12 +458,13 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       double cluLocXSIM = 0.;
       double cluLocYSIM = 0.;
       double cluLocZSIM = 0.;
-
+      std::cout << "New cluster in BTL with " << cluster.size() << " hits" << std::endl;
+      bool found = false;
       for (int ihit = 0; ihit < cluster.size(); ++ihit) {
         int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
         int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
-
         // Match the RECO hit to the corresponding SIM hit
+        SimCluster r2s;
         for (const auto& recHit : *btlRecHitsHandle) {
           BTLDetId hitId(recHit.id().rawId());
 
@@ -423,27 +480,58 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           if (recHit.energy() != cluster.hitENERGY()[ihit] || recHit.time() != cluster.hitTIME()[ihit])
             continue;
 
-          // SIM hit's position in the module reference frame
-          Local3DPoint local_point_sim(convertMmToCm(m_btlSimHits[recHit.id().rawId()].x),
-                                       convertMmToCm(m_btlSimHits[recHit.id().rawId()].y),
-                                       convertMmToCm(m_btlSimHits[recHit.id().rawId()].z));
-          local_point_sim =
-              topo.pixelToModuleLocalPoint(local_point_sim, hitId.row(topo.nrows()), hitId.column(topo.nrows()));
+          // MTDHit targetHit = m_btlSimHits[recHit.id().rawId()];
+          uint32_t targetId = hitId.rawId();
+          int nClus = 0;
+          for (const auto& sc : *btlSimCluHandle) {
+            nClus++;
+            for (const auto& hAndF : sc.hits_and_fractions()) {
+              uint32_t hitId = hAndF.first;  //rawId of the simHit in the SimCluster
+              if (targetId == hitId) {
+                r2s = sc;
+                found = true;
+                break;
+              }
+            }
+            if (found)
+              break;
+          }
+          if (!found)
+            continue;
+          std::cout << "matched with sc " << nClus << std::endl;
+          // cluEneSIM = r2s.simEnergy(); // it's zero, never filled
 
-          // Calculate the SIM cluster's position in the module reference frame
-          cluLocXSIM += local_point_sim.x() * m_btlSimHits[recHit.id().rawId()].energy;
-          cluLocYSIM += local_point_sim.y() * m_btlSimHits[recHit.id().rawId()].energy;
-          cluLocZSIM += local_point_sim.z() * m_btlSimHits[recHit.id().rawId()].energy;
+          // sim cluster time
+          cluTimeSIM = r2s.simTime(); 
 
-          // Calculate the SIM cluster energy and time
-          cluEneSIM += m_btlSimHits[recHit.id().rawId()].energy;
-          cluTimeSIM += m_btlSimHits[recHit.id().rawId()].time * m_btlSimHits[recHit.id().rawId()].energy;
+          std::vector<std::pair<uint32_t, float>> simCluHits = r2s.hits_and_fractions();
 
+          for (const auto& hAndF : simCluHits) {
+            auto SimHitId = hAndF.first;
+            // SIM hit's position in the module reference frame
+            Local3DPoint local_point_sim(convertMmToCm(m_btlSimHits[SimHitId].x),
+                                         convertMmToCm(m_btlSimHits[SimHitId].y),
+                                         convertMmToCm(m_btlSimHits[SimHitId].z));
+            local_point_sim =
+                topo.pixelToModuleLocalPoint(local_point_sim, hitId.row(topo.nrows()), hitId.column(topo.nrows()));
+
+            // Calculate the SIM cluster's position in the module reference frame
+            cluLocXSIM += local_point_sim.x() * m_btlSimHits[SimHitId].energy;
+            cluLocYSIM += local_point_sim.y() * m_btlSimHits[SimHitId].energy;
+            cluLocZSIM += local_point_sim.z() * m_btlSimHits[SimHitId].energy;
+            // Calculate the SIM cluster energy 
+            cluEneSIM += m_btlSimHits[recHit.id().rawId()].energy;
+          }
           break;
 
         }  // recHit loop
 
+        if (found)
+          break;
       }  // ihit loop
+
+      if (!found)
+        std::cout << "no sim cluster for this reco Cluster " << std::endl;
 
       // Find the MTDTrackingRecHit corresponding to the cluster
       const MTDTrackingRecHit* comp(nullptr);
@@ -463,7 +551,6 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
       // --- Fill the cluster resolution histograms
       if (cluTimeSIM > 0. && cluEneSIM > 0.) {
-        cluTimeSIM /= cluEneSIM;
 
         Local3DPoint cluLocalPosSIM(cluLocXSIM / cluEneSIM, cluLocYSIM / cluEneSIM, cluLocZSIM / cluEneSIM);
         const auto& cluGlobalPosSIM = genericDet->toGlobal(cluLocalPosSIM);
@@ -994,6 +1081,7 @@ void BtlLocalRecoValidation::fillDescriptions(edm::ConfigurationDescriptions& de
   desc.add<edm::InputTag>("uncalibRecHitsTag", edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
   desc.add<edm::InputTag>("recCluTag", edm::InputTag("mtdClusters", "FTLBarrel"));
+  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruth"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   desc.add<double>("HitMinimumEnergy", 1.);  // [MeV]
   desc.add<bool>("optionalPlots", false);
