@@ -191,7 +191,8 @@ public:
   }
 
   /** @brief add simhit's energy to cluster */
-  void addSimHit(const PCaloHit &hit) {
+  template<typename T>
+  void addSimHit(const T &hit) {
     simhit_energy_ += hit.energy();
     ++nsimhits_;
   }

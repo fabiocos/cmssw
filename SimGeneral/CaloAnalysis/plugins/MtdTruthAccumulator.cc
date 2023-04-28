@@ -537,6 +537,8 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       DetId bb = hAndF[b].first;
       if (rhtools_.isETL(aa) != rhtools_.isETL(bb))
 	return (int)rhtools_.isETL(aa) < (int)rhtools_.isETL(bb);
+      else if (rhtools_.isETL(aa) and (rhtools_.getLayer(aa) != rhtools_.getLayer(bb)))
+	return rhtools_.getLayer(aa) < rhtools_.getLayer(bb);
       else if (rhtools_.getModule(aa) != rhtools_.getModule(bb))
         return rhtools_.getModule(aa) < rhtools_.getModule(aa);
       else if (rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).second !=
