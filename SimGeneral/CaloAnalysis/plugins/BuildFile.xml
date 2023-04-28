@@ -1,4 +1,5 @@
 <use name="clhep"/>
+<use name="DataFormats/Math"/>
 <use name="DataFormats/SiStripDetId"/>
 <use name="DataFormats/SiPixelDetId"/>
 <use name="FWCore/Framework"/>
@@ -21,6 +22,7 @@
 <use name="Geometry/HcalCommonData"/>
 <use name="Geometry/MTDGeometryBuilder"/>
 <use name="Geometry/MTDNumberingBuilder"/>
+<use name="RecoLocalFastTime/FTLCommonAlgos"/>
 <library file="*.cc" name="SimGeneralCaloAnalysisPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>

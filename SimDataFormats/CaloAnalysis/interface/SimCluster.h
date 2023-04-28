@@ -181,10 +181,7 @@ public:
   void addHitEnergy(float energy) { energies_.emplace_back(energy); }
 
   /** @brief add hit time */
-  void addHitTime(float time, int nDisk) {
-    times_.emplace_back(time);
-    disk_.emplace_back(nDisk);
-  }
+  void addHitTime(float time) { times_.emplace_back(time); }
 
   /** @brief Returns list of rechit IDs and fractions for this SimCluster */
   std::vector<std::pair<uint32_t, float>> hits_and_fractions() const {
@@ -206,6 +203,17 @@ public:
     return result;
   }
 
+  /** @brief Returns list of rechit IDs and times for this SimCluster */
+  std::vector<std::pair<uint32_t, float>> hits_and_times() const {
+    assert(hits_.size() == times_.size());
+    std::vector<std::pair<uint32_t, float>> result;
+    result.reserve(hits_.size());
+    for (size_t i = 0; i < hits_.size(); ++i) {
+      result.emplace_back(hits_[i], times_[i]);
+    }
+    return result;
+  }
+
   /** @brief clear the hits and fractions list */
   void clearHitsAndFractions() {
     std::vector<uint32_t>().swap(hits_);
@@ -218,16 +226,18 @@ public:
   /** @brief clear the times list */
   void clearHitsTime() { std::vector<float>().swap(times_); }
 
+  void clear() {
+    clearHitsAndFractions();
+    clearHitsEnergy();
+    clearHitsTime();
+  } 
+
   /** @brief computes the time of the cluster */
-  float computeClusterTime(int disk=1) { 
-    uint32_t nsim = times_.size();
-    auto tot_en = 0.;
-    simhit_time_ = 0.;
-    for (uint32_t i = 0; i < nsim; i++){
-      if( disk_[i] == disk){
-        simhit_time_ += times_[i]*energies_[i];
-        tot_en += energies_[i];
-      }	
+  float computeClusterTime() { 
+    float tot_en = 0.;
+    for (uint32_t i = 0; i < times_.size(); i++){
+      simhit_time_ += times_[i]*energies_[i];
+      tot_en += energies_[i];
     }
     if (tot_en != 0.)
       simhit_time_ = simhit_time_ / tot_en; 	
@@ -241,16 +251,11 @@ public:
   float simEnergy() const { return simhit_energy_; }
 
   /** @brief add simhit's energy to cluster */
-  void addSimHit(const PCaloHit &hit) {
+  template <typename T>
+  void addSimHit(const T &hit) {
     simhit_energy_ += hit.energy();
     ++nsimhits_;
   }
-
-  /** @brief for ETL: return vector of hits' disk (1 or 2) */
-  std::vector<int> nDisk () const { return disk_; }
-
-  /** @brief return vector of hits' times */
-  std::vector<float> times () const { return times_; }
 
 private:
   uint64_t nsimhits_{0};
@@ -263,7 +268,6 @@ private:
   std::vector<float> fractions_;
   std::vector<float> energies_;
   std::vector<float> times_;
-  std::vector<int> disk_;
 
   math::XYZTLorentzVectorF theMomentum_;
 

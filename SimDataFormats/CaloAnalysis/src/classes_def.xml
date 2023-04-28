@@ -9,7 +9,9 @@
   <class name="CaloParticleRefProd"/>
   <class name="CaloParticleContainer"/>
 <class name="std::pair<edm::ProductID,int>" />
-  <class name="SimCluster"  ClassVersion="7">
+  <class name="SimCluster"  ClassVersion="9">
+   <version ClassVersion="9" checksum="337554252"/>
+   <version ClassVersion="8" checksum="1930126156"/>
    <version ClassVersion="7" checksum="1199466954"/>
    <version ClassVersion="6" checksum="337554252"/>
    <version ClassVersion="5" checksum="1671921505"/>

@@ -16,6 +16,7 @@
 #pragma GCC diagnostic pop
 #endif
 
+#include <algorithm>
 #include <iterator>
 #include <exception>
 #include <memory>
@@ -35,8 +36,11 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Math/interface/angle_units.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
+
+#include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
 
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
@@ -151,7 +155,7 @@ private:
 
   std::unordered_map<Index_t, float> m_detIdToTotalSimEnergy;  // keep track of cell normalizations
   std::unordered_map<Index_t, float> m_detIdToTotalSimTime;
-  std::unordered_map<Index_t, int> m_detIdToDisc;
+  std::unordered_map<Index_t, LocalPoint> m_detIdToPos;
   std::unordered_multimap<Barcode_t, Index_t> m_simHitBarcodeToIndex;
 
   /** The maximum bunch crossing BEFORE the signal crossing to create
@@ -180,8 +184,12 @@ private:
   const edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
   // edm::ESWatcher<MTDDigiGeometryRecord> geomWatcher_;
 
+  mtd::RecHitTools rhtools_;
+
   const double minEnergy_, maxPseudoRapidity_;
   const bool premixStage1_;
+
+  bool isEtl_;
 
 public:
   struct OutputCollections {
@@ -358,8 +366,8 @@ namespace {
 }  // namespace
 
 MtdTruthAccumulator::MtdTruthAccumulator(const edm::ParameterSet &config,
-                                           edm::ProducesCollector producesCollector,
-                                           edm::ConsumesCollector &iC)
+                                         edm::ProducesCollector producesCollector,
+                                         edm::ConsumesCollector &iC)
     : messageCategory_("MtdTruthAccumulator"),
       maximumPreviousBunchCrossing_(config.getParameter<unsigned int>("maximumPreviousBunchCrossing")),
       maximumSubsequentBunchCrossing_(config.getParameter<unsigned int>("maximumSubsequentBunchCrossing")),
@@ -373,30 +381,32 @@ MtdTruthAccumulator::MtdTruthAccumulator(const edm::ParameterSet &config,
       minEnergy_(config.getParameter<double>("MinEnergy")),
       maxPseudoRapidity_(config.getParameter<double>("MaxPseudoRapidity")),
       premixStage1_(config.getParameter<bool>("premixStage1")) {
-producesCollector.produces<SimClusterCollection>("MergedMtdTruth"); 
-producesCollector.produces<CaloParticleCollection>("MergedMtdTruth");
-if (premixStage1_) {
-  producesCollector.produces<std::vector<std::pair<unsigned int, float>>>("MergedMtdTruth");
-}
+  iC.consumes<std::vector<SimTrack>>(simTrackLabel_);
+  iC.consumes<std::vector<SimVertex>>(simVertexLabel_);
+  iC.consumes<std::vector<reco::GenParticle>>(genParticleLabel_);
+  iC.consumes<std::vector<int>>(genParticleLabel_);
+  iC.consumes<std::vector<int>>(hepMCproductLabel_);
 
-iC.consumes<std::vector<SimTrack>>(simTrackLabel_);
-iC.consumes<std::vector<SimVertex>>(simVertexLabel_);
-iC.consumes<std::vector<reco::GenParticle>>(genParticleLabel_);
-iC.consumes<std::vector<int>>(genParticleLabel_);
-iC.consumes<std::vector<int>>(hepMCproductLabel_);
+  // Fill the collection tags
+  const edm::ParameterSet &simHitCollectionConfig = config.getParameterSet("simHitCollections");
+  std::vector<std::string> parameterNames = simHitCollectionConfig.getParameterNames();
 
-// Fill the collection tags
-const edm::ParameterSet &simHitCollectionConfig = config.getParameterSet("simHitCollections");
-std::vector<std::string> parameterNames = simHitCollectionConfig.getParameterNames();
+  for (auto const &parameterName : parameterNames) {
+    std::vector<edm::InputTag> tags = simHitCollectionConfig.getParameter<std::vector<edm::InputTag>>(parameterName);
+    collectionTags_.insert(collectionTags_.end(), tags.begin(), tags.end());
+  }
 
-for (auto const &parameterName : parameterNames) {
-  std::vector<edm::InputTag> tags = simHitCollectionConfig.getParameter<std::vector<edm::InputTag>>(parameterName);
-  collectionTags_.insert(collectionTags_.end(), tags.begin(), tags.end());
-}
+  for (auto const &collectionTag : collectionTags_) {
+    iC.consumes<std::vector<PSimHit>>(collectionTag);
+    isEtl_ = (collectionTag.instance().find("FastTimerHitsEndcap") != std::string::npos);
+  }
 
-for (auto const &collectionTag : collectionTags_) {
-  iC.consumes<std::vector<PSimHit>>(collectionTag); 
-}
+  producesCollector.produces<SimClusterCollection>("MergedMtdTruth");
+  producesCollector.produces<SimClusterCollection>("MergedMtdTruthSplitted");
+  producesCollector.produces<CaloParticleCollection>("MergedMtdTruth");
+  if (premixStage1_) {
+    producesCollector.produces<std::vector<std::pair<unsigned int, float>>>("MergedMtdTruth");
+  }
 }
 
 void MtdTruthAccumulator::initializeEvent(edm::Event const &event, edm::EventSetup const &setup) {
@@ -405,15 +415,16 @@ void MtdTruthAccumulator::initializeEvent(edm::Event const &event, edm::EventSet
 
   m_detIdToTotalSimEnergy.clear();
   m_detIdToTotalSimTime.clear();
-  m_detIdToDisc.clear();
+  m_detIdToPos.clear();
 
-  // if (geomWatcher_.check(setup)) {
-     auto geometryHandle = setup.getTransientHandle(geomToken_);
-     geom = geometryHandle.product();
+  auto geometryHandle = setup.getTransientHandle(geomToken_);
+  geom = geometryHandle.product();
 
-    auto topologyHandle = setup.getTransientHandle(mtdtopoToken_);
-    topology = topologyHandle.product();
-  // }
+  auto topologyHandle = setup.getTransientHandle(mtdtopoToken_);
+  topology = topologyHandle.product();
+
+  rhtools_.setGeometry(geom);
+  rhtools_.setTopology(topology);
 }
 
 /** Create handle to edm::HepMCProduct here because event.getByLabel with
@@ -432,8 +443,8 @@ void MtdTruthAccumulator::accumulate(edm::Event const &event, edm::EventSetup co
 }
 
 void MtdTruthAccumulator::accumulate(PileUpEventPrincipal const &event,
-                                      edm::EventSetup const &setup,
-                                      edm::StreamID const &) {
+                                     edm::EventSetup const &setup,
+                                     edm::StreamID const &) {
   if (event.bunchCrossing() >= -static_cast<int>(maximumPreviousBunchCrossing_) &&
       event.bunchCrossing() <= static_cast<int>(maximumSubsequentBunchCrossing_)) {
     // simply create empty handle as we do not have a HepMCProduct in PU anyway
@@ -470,8 +481,6 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       for (auto &hAndE : hitsAndEnergies) {
         const float totalenergy = m_detIdToTotalSimEnergy[hAndE.first];
         const float simTime = m_detIdToTotalSimTime[hAndE.first];
-        const int disk = m_detIdToDisc[hAndE.first];
-        // MTD 
         float fraction = 0.;
         if (totalenergy > 0)
           fraction = hAndE.second / totalenergy;
@@ -480,14 +489,120 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
               << "TotalSimEnergy for hit " << hAndE.first << " is 0! The fraction for this hit cannot be computed.";
         sc.addRecHitAndFraction(hAndE.first, fraction);
         sc.addHitEnergy(hAndE.second);
-        sc.addHitTime(simTime, disk);
-     }
-     sc.computeClusterTime(); // COMMENT not correct for ETL, mixing the two disks
+        sc.addHitTime(simTime);
+      }
     }
   }
 
+  /******************************************************/
+#ifdef PRINT_DEBUG
+  std::cout << "SIMCLUSTERS LIST: \n";
+  for (const auto &sc : *(output_.pSimClusters)) {
+    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
+              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy (GeV) " << sc.energy()
+              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi() << "\n  number of cells = " << sc.hits_and_fractions().size()
+              << std::endl;
+    float minTime = 99.;
+    for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
+      DetId id(sc.hits_and_fractions()[i].first); 
+      std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
+                << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
+    if (sc.hits_and_times()[i].second < minTime)
+	minTime = sc.hits_and_times()[i].second;
+    }
+    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << minTime << std::endl;
+    std::cout << "--------------\n";
+  }
+  std::cout << std::endl;
+#endif
+  /******************************************************/
+
   // save the SimCluster orphan handle so we can fill the calo particles
   auto scHandle = event.put(std::move(output_.pSimClusters), "MergedMtdTruth");
+
+  auto SCsplitted = std::make_unique<SimClusterCollection>();
+  // reserve for the best case scenario: already splitted
+  SCsplitted->reserve(scHandle->size());
+
+  for (const auto &sc : *scHandle) {
+    auto hAndF = sc.hits_and_fractions();
+    auto hAndE = sc.hits_and_energies();
+    auto hAndT = sc.hits_and_times();
+    // create a vector with the indexes of the hits in the sc
+    std::vector<int> indexes(hAndF.size());
+    std::iota(indexes.begin(), indexes.end(), 0);
+    // sort the hits indexes based on increasing module, then row, then column
+    std::sort(indexes.begin(), indexes.end(), [&](int a, int b) {
+      DetId aa = hAndF[a].first;
+      DetId bb = hAndF[b].first;
+      if (rhtools_.isETL(aa) != rhtools_.isETL(bb))
+	return (int)rhtools_.isETL(aa) < (int)rhtools_.isETL(bb);
+      else if (rhtools_.getModule(aa) != rhtools_.getModule(bb))
+        return rhtools_.getModule(aa) < rhtools_.getModule(aa);
+      else if (rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).second !=
+               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).second)
+        return rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).second <
+               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).second;
+      else
+        return rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).first <
+               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).first;
+    });
+
+    // now split the sc: loop on the sorted indexes and save the first hit in a 
+    // temporary simcluster. If the following hit is in the same module and row, 
+    // but next column put it in the temporary simcluster as well, otherwise
+    // put the temporary simcluster in the collection and start creating a new one 
+    SimCluster tmpSC(sc.g4Tracks()[0]);
+    int prev = indexes[0];
+    DetId prevId(hAndF[prev].first);
+    // fill tmpSC with first hit
+    tmpSC.addRecHitAndFraction(hAndF[prev].first, hAndF[prev].second);
+    tmpSC.addHitEnergy(hAndE[prev].second);
+    tmpSC.addHitTime(hAndT[prev].second);
+    for (const auto &ind : indexes) {
+      if (ind == indexes[0])
+        continue;
+      DetId id(hAndF[ind].first);
+      if (rhtools_.isETL(id) != rhtools_.isETL(prevId) or
+	  rhtools_.getModule(id) != rhtools_.getModule(prevId) or
+          rhtools_.getPixelInModule(id, m_detIdToPos[id]).first !=
+              rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first or
+          rhtools_.getPixelInModule(id, m_detIdToPos[id]).second !=
+              (rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second + 1)) {
+        SCsplitted->emplace_back(tmpSC);
+        tmpSC.clear();
+      }
+      tmpSC.addRecHitAndFraction(hAndF[ind].first, hAndF[ind].second);
+      tmpSC.addHitEnergy(hAndE[ind].second);
+      tmpSC.addHitTime(hAndT[ind].second);
+      prev = ind;
+      DetId newId(hAndF[prev].first);
+      prevId = newId;
+    }
+    SCsplitted->emplace_back(tmpSC);
+  }
+
+  /******************************************************/
+#ifdef PRINT_DEBUG
+  std::cout << "SIMCLUSTERS SPLITTED LIST: \n";
+  for (auto &sc : *SCsplitted) {
+    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
+              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
+              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi()
+              << "\n  number of cells = " << sc.hits_and_fractions().size() << std::endl;
+  for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
+    DetId id(sc.hits_and_fractions()[i].first); 
+    std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
+              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
+    }
+    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << sc.computeClusterTime() << std::endl;
+    std::cout << "--------------\n";
+  }
+  std::cout << std::endl;
+#endif
+  /******************************************************/
+
+    event.put(std::move(SCsplitted), "MergedMtdTruthSplitted");
 
   // now fill the calo particles
   for (unsigned i = 0; i < output_.pCaloParticles->size(); ++i) {
@@ -500,21 +615,20 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
         cp.addSimTime(hSimVertices->at(vertIndex).position().t());
     }
   }
-
   event.put(std::move(output_.pCaloParticles), "MergedMtdTruth");
 
   calo_particles().swap(m_caloParticles);
 
   std::unordered_map<Index_t, float>().swap(m_detIdToTotalSimEnergy);
   std::unordered_map<Index_t, float>().swap(m_detIdToTotalSimTime);
-  std::unordered_map<Index_t, int>().swap(m_detIdToDisc);
+  std::unordered_map<Index_t, LocalPoint>().swap(m_detIdToPos);
   std::unordered_multimap<Barcode_t, Index_t>().swap(m_simHitBarcodeToIndex);
 }
 
 template <class T>
 void MtdTruthAccumulator::accumulateEvent(const T &event,
-                                           const edm::EventSetup &setup,
-                                           const edm::Handle<edm::HepMCProduct> &hepMCproduct) {
+                                          const edm::EventSetup &setup,
+                                          const edm::Handle<edm::HepMCProduct> &hepMCproduct) {
   edm::Handle<std::vector<reco::GenParticle>> hGenParticles;
   edm::Handle<std::vector<int>> hGenParticleIndices;
 
@@ -655,12 +769,11 @@ void MtdTruthAccumulator::accumulateEvent(const T &event,
 
 template <class T>
 void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit *>> &returnValue,
-                                       std::unordered_map<int, std::map<int, float>> &simTrackDetIdEnergyMap,
-                                       const T &event,
-                                       const edm::EventSetup &setup) {
+                                      std::unordered_map<int, std::map<int, float>> &simTrackDetIdEnergyMap,
+                                      const T &event,
+                                      const edm::EventSetup &setup) {
   for (auto const &collectionTag : collectionTags_) {
     edm::Handle<std::vector<PSimHit>> hSimHits;
-    const bool isEtl = (collectionTag.instance().find("FastTimerHitsEndcap") != std::string::npos);
     event.getByLabel(collectionTag, hSimHits);
 
     for (auto const &simHit : *hSimHits) {
@@ -684,17 +797,22 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit
       simTrackDetIdEnergyMap[simHit.trackId()][id.rawId()] += simHit.energyLoss();
       m_detIdToTotalSimEnergy[id.rawId()] += simHit.energyLoss();
       // --- Get the time of the first SIM hit in the cell
-      // COMMENT Maybe this is not the best thing to do
       if (m_detIdToTotalSimTime[id.rawId()] == 0. || simHit.tof() < m_detIdToTotalSimTime[id.rawId()]) {
         m_detIdToTotalSimTime[id.rawId()] = simHit.tof();
-        if (isEtl){
-            ETLDetId detId = simHit.detUnitId();
-            m_detIdToDisc[id.rawId()] = detId.nDisc();
-        } else {
-            m_detIdToDisc[id.rawId()] = 1;
-        }  
+        const auto &position = simHit.localPosition();
+        Local3DPoint simscaled(angle_units::operators::convertMmToCm(position.x()),
+                               angle_units::operators::convertMmToCm(position.y()),
+                               angle_units::operators::convertMmToCm(position.z()));
+        m_detIdToPos[id.rawId()] = simscaled;
       }
-    }
+#ifdef PRINT_DEBUG      
+      auto simscaled = m_detIdToPos[id.rawId()]; 
+      std::cout << "hit " << id.rawId() << " from track " << simHit.trackId() << " in layer " << rhtools_.getLayer(id) << " module "
+                << rhtools_.getModule(id) << " pixel " << (int)rhtools_.getPixelInModule(id, simscaled).first << ", "
+                << (int)rhtools_.getPixelInModule(id, simscaled).second << " global pos(cm) "
+                << rhtools_.getPosition(id, simscaled) << " time(ns) " << simHit.tof() << std::endl;
+#endif
+    } // end of loop over simHits
   }  // end of loop over InputTags
 }
 

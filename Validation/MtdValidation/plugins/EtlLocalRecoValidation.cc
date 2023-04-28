@@ -28,6 +28,8 @@
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/TrackerRecHit2D/interface/MTDTrackingRecHit.h"
 
+#include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
+
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimClusterFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
@@ -188,6 +190,10 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
 
+  mtd::RecHitTools rhtools_;
+  rhtools_.setGeometry(geom);
+  rhtools_.setTopology(topology);
+
   auto const& cpe = iSetup.getData(cpeToken_);
 
   bool topo1Dis = false;
@@ -220,7 +226,9 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 #endif
 
   // --- Loop over the ETL SIM hits
+#ifdef PRINT_DEBUG
   std::cout << "ETL simhits list" << std::endl;
+#endif
   std::unordered_map<uint32_t, MTDHit> m_etlSimHits[4];
   for (auto const& simHit : etlSimHits) {
     // --- Use only hits compatible with the in-time bunch-crossing
@@ -252,9 +260,11 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     // --- Accumulate the energy (in MeV) of SIM hits in the same detector cell
     (simHitIt->second).energy += convertUnitsTo(0.001_MeV, simHit.energyLoss());
 
+#ifdef PRINT_DEBUG
     std::cout << std::fixed << std::setprecision(3) << " hit id " << id.rawId() << " track " << simHit.trackId()
               << "\n time (ns) " << simHit.tof() << " energy (MeV) " << convertUnitsTo(0.001_MeV, simHit.energyLoss())
               << std::fixed << std::setprecision(2) << " global pos (cm) " << global_point << std::endl;
+#endif
     // --- Get the time of the first SIM hit in the cell
     if ((simHitIt->second).time == 0 || simHit.tof() < (simHitIt->second).time) {
       (simHitIt->second).time = simHit.tof();
@@ -376,34 +386,34 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     }
   }
 
-  std::cout << "simClusters list: \n";
+#ifdef PRINT_DEBUG
+  std::cout << "ETL simClusters list: \n";
   for (const auto& sc : *etlSimCluHandle) {
+    if (rhtools_.getLayer((DetId)sc.hits_and_fractions()[0].first) == 0)
+	continue; // do not print btl clusters
     SimCluster SC = sc;
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster from CP with:"
+    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
               << "\n  charge " << SC.charge() << "\n  pdgId  " << SC.pdgId() << "\n  energy " << SC.energy()
-              << "\n  eta    " << SC.eta() << "\n  phi    " << SC.phi() << "\n  number of cells = " << SC.nDisk().size()
+              << "\n  eta    " << SC.eta() << "\n  phi    " << SC.phi() << "\n  number of cells = " << SC.hits_and_fractions().size()
               << std::endl;
-    std::vector<int> nDisk = SC.nDisk();
-    std::vector<float> nTimes = SC.times();
-    for (unsigned int i = 0; i < SC.hits_and_fractions().size(); ++i) {
-      std::cout << std::fixed << std::setprecision(3) << "hit " << SC.hits_and_fractions()[i].first << " disk "
-                << nDisk[i] << " time " << nTimes[i] << std::endl;
+  for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
+    DetId id(sc.hits_and_fractions()[i].first); 
+    std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
+              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
     }
-    for (unsigned int i = 1; i < 3; i++) {
-      if (std::find(begin(nDisk), end(nDisk), i) != std::end(nDisk)) {
-        float clTime = SC.computeClusterTime(i);
-        std::cout << std::fixed << std::setprecision(3) << " Cluster time " << clTime << " for disk " << i << std::endl;
-      }
-    }
+    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << SC.computeClusterTime() << std::endl;
     std::cout << "--------------\n";
   }
   std::cout << std::endl;
+#endif
 
   for (const auto& DetSetClu : *etlRecCluHandle) {
     for (const auto& cluster : DetSetClu) {
       ETLDetId cluId = cluster.id();
+#ifdef PRINT_DEBUG
       std::cout << "Recocluster in ETL " << cluster.id().rawId() << " with " << cluster.size() << " hits" << std::endl;
       std::cout << "mtdSide " << cluId.mtdSide() << " mtdRR " << cluId.mtdRR() << std::endl;
+#endif
       for (int ihit = 0; ihit < cluster.size(); ++ihit) {
         int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
         int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
@@ -425,15 +435,19 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 
           Local3DPoint local_point(topo.localX(recHit.row()), topo.localY(recHit.column()), 0.);
           const auto& global_point = thedet->toGlobal(local_point);
+#ifdef PRINT_DEBUG
           std::cout << std::fixed << std::setprecision(3) << "hit " << recHit.id().rawId() << " in position " << hit_row
                     << " " << hit_col << "\n"
                     << "\n  energy " << recHit.energy() << "\n  time " << recHit.time() << "\n  local position "
                     << local_point << std::fixed << std::setprecision(2) << "\n  global position " << global_point
                     << std::endl;
+#endif
           break;
         }
       }
+#ifdef PRINT_DEBUG
       std::cout << "--------------\n";
+#endif
     }
   }
 
@@ -512,7 +526,9 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       double cluLocZSIM = 0.;
 
       bool found = false;
+#ifdef PRINT_DEBUG
       std::cout << "New cluster in ETL with " << cluster.size() << " hits" << std::endl;
+#endif
       for (int ihit = 0; ihit < cluster.size(); ++ihit) {
         int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
         int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
@@ -551,15 +567,14 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           }
           if (!found)
             continue;
+#ifdef PRINT_DEBUG
           std::cout << "matched with sc " << nClus << std::endl;
-          auto nDisk = (idet == 0 or idet == 2) ? 1 : 2;
-
+#endif
+          cluTimeSIM = r2s.computeClusterTime();
           std::vector<std::pair<uint32_t, float>> simCluHits = r2s.hits_and_fractions();
-          for (unsigned int i = 0; i < simCluHits.size(); ++i) {
-            if (r2s.nDisk()[i] != nDisk)
-              continue;
 
-            auto simId = simCluHits[i].first;
+          for (const auto& hAndF : simCluHits) {
+            auto simId = hAndF.first;
 
             // SIM hit's position in the module reference frame
             Local3DPoint local_point_sim(convertMmToCm(m_etlSimHits[idet][simId].x),
@@ -570,11 +585,9 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
             cluLocXSIM += local_point_sim.x() * m_etlSimHits[idet][simId].energy;
             cluLocYSIM += local_point_sim.y() * m_etlSimHits[idet][simId].energy;
             cluLocZSIM += local_point_sim.z() * m_etlSimHits[idet][simId].energy;
-
             // Calculate the SIM cluster energy
             cluEneSIM += m_etlSimHits[idet][simId].energy;
           }
-          cluTimeSIM = r2s.computeClusterTime(nDisk);
           break;
 
         }  // recHit loop
@@ -583,9 +596,10 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           break;
 
       }  // ihit loop
+#ifdef PRINT_DEBUG
       if (!found)
         std::cout << "no sim cluster for this reco Cluster " << std::endl;
-
+#endif
       // Find the MTDTrackingRecHit corresponding to the cluster
       MTDTrackingRecHit* comp(nullptr);
       bool matchClu = false;
@@ -1225,7 +1239,7 @@ void EtlLocalRecoValidation::fillDescriptions(edm::ConfigurationDescriptions& de
   desc.add<edm::InputTag>("uncalibRecHitsTag", edm::InputTag("mtdUncalibratedRecHits", "FTLEndcap"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsEndcap"));
   desc.add<edm::InputTag>("recCluTag", edm::InputTag("mtdClusters", "FTLEndcap"));
-  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruth"));
+  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruthSplitted"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   desc.add<double>("hitMinimumEnergy1Dis", 1.);     // [MeV]
   desc.add<double>("hitMinimumEnergy2Dis", 0.001);  // [MeV]

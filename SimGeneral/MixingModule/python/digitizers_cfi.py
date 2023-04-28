@@ -94,7 +94,7 @@ phase2_timing_layer.toModify( theDigitizers,
     maximumSubsequentBunchCrossing = cms.uint32(0),
 
     simHitCollections = cms.PSet(
-        mtd = cms.VInputTag(
+        btl = cms.VInputTag(
            cms.InputTag('g4SimHits','FastTimerHitsBarrel'),
            cms.InputTag('g4SimHits','FastTimerHitsEndcap')
        ),
