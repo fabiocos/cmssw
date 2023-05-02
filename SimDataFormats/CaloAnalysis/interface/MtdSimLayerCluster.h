@@ -1,7 +1,5 @@
-#ifndef SimDataFormats_CaloAnalysis_MtdSimCluster_h
-#define SimDataFormats_CaloAnalysis_MtdSimCluster_h
-
-// wrt simClusters, MtdSimClusters should have three methods, one to compute the time and the other to compute the position and one for the energy
+#ifndef SimDataFormats_CaloAnalysis_MtdSimLayerCluster_h
+#define SimDataFormats_CaloAnalysis_MtdSimLayerCluster_h
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
@@ -29,8 +27,8 @@ class EncodedEventId;
  * (mark.grimes@bristol.ac.uk).
  * @date original date unknown, re-engineering Jan-May 2013
  */
-class MtdSimCluster {
-  friend std::ostream &operator<<(std::ostream &s, MtdSimCluster const &tp);
+class MtdSimLayerCluster {
+  friend std::ostream &operator<<(std::ostream &s, MtdSimLayerCluster const &tp);
 
 public:
   typedef int Charge;                                       ///< electric charge type
@@ -43,13 +41,13 @@ public:
   typedef reco::GenParticleRefVector::iterator genp_iterator;
   typedef std::vector<SimTrack>::const_iterator g4t_iterator;
 
-  MtdSimCluster();
+  MtdSimLayerCluster();
 
-  MtdSimCluster(const SimTrack &simtrk);
-  MtdSimCluster(EncodedEventId eventID, uint32_t particleID);  // for PU
+  MtdSimLayerCluster(const SimTrack &simtrk);
+  MtdSimLayerCluster(EncodedEventId eventID, uint32_t particleID);  // for PU
 
   // destructor
-  ~MtdSimCluster();
+  ~MtdSimLayerCluster();
 
   /** @brief PDG ID.
    *
@@ -65,7 +63,7 @@ public:
   /** @brief Signal source, crossing number.
    *
    * Note this is taken from the first SimTrack only, but there shouldn't be any
-   * SimTracks from different crossings in the MtdSimCluster. */
+   * SimTracks from different crossings in the MtdSimLayerCluster. */
   EncodedEventId eventId() const { return event_; }
 
   uint64_t particleId() const { return particleId_; }
@@ -189,7 +187,7 @@ public:
     ++nsimhits_;
   }
 
-  /** @brief Returns list of rechit IDs and fractions for this MtdSimCluster */
+  /** @brief Returns list of rechit IDs and fractions for this MtdSimLayerCluster */
   std::vector<std::pair<uint32_t, float>> hits_and_fractions() const {
     std::vector<std::pair<uint32_t, float>> result;
     for (size_t i = 0; i < hits_.size(); ++i) {
@@ -198,7 +196,7 @@ public:
     return result;
   }
 
-  /** @brief Returns list of rechit IDs and energies for this MtdSimCluster */
+  /** @brief Returns list of rechit IDs and energies for this MtdSimLayerCluster */
   std::vector<std::pair<uint32_t, float>> hits_and_energies() const {
     assert(hits_.size() == energies_.size());
     std::vector<std::pair<uint32_t, float>> result;
@@ -209,7 +207,7 @@ public:
     return result;
   }
 
-  /** @brief Returns list of rechit IDs and times for this MtdSimCluster */
+  /** @brief Returns list of rechit IDs and times for this MtdSimLayerCluster */
   std::vector<std::pair<uint32_t, float>> hits_and_times() const {
     assert(hits_.size() == times_.size());
     std::vector<std::pair<uint32_t, float>> result;
@@ -240,29 +238,40 @@ public:
 
   /** @brief computes the time of the cluster */
   float computeClusterTime() { 
-    simclu_time_ = 0.;
+    simLC_time_ = 0.;
     float tot_en = 0.;
     for (uint32_t i = 0; i < times_.size(); i++){
-      simclu_time_ += times_[i]*energies_[i];
+      simLC_time_ += times_[i]*energies_[i];
       tot_en += energies_[i];
     }
     if (tot_en != 0.)
-      simclu_time_ = simclu_time_ / tot_en; 	
-    return simclu_time_;
- }
+      simLC_time_ = simLC_time_ / tot_en; 	
+    return simLC_time_;
+  }
 
-  /** @brief returns the time of the cluster */
-  float simTime() const { return simclu_time_; }
+  /** @brief computes the energy of the cluster */
+  void addCluEnergy(float energy) {
+    simLC_energy_ = energy; 
+  } 
 
-  /** @brief returns the local position of the cluster */
-  LocalPoint simPos() const { return simclu_pos_; }
+  /** @brief computes the position of the cluster */
+  void addCluLocalPos(LocalPoint pos) {
+    simLC_pos_ = pos; 
+  } 
 
-  /** @brief returns the accumulated sim energy in the cluster */
-  float simEnergy() const { return simclu_energy_; }
-
+  /** @brief add the index of the simcluster */
   void addCluIndex(const uint32_t index) {
     seedId_ = index;
   }
+
+  /** @brief returns the time of the cluster */
+  float simTime() const { return simLC_time_; }
+
+  /** @brief returns the local position of the cluster */
+  LocalPoint simPos() const { return simLC_pos_; }
+
+  /** @brief returns the accumulated sim energy in the cluster */
+  float simEnergy() const { return simLC_energy_; }
 
   uint32_t seedId() const { return seedId_; }
 
@@ -274,11 +283,11 @@ private:
   EncodedEventId event_;
 
   uint32_t particleId_{0};
-  float simclu_time_{0.f};
+  float simLC_time_{0.f};
 
   // only if we want cluster energy and position directly here
-  float simclu_energy_{0.f};
-  LocalPoint simclu_pos_;
+  float simLC_energy_{0.f};
+  LocalPoint simLC_pos_;
 
   std::vector<uint32_t> hits_;
   std::vector<float> fractions_;

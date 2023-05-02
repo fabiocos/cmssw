@@ -234,18 +234,16 @@ public:
 
   /** @brief computes the time of the cluster */
   float computeClusterTime() { 
+    float time = 0.;
     float tot_en = 0.;
     for (uint32_t i = 0; i < times_.size(); i++){
-      simhit_time_ += times_[i]*energies_[i];
+      time += times_[i]*energies_[i];
       tot_en += energies_[i];
     }
     if (tot_en != 0.)
-      simhit_time_ = simhit_time_ / tot_en; 	
-    return simhit_time_;
+      time = time / tot_en; 	
+    return time;
  }
-
-  /** @brief returns the time of the cluster */
-  float simTime() const { return simhit_time_; }
 
   /** @brief returns the accumulated sim energy in the cluster */
   float simEnergy() const { return simhit_energy_; }
@@ -263,7 +261,6 @@ private:
 
   uint32_t particleId_{0};
   float simhit_energy_{0.f};
-  float simhit_time_{0.f};
   std::vector<uint32_t> hits_;
   std::vector<float> fractions_;
   std::vector<float> energies_;

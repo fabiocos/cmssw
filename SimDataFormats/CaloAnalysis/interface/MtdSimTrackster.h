@@ -182,7 +182,7 @@ private:
   float timeAtEntrance_{0.f};
   // global pos of the simHit
   GlobalPoint posAtEntrance_;
-  // indexes of the MtdSimClusters contained in the simTrackster
+  // indexes of the MtdSimLayerClusters contained in the simTrackster
   std::vector<uint32_t> clusters_;
 
   math::XYZTLorentzVectorF theMomentum_;

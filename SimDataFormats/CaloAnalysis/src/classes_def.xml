@@ -9,7 +9,8 @@
   <class name="CaloParticleRefProd"/>
   <class name="CaloParticleContainer"/>
 <class name="std::pair<edm::ProductID,int>" />
-  <class name="SimCluster"  ClassVersion="9">
+  <class name="SimCluster"  ClassVersion="10">
+   <version ClassVersion="10" checksum="1671921505"/>
    <version ClassVersion="9" checksum="337554252"/>
    <version ClassVersion="8" checksum="1930126156"/>
    <version ClassVersion="7" checksum="1199466954"/>
@@ -25,13 +26,13 @@
   <class name="SimClusterRefProd"/>
   <class name="SimClusterContainer"/>
 
-  <class name="MtdSimCluster"/>
-  <class name="MtdSimClusterCollection"/>
-  <class name="edm::Wrapper<MtdSimClusterCollection>"/>
-  <class name="MtdSimClusterRef"/>
-  <class name="MtdSimClusterRefVector"/>
-  <class name="MtdSimClusterRefProd"/>
-  <class name="MtdSimClusterContainer"/>
+  <class name="MtdSimLayerCluster"/>
+  <class name="MtdSimLayerClusterCollection"/>
+  <class name="edm::Wrapper<MtdSimLayerClusterCollection>"/>
+  <class name="MtdSimLayerClusterRef"/>
+  <class name="MtdSimLayerClusterRefVector"/>
+  <class name="MtdSimLayerClusterRefProd"/>
+  <class name="MtdSimLayerClusterContainer"/>
 
   <class name="MtdSimTrackster"/>
   <class name="MtdSimTracksterCollection"/>

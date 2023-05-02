@@ -30,8 +30,8 @@
 
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
 
-#include "SimDataFormats/CaloAnalysis/interface/MtdSimCluster.h"
-#include "SimDataFormats/CaloAnalysis/interface/MtdSimClusterFwd.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerClusterFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
@@ -75,7 +75,7 @@ private:
   edm::EDGetTokenT<FTLUncalibratedRecHitCollection> etlUncalibRecHitsToken_;
   edm::EDGetTokenT<CrossingFrame<PSimHit>> etlSimHitsToken_;
   edm::EDGetTokenT<FTLClusterCollection> etlRecCluToken_;
-  edm::EDGetTokenT<MtdSimClusterCollection> etlSimCluToken_;
+  edm::EDGetTokenT<MtdSimLayerClusterCollection> etlSimCluToken_;
   edm::EDGetTokenT<MTDTrackingDetSetVector> mtdTrackingHitToken_;
 
   const edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
@@ -172,7 +172,7 @@ EtlLocalRecoValidation::EtlLocalRecoValidation(const edm::ParameterSet& iConfig)
         consumes<FTLUncalibratedRecHitCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsTag"));
   etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
   etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTag"));
-  etlSimCluToken_ = consumes<MtdSimClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
+  etlSimCluToken_ = consumes<MtdSimLayerClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
 }
 
@@ -391,7 +391,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   for (const auto& sc : *etlSimCluHandle) {
     if (rhtools_.getLayer((DetId)sc.hits_and_fractions()[0].first) == 0)
 	continue; // do not print btl clusters
-    MtdSimCluster SC = sc;
+    MtdSimLayerCluster SC = sc;
     std::cout << std::fixed << std::setprecision(3) << "LayerCluster from SC " << SC.seedId() << " with:"
               << "\n  charge " << SC.charge() << "\n  pdgId  " << SC.pdgId() << "\n  energy " << SC.energy()
               << "\n  eta    " << SC.eta() << "\n  phi    " << SC.phi() << "\n  number of cells = " << SC.hits_and_fractions().size()
@@ -534,7 +534,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
 
         // Match the RECO hit to the corresponding SIM cluster
-        MtdSimCluster r2s;
+        MtdSimLayerCluster r2s;
         for (const auto& recHit : *etlRecHitsHandle) {
           ETLDetId hitId(recHit.id().rawId());
 

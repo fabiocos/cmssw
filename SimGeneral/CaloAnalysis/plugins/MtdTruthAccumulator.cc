@@ -37,6 +37,7 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Math/interface/GeantUnits.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 
@@ -46,8 +47,8 @@
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimClusterFwd.h"
-#include "SimDataFormats/CaloAnalysis/interface/MtdSimCluster.h"
-#include "SimDataFormats/CaloAnalysis/interface/MtdSimClusterFwd.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerClusterFwd.h"
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimTrackster.h"
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimTracksterFwd.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
@@ -406,7 +407,7 @@ MtdTruthAccumulator::MtdTruthAccumulator(const edm::ParameterSet &config,
   }
 
   producesCollector.produces<SimClusterCollection>("MergedMtdTruth");
-  producesCollector.produces<MtdSimClusterCollection>("MergedMtdTruthLC");
+  producesCollector.produces<MtdSimLayerClusterCollection>("MergedMtdTruthLC");
   producesCollector.produces<MtdSimTracksterCollection>("MergedMtdTruthST");
   producesCollector.produces<CaloParticleCollection>("MergedMtdTruth");
   if (premixStage1_) {
@@ -463,6 +464,8 @@ void MtdTruthAccumulator::accumulate(PileUpEventPrincipal const &event,
 }
 
 void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const &setup) {
+  using namespace geant_units::operators;
+
   edm::LogInfo(messageCategory_) << "Adding " << output_.pSimClusters->size() << " SimParticles and "
                                  << output_.pCaloParticles->size() << " CaloParticles to the event.";
 
@@ -503,9 +506,9 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
 #ifdef PRINT_DEBUG
   std::cout << "SIMCLUSTERS LIST: \n";
   for (const auto &sc : *(output_.pSimClusters)) {
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
-              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy (GeV) " << sc.energy()
-              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi() << "\n  number of cells = " << sc.hits_and_fractions().size()
+    std::cout << std::fixed << std::setprecision(3) << "SimCluster from CP with:"
+              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
+              << " GeV\n  eta    " << sc.eta() << "\n  phi    " << sc.phi() << "\n  number of cells = " << sc.hits_and_fractions().size()
               << std::endl;
     float minTime = 99.;
     for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
@@ -525,7 +528,7 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
   // save the SimCluster orphan handle so we can fill the calo particles
   auto scHandle = event.put(std::move(output_.pSimClusters), "MergedMtdTruth");
 
-  auto SCsplitted = std::make_unique<MtdSimClusterCollection>();
+  auto SCsplitted = std::make_unique<MtdSimLayerClusterCollection>();
   auto mtdSimTrackster = std::make_unique<MtdSimTracksterCollection>();
 
   // reserve for the best case scenario: already splitted
@@ -565,23 +568,41 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
     // but next column put it in the temporary simcluster as well, otherwise
     // put the temporary simcluster in the collection and start creating a new one 
     std::vector<uint32_t> SCsplitted_indexes;
-    MtdSimCluster tmpSC(sc.g4Tracks()[0]);
+    MtdSimLayerCluster tmpSC(sc.g4Tracks()[0]);
     int prev = indexes[0];
     DetId prevId(hAndF[prev].first);
     // fill tmpSC with first hit
     tmpSC.addRecHitAndFraction(hAndF[prev].first, hAndF[prev].second);
     tmpSC.addHitEnergy(hAndE[prev].second);
     tmpSC.addHitTime(hAndT[prev].second);
+    float SimLCenergy = 0.;
+    float SimLCx = 0., SimLCy = 0., SimLCz = 0.;
+    //LocalPoint SimLCpos(0., 0., 0.);
+    SimLCenergy += convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
+    SimLCx += m_detIdToPos[hAndF[prev].first].x() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
+    SimLCy += m_detIdToPos[hAndF[prev].first].y() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
+    SimLCz += m_detIdToPos[hAndF[prev].first].z() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
     for (const auto &ind : indexes) {
       if (ind == indexes[0])
         continue;
       DetId id(hAndF[ind].first);
+      SimLCenergy += convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+      SimLCx += m_detIdToPos[hAndF[ind].first].x() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+      SimLCy += m_detIdToPos[hAndF[ind].first].y() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+      SimLCz += m_detIdToPos[hAndF[ind].first].z() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
       if (rhtools_.isETL(id) != rhtools_.isETL(prevId) or
 	  rhtools_.getModule(id) != rhtools_.getModule(prevId) or
           rhtools_.getPixelInModule(id, m_detIdToPos[id]).first !=
               rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first or
           rhtools_.getPixelInModule(id, m_detIdToPos[id]).second !=
               (rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second + 1)) {
+        tmpSC.addCluEnergy(SimLCenergy);
+        LocalPoint SimLCpos(SimLCx, SimLCy, SimLCz);
+        tmpSC.addCluLocalPos(SimLCpos);
+        SimLCenergy = 0.;
+	SimLCx = 0.;
+	SimLCy = 0.;
+	SimLCz = 0.;
         tmpSC.addCluIndex(sc_index);
         tmpSC.computeClusterTime();
         SCsplitted->emplace_back(tmpSC);
@@ -596,6 +617,13 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       DetId newId(hAndF[prev].first);
       prevId = newId;
     }
+    tmpSC.addCluEnergy(SimLCenergy);
+    LocalPoint SimLCpos(SimLCx, SimLCy, SimLCz);
+    tmpSC.addCluLocalPos(SimLCpos);
+    SimLCenergy = 0.;
+    SimLCx = 0.;
+    SimLCy = 0.;
+    SimLCz = 0.;
     tmpSC.addCluIndex(sc_index);
     tmpSC.computeClusterTime();
     SCsplitted->emplace_back(tmpSC);
@@ -620,30 +648,32 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
 
   /******************************************************/
 #ifdef PRINT_DEBUG
-  std::cout << "SIMCLUSTERS SPLITTED LIST: \n";
+  std::cout << "SIMLAYERCLUSTERS LIST: \n";
   for (auto &sc : *SCsplitted) {
     std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
-              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
-              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi()
+              << "\n  CP charge " << sc.charge() << "\n  CP pdgId  " << sc.pdgId() << "\n  CP energy " << sc.energy()
+              << " GeV\n  CP eta    " << sc.eta() << "\n  CP phi    " << sc.phi()
               << "\n  number of cells = " << sc.hits_and_fractions().size() << std::endl;
   for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
     DetId id(sc.hits_and_fractions()[i].first); 
-    std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
-              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
+    std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " Layer "
+              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << " ns" << std::endl;
     }
-    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << sc.computeClusterTime() << std::endl;
+    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << sc.computeClusterTime() 
+						    << " ns \n Cluster energy " << sc.simEnergy() 
+                                                    << " MeV\n Cluster pos " << sc.simPos() << "cm" << std::endl;
     std::cout << "--------------\n";
   }
   std::cout << std::endl;
 
   std::cout << "SIMTRACKSTERS LIST: \n";
   for (auto &sc : *mtdSimTrackster) {
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
-              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
-              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi()
+    std::cout << std::fixed << std::setprecision(3) << "SimTrackster with:"
+              << "\n  CP charge " << sc.charge() << "\n  CP pdgId  " << sc.pdgId() << "\n  CP energy " << sc.energy()
+              << " GeV\n  CP eta    " << sc.eta() << "\n  CP phi    " << sc.phi()
               << "\n  number of layer clusters = " << sc.numberOfClusters() 
 	      << "\n  time of first simhit " << sc.time()
-	      << "\n  position " << sc.position() << std::endl;
+	      << " ns\n  position of first simhit " << sc.position() << "cm" << std::endl;
     std::cout << "--------------\n";
   }
   std::cout << std::endl;
@@ -855,11 +885,12 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit
         m_detIdToPos[id.rawId()] = simscaled;
       }
 #ifdef PRINT_DEBUG      
+      using namespace geant_units::operators;
       auto simscaled = m_detIdToPos[id.rawId()]; 
       std::cout << "hit " << id.rawId() << " from track " << simHit.trackId() << " in layer " << rhtools_.getLayer(id) << " module "
                 << rhtools_.getModule(id) << " pixel " << (int)rhtools_.getPixelInModule(id, simscaled).first << ", "
                 << (int)rhtools_.getPixelInModule(id, simscaled).second << " global pos(cm) "
-                << rhtools_.getPosition(id, simscaled) << " time(ns) " << simHit.tof() << std::endl;
+                << rhtools_.getPosition(id, simscaled) << " time(ns) " << simHit.tof() << "energy" << convertUnitsTo(0.001_MeV, simHit.energyLoss()) << std::endl;
 #endif
     } // end of loop over simHits
   }  // end of loop over InputTags
