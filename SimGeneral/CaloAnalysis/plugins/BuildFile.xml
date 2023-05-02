@@ -5,6 +5,7 @@
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/ParameterSet"/>
+<use name="FWCore/Utilities"/>
 <use name="SimDataFormats/GeneratorProducts"/>
 <use name="SimDataFormats/CaloAnalysis"/>
 <use name="SimDataFormats/Vertex"/>
@@ -23,6 +24,7 @@
 <use name="Geometry/MTDGeometryBuilder"/>
 <use name="Geometry/MTDNumberingBuilder"/>
 <use name="RecoLocalFastTime/FTLCommonAlgos"/>
+
 <library file="*.cc" name="SimGeneralCaloAnalysisPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>

@@ -30,8 +30,8 @@
 
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
 
-#include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
-#include "SimDataFormats/CaloAnalysis/interface/SimClusterFwd.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimClusterFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
@@ -77,7 +77,7 @@ private:
   edm::EDGetTokenT<FTLUncalibratedRecHitCollection> btlUncalibRecHitsToken_;
   edm::EDGetTokenT<CrossingFrame<PSimHit>> btlSimHitsToken_;
   edm::EDGetTokenT<FTLClusterCollection> btlRecCluToken_;
-  edm::EDGetTokenT<SimClusterCollection> btlSimCluToken_;
+  edm::EDGetTokenT<MtdSimClusterCollection> btlSimCluToken_;
   edm::EDGetTokenT<MTDTrackingDetSetVector> mtdTrackingHitToken_;
 
   const edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
@@ -227,7 +227,7 @@ BtlLocalRecoValidation::BtlLocalRecoValidation(const edm::ParameterSet& iConfig)
       consumes<FTLUncalibratedRecHitCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsTag"));
   btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
   btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTag"));
-  btlSimCluToken_ = consumes<SimClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
+  btlSimCluToken_ = consumes<MtdSimClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
   mtdTrackingHitToken_ = consumes<MTDTrackingDetSetVector>(iConfig.getParameter<edm::InputTag>("trkHitTag"));
 }
 
@@ -317,8 +317,8 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   for (const auto& sc : *btlSimCluHandle) {
     if (rhtools_.getLayer((DetId)sc.hits_and_fractions()[0].first) != 0)
 	continue; // do not print etl clusters
-    SimCluster SC = sc;
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster from CP with:"
+    MtdSimCluster SC = sc;
+    std::cout << std::fixed << std::setprecision(3) << "LayerCluster from SC " << SC.seedId() << " with:"
               << "\n  charge " << SC.charge() << "\n  pdgId  " << SC.pdgId() << "\n  energy " << SC.energy()
               << "\n  eta    " << SC.eta() << "\n  phi    " << SC.phi() << "\n  number of cells = " << SC.hits_and_fractions().size()
               << std::endl;
@@ -327,7 +327,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
     std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
               << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
     }
-    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << SC.computeClusterTime() << std::endl;
+    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << SC.simTime() << std::endl;
     std::cout << "--------------\n";
   }
   std::cout << std::endl;
@@ -502,7 +502,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
         int hit_col = cluster.minHitCol() + cluster.hitOffset()[ihit * 2 + 1];
         // Match the RECO hit to the corresponding SIM hit
-        SimCluster r2s;
+        MtdSimCluster r2s;
         for (const auto& recHit : *btlRecHitsHandle) {
           BTLDetId hitId(recHit.id().rawId());
 
@@ -539,7 +539,7 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
           std::cout << "matched with sc " << nClus << std::endl;
 #endif
           // sim cluster time
-          cluTimeSIM = r2s.computeClusterTime(); 
+          cluTimeSIM = r2s.simTime(); 
 
           std::vector<std::pair<uint32_t, float>> simCluHits = r2s.hits_and_fractions();
 
@@ -1119,7 +1119,7 @@ void BtlLocalRecoValidation::fillDescriptions(edm::ConfigurationDescriptions& de
   desc.add<edm::InputTag>("uncalibRecHitsTag", edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
   desc.add<edm::InputTag>("recCluTag", edm::InputTag("mtdClusters", "FTLBarrel"));
-  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruthSplitted"));
+  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruthLC"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   desc.add<double>("HitMinimumEnergy", 1.);  // [MeV]
   desc.add<bool>("optionalPlots", false);

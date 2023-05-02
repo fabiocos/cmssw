@@ -1,3 +1,4 @@
+#define PRINT_DEBUG
 #define DEBUG false
 #if DEBUG
 // boost optional (used by boost graph) results in some false positives with
@@ -36,7 +37,6 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/Math/interface/angle_units.h"
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 
@@ -46,6 +46,10 @@
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimClusterFwd.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimClusterFwd.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimTrackster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimTracksterFwd.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/Vertex/interface/SimVertex.h"
@@ -402,7 +406,8 @@ MtdTruthAccumulator::MtdTruthAccumulator(const edm::ParameterSet &config,
   }
 
   producesCollector.produces<SimClusterCollection>("MergedMtdTruth");
-  producesCollector.produces<SimClusterCollection>("MergedMtdTruthSplitted");
+  producesCollector.produces<MtdSimClusterCollection>("MergedMtdTruthLC");
+  producesCollector.produces<MtdSimTracksterCollection>("MergedMtdTruthST");
   producesCollector.produces<CaloParticleCollection>("MergedMtdTruth");
   if (premixStage1_) {
     producesCollector.produces<std::vector<std::pair<unsigned int, float>>>("MergedMtdTruth");
@@ -520,10 +525,15 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
   // save the SimCluster orphan handle so we can fill the calo particles
   auto scHandle = event.put(std::move(output_.pSimClusters), "MergedMtdTruth");
 
-  auto SCsplitted = std::make_unique<SimClusterCollection>();
+  auto SCsplitted = std::make_unique<MtdSimClusterCollection>();
+  auto mtdSimTrackster = std::make_unique<MtdSimTracksterCollection>();
+
   // reserve for the best case scenario: already splitted
   SCsplitted->reserve(scHandle->size());
+  mtdSimTrackster->reserve(scHandle->size());
 
+  uint32_t sc_index = 0;
+  uint32_t SCsplitted_index = 0;
   for (const auto &sc : *scHandle) {
     auto hAndF = sc.hits_and_fractions();
     auto hAndE = sc.hits_and_energies();
@@ -554,7 +564,8 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
     // temporary simcluster. If the following hit is in the same module and row, 
     // but next column put it in the temporary simcluster as well, otherwise
     // put the temporary simcluster in the collection and start creating a new one 
-    SimCluster tmpSC(sc.g4Tracks()[0]);
+    std::vector<uint32_t> SCsplitted_indexes;
+    MtdSimCluster tmpSC(sc.g4Tracks()[0]);
     int prev = indexes[0];
     DetId prevId(hAndF[prev].first);
     // fill tmpSC with first hit
@@ -571,7 +582,11 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
               rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first or
           rhtools_.getPixelInModule(id, m_detIdToPos[id]).second !=
               (rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second + 1)) {
+        tmpSC.addCluIndex(sc_index);
+        tmpSC.computeClusterTime();
         SCsplitted->emplace_back(tmpSC);
+        SCsplitted_indexes.push_back(SCsplitted_index);
+        SCsplitted_index++;
         tmpSC.clear();
       }
       tmpSC.addRecHitAndFraction(hAndF[ind].first, hAndF[ind].second);
@@ -581,7 +596,26 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       DetId newId(hAndF[prev].first);
       prevId = newId;
     }
+    tmpSC.addCluIndex(sc_index);
+    tmpSC.computeClusterTime();
     SCsplitted->emplace_back(tmpSC);
+    SCsplitted_indexes.push_back(SCsplitted_index);
+    SCsplitted_index++;
+
+    // now the simTrackster
+    float timeAtEntrance = 99.;
+    uint32_t idAtEntrance;
+    for (const auto& hAndT : sc.hits_and_times()){
+      if (hAndT.second < timeAtEntrance){
+	 timeAtEntrance = hAndT.second;
+         idAtEntrance = hAndT.first;
+      }
+    }
+
+    GlobalPoint posAtEntrance = rhtools_.getPosition(idAtEntrance, m_detIdToPos[idAtEntrance]);
+    mtdSimTrackster->emplace_back(sc, SCsplitted_indexes, timeAtEntrance, posAtEntrance);
+
+    sc_index++;
   }
 
   /******************************************************/
@@ -601,10 +635,23 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
     std::cout << "--------------\n";
   }
   std::cout << std::endl;
+
+  std::cout << "SIMTRACKSTERS LIST: \n";
+  for (auto &sc : *mtdSimTrackster) {
+    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
+              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
+              << "\n  eta    " << sc.eta() << "\n  phi    " << sc.phi()
+              << "\n  number of layer clusters = " << sc.numberOfClusters() 
+	      << "\n  time of first simhit " << sc.time()
+	      << "\n  position " << sc.position() << std::endl;
+    std::cout << "--------------\n";
+  }
+  std::cout << std::endl;
 #endif
   /******************************************************/
 
-    event.put(std::move(SCsplitted), "MergedMtdTruthSplitted");
+    event.put(std::move(SCsplitted), "MergedMtdTruthLC");
+    event.put(std::move(mtdSimTrackster), "MergedMtdTruthST");
 
   // now fill the calo particles
   for (unsigned i = 0; i < output_.pCaloParticles->size(); ++i) {

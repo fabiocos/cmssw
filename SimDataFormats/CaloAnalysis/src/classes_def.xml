@@ -24,4 +24,20 @@
   <class name="SimClusterRefVector"/>
   <class name="SimClusterRefProd"/>
   <class name="SimClusterContainer"/>
+
+  <class name="MtdSimCluster"/>
+  <class name="MtdSimClusterCollection"/>
+  <class name="edm::Wrapper<MtdSimClusterCollection>"/>
+  <class name="MtdSimClusterRef"/>
+  <class name="MtdSimClusterRefVector"/>
+  <class name="MtdSimClusterRefProd"/>
+  <class name="MtdSimClusterContainer"/>
+
+  <class name="MtdSimTrackster"/>
+  <class name="MtdSimTracksterCollection"/>
+  <class name="edm::Wrapper<MtdSimTracksterCollection>"/>
+  <class name="MtdSimTracksterRef"/>
+  <class name="MtdSimTracksterRefVector"/>
+  <class name="MtdSimTracksterRefProd"/>
+  <class name="MtdSimTracksterContainer"/>
 </lcgdict>
