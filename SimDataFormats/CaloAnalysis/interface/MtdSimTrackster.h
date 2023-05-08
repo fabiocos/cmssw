@@ -165,8 +165,8 @@ public:
   /** @brief returns the time of the cluster */
   float time() const { return timeAtEntrance_; }
 
-  /** @brief returns the accumulated sim energy in the cluster */
-  // float simEnergy() const { return simhit_energy_; }
+  /** @brief returns the layer clusters indexes in the sim trackster*/
+  std::vector<uint32_t> clusters() const { return clusters_; }
 
   /** @brief add simhit's energy to cluster */
   void addCluster(const uint32_t sc) {
@@ -178,9 +178,7 @@ private:
   EncodedEventId event_;
 
   uint32_t particleId_{0};
-  // float simhit_energy_{0.f};
   float timeAtEntrance_{0.f};
-  // global pos of the simHit
   GlobalPoint posAtEntrance_;
   // indexes of the MtdSimLayerClusters contained in the simTrackster
   std::vector<uint32_t> clusters_;

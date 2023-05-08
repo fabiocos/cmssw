@@ -1,4 +1,3 @@
-#define PRINT_DEBUG
 #define DEBUG false
 #if DEBUG
 // boost optional (used by boost graph) results in some false positives with
@@ -41,8 +40,6 @@
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 
-#include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
-
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticle.h"
 #include "SimDataFormats/CaloAnalysis/interface/CaloParticleFwd.h"
 #include "SimDataFormats/CaloAnalysis/interface/SimCluster.h"
@@ -63,6 +60,7 @@
 #include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
 #include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeomUtil.h"
 #include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
 #include "Geometry/MTDGeometryBuilder/interface/ProxyMTDTopology.h"
 #include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
@@ -159,7 +157,7 @@ private:
   const std::string messageCategory_;
 
   std::unordered_map<Index_t, float> m_detIdToTotalSimEnergy;  // keep track of cell normalizations
-  std::unordered_map<Index_t, float> m_detIdToTotalSimTime;
+  std::unordered_map<Index_t, std::map<int, float>> m_detIdToTotalSimTime;
   std::unordered_map<Index_t, LocalPoint> m_detIdToPos;
   std::unordered_multimap<Barcode_t, Index_t> m_simHitBarcodeToIndex;
 
@@ -189,7 +187,7 @@ private:
   const edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
   // edm::ESWatcher<MTDDigiGeometryRecord> geomWatcher_;
 
-  mtd::RecHitTools rhtools_;
+  mtd::MTDGeomUtil geomTools_;
 
   const double minEnergy_, maxPseudoRapidity_;
   const bool premixStage1_;
@@ -429,8 +427,8 @@ void MtdTruthAccumulator::initializeEvent(edm::Event const &event, edm::EventSet
   auto topologyHandle = setup.getTransientHandle(mtdtopoToken_);
   topology = topologyHandle.product();
 
-  rhtools_.setGeometry(geom);
-  rhtools_.setTopology(topology);
+  geomTools_.setGeometry(geom);
+  geomTools_.setTopology(topology);
 }
 
 /** Create handle to edm::HepMCProduct here because event.getByLabel with
@@ -488,7 +486,7 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       sc.clearHitsTime();
       for (auto &hAndE : hitsAndEnergies) {
         const float totalenergy = m_detIdToTotalSimEnergy[hAndE.first];
-        const float simTime = m_detIdToTotalSimTime[hAndE.first];
+        const float simTime = m_detIdToTotalSimTime[sc.g4Tracks()[0].trackId()][hAndE.first];
         float fraction = 0.;
         if (totalenergy > 0)
           fraction = hAndE.second / totalenergy;
@@ -502,135 +500,142 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
     }
   }
 
-  /******************************************************/
 #ifdef PRINT_DEBUG
-  std::cout << "SIMCLUSTERS LIST: \n";
-  for (const auto &sc : *(output_.pSimClusters)) {
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster from CP with:"
-              << "\n  charge " << sc.charge() << "\n  pdgId  " << sc.pdgId() << "\n  energy " << sc.energy()
-              << " GeV\n  eta    " << sc.eta() << "\n  phi    " << sc.phi() << "\n  number of cells = " << sc.hits_and_fractions().size()
+  IfLogDebug(DEBUG, messageCategoryGraph_) << "SIMCLUSTERS LIST:" << std::endl;
+  for (const auto &sc : *(output_.pSimClusters)) { 
+    IfLogDebug(DEBUG, messageCategoryGraph_) 
+              << std::fixed << std::setprecision(3) << "SimCluster from CP with:"
+              << "\n  charge " << sc.charge() 
+	      << "\n  pdgId  " << sc.pdgId() 
+              << "\n  energy " << sc.energy()
+              << " GeV\n  eta    " << sc.eta() 
+              << "\n  phi    " << sc.phi() 
+              << "\n  number of cells = " << sc.hits_and_fractions().size()
               << std::endl;
-    float minTime = 99.;
     for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
       DetId id(sc.hits_and_fractions()[i].first); 
-      std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
-                << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
-    if (sc.hits_and_times()[i].second < minTime)
-	minTime = sc.hits_and_times()[i].second;
+      IfLogDebug(DEBUG, messageCategoryGraph_) 
+                << std::fixed << std::setprecision(3) << " hit " << sc.hits_and_fractions()[i].first << " on layer "
+                << geomTools_.getLayer(id) << " at time " << sc.hits_and_times()[i].second << " ns" << std::endl;
     }
-    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << minTime << std::endl;
-    std::cout << "--------------\n";
+    IfLogDebug(DEBUG, messageCategoryGraph_) << "--------------\n";
   }
-  std::cout << std::endl;
+  IfLogDebug(DEBUG, messageCategoryGraph_) << std::endl;
 #endif
-  /******************************************************/
 
   // save the SimCluster orphan handle so we can fill the calo particles
   auto scHandle = event.put(std::move(output_.pSimClusters), "MergedMtdTruth");
 
-  auto SCsplitted = std::make_unique<MtdSimLayerClusterCollection>();
-  auto mtdSimTrackster = std::make_unique<MtdSimTracksterCollection>();
+  // creation of MTD SimLayerClusters (LC) and SimTracksters (ST)
+  auto mtdLayerClusters = std::make_unique<MtdSimLayerClusterCollection>();
+  auto mtdSimTracksters = std::make_unique<MtdSimTracksterCollection>();
 
   // reserve for the best case scenario: already splitted
-  SCsplitted->reserve(scHandle->size());
-  mtdSimTrackster->reserve(scHandle->size());
+  mtdLayerClusters->reserve(scHandle->size());
+  mtdSimTracksters->reserve(scHandle->size());
 
-  uint32_t sc_index = 0;
-  uint32_t SCsplitted_index = 0;
+  uint32_t SC_index = 0;
+  uint32_t LC_index = 0;
   for (const auto &sc : *scHandle) {
     auto hAndF = sc.hits_and_fractions();
     auto hAndE = sc.hits_and_energies();
     auto hAndT = sc.hits_and_times();
-    // create a vector with the indexes of the hits in the sc
+    // create a vector with the indexes of the hits in the simCluster
     std::vector<int> indexes(hAndF.size());
     std::iota(indexes.begin(), indexes.end(), 0);
-    // sort the hits indexes based on increasing module, then row, then column
+    // sort the hits indexes based on subdetector, layer, module, then pixel row and column
     std::sort(indexes.begin(), indexes.end(), [&](int a, int b) {
       DetId aa = hAndF[a].first;
       DetId bb = hAndF[b].first;
-      if (rhtools_.isETL(aa) != rhtools_.isETL(bb))
-	return (int)rhtools_.isETL(aa) < (int)rhtools_.isETL(bb);
-      else if (rhtools_.isETL(aa) and (rhtools_.getLayer(aa) != rhtools_.getLayer(bb)))
-	return rhtools_.getLayer(aa) < rhtools_.getLayer(bb);
-      else if (rhtools_.getModule(aa) != rhtools_.getModule(bb))
-        return rhtools_.getModule(aa) < rhtools_.getModule(aa);
-      else if (rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).second !=
-               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).second)
-        return rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).second <
-               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).second;
+      if (geomTools_.isETL(aa) != geomTools_.isETL(bb))
+	return (int)geomTools_.isETL(aa) < (int)geomTools_.isETL(bb);
+      else if (geomTools_.isETL(aa) and (geomTools_.getLayer(aa) != geomTools_.getLayer(bb)))
+	return geomTools_.getLayer(aa) < geomTools_.getLayer(bb);
+      else if (geomTools_.getModule(aa) != geomTools_.getModule(bb))
+        return geomTools_.getModule(aa) < geomTools_.getModule(aa);
+      else if (geomTools_.getPixelInModule(aa, m_detIdToPos[aa]).second ==
+              (int)geomTools_.getPixelInModule(bb, m_detIdToPos[bb]).second
+              and std::abs(geomTools_.getPixelInModule(aa, m_detIdToPos[aa]).first -
+              (int)geomTools_.getPixelInModule(bb, m_detIdToPos[bb]).first ) <2 )
+	return geomTools_.getPixelInModule(aa, m_detIdToPos[aa]).first <
+              (int)geomTools_.getPixelInModule(bb, m_detIdToPos[bb]).first;
       else
-        return rhtools_.getPixelInModule(aa, m_detIdToPos[aa]).first <
-               (int)rhtools_.getPixelInModule(bb, m_detIdToPos[bb]).first;
+        return geomTools_.getPixelInModule(aa, m_detIdToPos[aa]).second <
+              (int)geomTools_.getPixelInModule(bb, m_detIdToPos[bb]).second;
     });
 
     // now split the sc: loop on the sorted indexes and save the first hit in a 
-    // temporary simcluster. If the following hit is in the same module and row, 
-    // but next column put it in the temporary simcluster as well, otherwise
+    // temporary simCluster. If the following hit is in the same module and row (column), 
+    // but next column (row) put it in the temporary simcluster as well, otherwise
     // put the temporary simcluster in the collection and start creating a new one 
-    std::vector<uint32_t> SCsplitted_indexes;
-    MtdSimLayerCluster tmpSC(sc.g4Tracks()[0]);
+    std::vector<uint32_t> LC_indexes;
+    MtdSimLayerCluster tmpLC(sc.g4Tracks()[0]);
     int prev = indexes[0];
     DetId prevId(hAndF[prev].first);
-    // fill tmpSC with first hit
-    tmpSC.addRecHitAndFraction(hAndF[prev].first, hAndF[prev].second);
-    tmpSC.addHitEnergy(hAndE[prev].second);
-    tmpSC.addHitTime(hAndT[prev].second);
+
     float SimLCenergy = 0.;
     float SimLCx = 0., SimLCy = 0., SimLCz = 0.;
-    //LocalPoint SimLCpos(0., 0., 0.);
-    SimLCenergy += convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
-    SimLCx += m_detIdToPos[hAndF[prev].first].x() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
-    SimLCy += m_detIdToPos[hAndF[prev].first].y() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
-    SimLCz += m_detIdToPos[hAndF[prev].first].z() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[prev].first]);
-    for (const auto &ind : indexes) {
-      if (ind == indexes[0])
-        continue;
-      DetId id(hAndF[ind].first);
-      SimLCenergy += convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
-      SimLCx += m_detIdToPos[hAndF[ind].first].x() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
-      SimLCy += m_detIdToPos[hAndF[ind].first].y() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
-      SimLCz += m_detIdToPos[hAndF[ind].first].z() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
-      if (rhtools_.isETL(id) != rhtools_.isETL(prevId) or
-	  rhtools_.getModule(id) != rhtools_.getModule(prevId) or
-          rhtools_.getPixelInModule(id, m_detIdToPos[id]).first !=
-              rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first or
-          rhtools_.getPixelInModule(id, m_detIdToPos[id]).second !=
-              (rhtools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second + 1)) {
-        tmpSC.addCluEnergy(SimLCenergy);
+    
+    auto push_back_hit = [&](const int& ind){
+        tmpLC.addRecHitAndFraction(hAndF[ind].first, hAndF[ind].second);
+        tmpLC.addHitEnergy(hAndE[ind].second);
+        tmpLC.addHitTime(hAndT[ind].second);
+    };
+    
+    auto update_clu_info = [&](const int& ind){
+        SimLCenergy += convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+        SimLCx += m_detIdToPos[hAndF[ind].first].x() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+        SimLCy += m_detIdToPos[hAndF[ind].first].y() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+        SimLCz += m_detIdToPos[hAndF[ind].first].z() * convertUnitsTo(0.001_MeV, m_detIdToTotalSimEnergy[hAndF[ind].first]);
+    };
+    
+    auto push_back_clu = [&](const uint32_t& SC_index, uint32_t& LC_index){
+        tmpLC.addCluEnergy(SimLCenergy);
         LocalPoint SimLCpos(SimLCx, SimLCy, SimLCz);
-        tmpSC.addCluLocalPos(SimLCpos);
+        tmpLC.addCluLocalPos(SimLCpos);
         SimLCenergy = 0.;
 	SimLCx = 0.;
 	SimLCy = 0.;
 	SimLCz = 0.;
-        tmpSC.addCluIndex(sc_index);
-        tmpSC.computeClusterTime();
-        SCsplitted->emplace_back(tmpSC);
-        SCsplitted_indexes.push_back(SCsplitted_index);
-        SCsplitted_index++;
-        tmpSC.clear();
+        tmpLC.addCluIndex(SC_index);
+        tmpLC.computeClusterTime();
+        mtdLayerClusters->emplace_back(tmpLC);
+        LC_indexes.push_back(LC_index);
+        LC_index++;
+        tmpLC.clear();
+    };
+
+    // fill tmpLC with the first hit
+    push_back_hit(prev);
+    update_clu_info(prev);
+    for (const auto &ind : indexes) {
+      if (ind == indexes[0])
+        continue;
+      DetId id(hAndF[ind].first);
+      update_clu_info(ind);
+      if (geomTools_.isETL(id) != geomTools_.isETL(prevId) or
+	  geomTools_.getModule(id) != geomTools_.getModule(prevId) or
+          geomTools_.getLayer(id) != geomTools_.getLayer(prevId) or
+          (geomTools_.getPixelInModule(id, m_detIdToPos[id]).first == geomTools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first 
+          and geomTools_.getPixelInModule(id, m_detIdToPos[id]).second != (geomTools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second + 1)) or
+          ( geomTools_.getPixelInModule(id, m_detIdToPos[id]).second == geomTools_.getPixelInModule(prevId, m_detIdToPos[prevId]).second 
+          and geomTools_.getPixelInModule(id, m_detIdToPos[id]).first != (geomTools_.getPixelInModule(prevId, m_detIdToPos[prevId]).first + 1))) {
+             // the next hit is not adjacent to the previous one, put the current temporary cluster in the collection
+             // and the hit will be put in an empty temporary cluster
+             push_back_clu(SC_index, LC_index);
       }
-      tmpSC.addRecHitAndFraction(hAndF[ind].first, hAndF[ind].second);
-      tmpSC.addHitEnergy(hAndE[ind].second);
-      tmpSC.addHitTime(hAndT[ind].second);
+      // add the hit to the temporary cluster 
+      push_back_hit(ind);
       prev = ind;
       DetId newId(hAndF[prev].first);
       prevId = newId;
     }
-    tmpSC.addCluEnergy(SimLCenergy);
-    LocalPoint SimLCpos(SimLCx, SimLCy, SimLCz);
-    tmpSC.addCluLocalPos(SimLCpos);
-    SimLCenergy = 0.;
-    SimLCx = 0.;
-    SimLCy = 0.;
-    SimLCz = 0.;
-    tmpSC.addCluIndex(sc_index);
-    tmpSC.computeClusterTime();
-    SCsplitted->emplace_back(tmpSC);
-    SCsplitted_indexes.push_back(SCsplitted_index);
-    SCsplitted_index++;
+    // add the remaining temporary cluster to the collection
+    push_back_clu(SC_index, LC_index);
 
-    // now the simTrackster
+    // now the simTrackster: find position and time of the first simHit
+    // bc right now there is no method to ask the simTrack for pos/time 
+    // at MTD entrance 
     float timeAtEntrance = 99.;
     uint32_t idAtEntrance;
     for (const auto& hAndT : sc.hits_and_times()){
@@ -640,48 +645,63 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
       }
     }
 
-    GlobalPoint posAtEntrance = rhtools_.getPosition(idAtEntrance, m_detIdToPos[idAtEntrance]);
-    mtdSimTrackster->emplace_back(sc, SCsplitted_indexes, timeAtEntrance, posAtEntrance);
+    // sort LCs in the SimTrackster by time
+    std::sort(LC_indexes.begin(), LC_indexes.end(), [&mtdLayerClusters](int i, int j){
+      return (*mtdLayerClusters)[i].simTime() < (*mtdLayerClusters)[j].simTime();
+    });
 
-    sc_index++;
+    GlobalPoint posAtEntrance = geomTools_.getPosition(idAtEntrance, m_detIdToPos[idAtEntrance]);
+    mtdSimTracksters->emplace_back(sc, LC_indexes, timeAtEntrance, posAtEntrance);
+
+    SC_index++;
   }
 
-  /******************************************************/
 #ifdef PRINT_DEBUG
-  std::cout << "SIMLAYERCLUSTERS LIST: \n";
-  for (auto &sc : *SCsplitted) {
-    std::cout << std::fixed << std::setprecision(3) << "SimCluster with:"
-              << "\n  CP charge " << sc.charge() << "\n  CP pdgId  " << sc.pdgId() << "\n  CP energy " << sc.energy()
-              << " GeV\n  CP eta    " << sc.eta() << "\n  CP phi    " << sc.phi()
+  IfLogDebug(DEBUG, messageCategoryGraph_) << "SIMLAYERCLUSTERS LIST: \n";
+  for (auto &sc : *mtdLayerClusters) {
+    IfLogDebug(DEBUG, messageCategoryGraph_) 
+              << std::fixed << std::setprecision(3) << "SimLayerCluster with:"
+              << "\n  CP charge " << sc.charge() 
+              << "\n  CP pdgId  " << sc.pdgId() 
+              << "\n  CP energy " << sc.energy()
+              << " GeV\n  CP eta    " << sc.eta() 
+              << "\n  CP phi    " << sc.phi()
               << "\n  number of cells = " << sc.hits_and_fractions().size() << std::endl;
-  for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
-    DetId id(sc.hits_and_fractions()[i].first); 
-    std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " Layer "
-              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << " ns" << std::endl;
+    for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
+      DetId id(sc.hits_and_fractions()[i].first); 
+      IfLogDebug(DEBUG, messageCategoryGraph_) 
+                << std::fixed << std::setprecision(3) << " hit " << sc.hits_and_fractions()[i].first << " on layer "
+                << geomTools_.getLayer(id) << " at time " << sc.hits_and_times()[i].second << " ns" << std::endl;
     }
-    std::cout << std::fixed << std::setprecision(3) << " Cluster time " << sc.computeClusterTime() 
-						    << " ns \n Cluster energy " << sc.simEnergy() 
-                                                    << " MeV\n Cluster pos " << sc.simPos() << "cm" << std::endl;
-    std::cout << "--------------\n";
+    IfLogDebug(DEBUG, messageCategoryGraph_) << std::fixed << std::setprecision(3) << "  Cluster time " << sc.computeClusterTime() 
+		                  	     << " ns \n  Cluster energy " << sc.simEnergy() 
+                                             << " MeV\n  Cluster pos" << sc.simPos() << "cm" << std::endl;
+    IfLogDebug(DEBUG, messageCategoryGraph_) << "--------------\n";
   }
-  std::cout << std::endl;
+  IfLogDebug(DEBUG, messageCategoryGraph_) << std::endl;
 
-  std::cout << "SIMTRACKSTERS LIST: \n";
-  for (auto &sc : *mtdSimTrackster) {
-    std::cout << std::fixed << std::setprecision(3) << "SimTrackster with:"
-              << "\n  CP charge " << sc.charge() << "\n  CP pdgId  " << sc.pdgId() << "\n  CP energy " << sc.energy()
-              << " GeV\n  CP eta    " << sc.eta() << "\n  CP phi    " << sc.phi()
-              << "\n  number of layer clusters = " << sc.numberOfClusters() 
-	      << "\n  time of first simhit " << sc.time()
-	      << " ns\n  position of first simhit " << sc.position() << "cm" << std::endl;
-    std::cout << "--------------\n";
+  IfLogDebug(DEBUG, messageCategoryGraph_) << "SIMTRACKSTERS LIST: \n";
+  for (auto &sc : *mtdSimTracksters) {
+    IfLogDebug(DEBUG, messageCategoryGraph_) 
+              << std::fixed << std::setprecision(3) << "SimTrackster with:"
+              << "\n  CP charge " << sc.charge() 
+              << "\n  CP pdgId  " << sc.pdgId() 
+              << "\n  CP energy " << sc.energy()
+              << " GeV\n  CP eta    " << sc.eta() 
+              << "\n  CP phi    " << sc.phi()
+              << "\n number of layer clusters = " << sc.numberOfClusters() 
+	      << "\n time of first simhit " << sc.time()
+	      << " ns\n position of first simhit" << sc.position() << "cm" << std::endl;
+    IfLogDebug(DEBUG, messageCategoryGraph_) << "  LCs indexes: ";
+    for (const auto& lc : sc.clusters())
+	IfLogDebug(DEBUG, messageCategoryGraph_) << lc << ", ";
+    IfLogDebug(DEBUG, messageCategoryGraph_) << "\n--------------\n";
   }
-  std::cout << std::endl;
+  IfLogDebug(DEBUG, messageCategoryGraph_) << std::endl;
 #endif
-  /******************************************************/
 
-    event.put(std::move(SCsplitted), "MergedMtdTruthLC");
-    event.put(std::move(mtdSimTrackster), "MergedMtdTruthST");
+    event.put(std::move(mtdLayerClusters), "MergedMtdTruthLC");
+    event.put(std::move(mtdSimTracksters), "MergedMtdTruthST");
 
   // now fill the calo particles
   for (unsigned i = 0; i < output_.pCaloParticles->size(); ++i) {
@@ -699,7 +719,7 @@ void MtdTruthAccumulator::finalizeEvent(edm::Event &event, edm::EventSetup const
   calo_particles().swap(m_caloParticles);
 
   std::unordered_map<Index_t, float>().swap(m_detIdToTotalSimEnergy);
-  std::unordered_map<Index_t, float>().swap(m_detIdToTotalSimTime);
+  std::unordered_map<Index_t, std::map<int, float>>().swap(m_detIdToTotalSimTime);
   std::unordered_map<Index_t, LocalPoint>().swap(m_detIdToPos);
   std::unordered_multimap<Barcode_t, Index_t>().swap(m_simHitBarcodeToIndex);
 }
@@ -851,6 +871,8 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit
                                       std::unordered_map<int, std::map<int, float>> &simTrackDetIdEnergyMap,
                                       const T &event,
                                       const edm::EventSetup &setup) {
+  using namespace geant_units::operators;
+  using namespace angle_units::operators;
   for (auto const &collectionTag : collectionTags_) {
     edm::Handle<std::vector<PSimHit>> hSimHits;
     event.getByLabel(collectionTag, hSimHits);
@@ -865,6 +887,7 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit
       id = simHit.detUnitId();
 
       if (id == DetId(0)) {
+        edm::LogWarning(messageCategory_) << "Invalid DetId for the current simHit!";
         continue;
       }
 
@@ -876,24 +899,24 @@ void MtdTruthAccumulator::fillSimHits(std::vector<std::pair<DetId, const PSimHit
       simTrackDetIdEnergyMap[simHit.trackId()][id.rawId()] += simHit.energyLoss();
       m_detIdToTotalSimEnergy[id.rawId()] += simHit.energyLoss();
       // --- Get the time of the first SIM hit in the cell
-      if (m_detIdToTotalSimTime[id.rawId()] == 0. || simHit.tof() < m_detIdToTotalSimTime[id.rawId()]) {
-        m_detIdToTotalSimTime[id.rawId()] = simHit.tof();
+      if (m_detIdToTotalSimTime[simHit.trackId()][id.rawId()] == 0. || simHit.tof() < m_detIdToTotalSimTime[simHit.trackId()][id.rawId()]) {
+        m_detIdToTotalSimTime[simHit.trackId()][id.rawId()] = simHit.tof();
         const auto &position = simHit.localPosition();
-        Local3DPoint simscaled(angle_units::operators::convertMmToCm(position.x()),
-                               angle_units::operators::convertMmToCm(position.y()),
-                               angle_units::operators::convertMmToCm(position.z()));
+        Local3DPoint simscaled(convertMmToCm(position.x()),
+                               convertMmToCm(position.y()),
+                               convertMmToCm(position.z()));
         m_detIdToPos[id.rawId()] = simscaled;
       }
 #ifdef PRINT_DEBUG      
-      using namespace geant_units::operators;
       auto simscaled = m_detIdToPos[id.rawId()]; 
-      std::cout << "hit " << id.rawId() << " from track " << simHit.trackId() << " in layer " << rhtools_.getLayer(id) << " module "
-                << rhtools_.getModule(id) << " pixel " << (int)rhtools_.getPixelInModule(id, simscaled).first << ", "
-                << (int)rhtools_.getPixelInModule(id, simscaled).second << " global pos(cm) "
-                << rhtools_.getPosition(id, simscaled) << " time(ns) " << simHit.tof() << "energy" << convertUnitsTo(0.001_MeV, simHit.energyLoss()) << std::endl;
+      IfLogDebug(DEBUG, messageCategoryGraph_)
+                << "hitId " << id.rawId() << " from track " << simHit.trackId() << " in layer " << geomTools_.getLayer(id) << ", module "
+                << geomTools_.getModule(id) << ", pixel ( " << (int)geomTools_.getPixelInModule(id, simscaled).first << ", "
+                << (int)geomTools_.getPixelInModule(id, simscaled).second << " )\n global pos(cm) "
+                << geomTools_.getPosition(id, simscaled) << " time(ns) " << simHit.tof() << "energy(MeV) " << convertUnitsTo(0.001_MeV, simHit.energyLoss()) << std::endl;
 #endif
     } // end of loop over simHits
-  }  // end of loop over InputTags
+  } // end of loop over InputTags
 }
 
 // Register with the framework

@@ -10,7 +10,6 @@
  Implementation:
      [Notes on implementation]
 */
-
 #include <string>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -28,8 +27,6 @@
 #include "DataFormats/FTLRecHit/interface/FTLClusterCollections.h"
 #include "DataFormats/TrackerRecHit2D/interface/MTDTrackingRecHit.h"
 
-#include "RecoLocalFastTime/FTLCommonAlgos/interface/RecHitTools.h"
-
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerClusterFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/CrossingFrame.h"
@@ -38,6 +35,7 @@
 
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
 #include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeomUtil.h"
 #include "Geometry/MTDGeometryBuilder/interface/ProxyMTDTopology.h"
 #include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
 #include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
@@ -190,9 +188,9 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
 
-  mtd::RecHitTools rhtools_;
-  rhtools_.setGeometry(geom);
-  rhtools_.setTopology(topology);
+  mtd::MTDGeomUtil GeomTools_;
+  GeomTools_.setGeometry(geom);
+  GeomTools_.setTopology(topology);
 
   auto const& cpe = iSetup.getData(cpeToken_);
 
@@ -389,7 +387,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
 #ifdef PRINT_DEBUG
   std::cout << "ETL simClusters list: \n";
   for (const auto& sc : *etlSimCluHandle) {
-    if (rhtools_.getLayer((DetId)sc.hits_and_fractions()[0].first) == 0)
+    if (GeomTools_.getLayer((DetId)sc.hits_and_fractions()[0].first) == 0)
 	continue; // do not print btl clusters
     MtdSimLayerCluster SC = sc;
     std::cout << std::fixed << std::setprecision(3) << "LayerCluster from SC " << SC.seedId() << " with:"
@@ -399,7 +397,7 @@ void EtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   for (unsigned int i = 0; i < sc.hits_and_fractions().size(); ++i) {
     DetId id(sc.hits_and_fractions()[i].first); 
     std::cout << std::fixed << std::setprecision(3) << "hit " << sc.hits_and_fractions()[i].first << " disk "
-              << rhtools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
+              << GeomTools_.getLayer(id) << " time " << sc.hits_and_times()[i].second << std::endl;
     }
     std::cout << std::fixed << std::setprecision(3) << " Cluster time " << SC.simTime() << std::endl;
     std::cout << "--------------\n";
