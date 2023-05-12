@@ -6,8 +6,6 @@
 
 #include <numeric>
 
-const unsigned int MtdSimTrackster::longLivedTag = 65536;
-
 MtdSimTrackster::MtdSimTrackster() {
   // No operation
 }
@@ -27,7 +25,10 @@ MtdSimTrackster::MtdSimTrackster(EncodedEventId eventID, uint32_t particleID) {
   particleId_ = particleID;
 }
 
-MtdSimTrackster::MtdSimTrackster(const SimCluster &sc, const std::vector<uint32_t> SCs, const float time, const GlobalPoint pos) {
+MtdSimTrackster::MtdSimTrackster(const SimCluster &sc,
+                                 const std::vector<uint32_t> SCs,
+                                 const float time,
+                                 const GlobalPoint pos) {
   auto simtrk = sc.g4Tracks()[0];
   addG4Track(simtrk);
   event_ = simtrk.eventId();
@@ -59,7 +60,5 @@ std::ostream &operator<<(std::ostream &s, MtdSimTrackster const &tp) {
       s << " Mismatch b/t MtdSimTrackster and Geant types" << std::endl;
     }
   }
-//  s << " # of cells = " << tp.hits_.size()
-//    << ", effective cells = " << std::accumulate(tp.fractions_.begin(), tp.fractions_.end(), 0.f) << std::endl;
   return s;
 }

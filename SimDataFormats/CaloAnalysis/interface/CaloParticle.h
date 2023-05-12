@@ -186,12 +186,10 @@ public:
   /** @brief returns the time of the caloparticle */
   float simTime() const { return simhit_time_; }
 
-  void addSimTime(const float time) {
-    simhit_time_ = time;
-  }
+  void addSimTime(const float time) { simhit_time_ = time; }
 
   /** @brief add simhit's energy to cluster */
-  template<typename T>
+  template <typename T>
   void addSimHit(const T &hit) {
     simhit_energy_ += hit.energy();
     ++nsimhits_;

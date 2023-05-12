@@ -6,8 +6,6 @@
 
 #include <numeric>
 
-const unsigned int MtdSimLayerCluster::longLivedTag = 65536;
-
 MtdSimLayerCluster::MtdSimLayerCluster() {
   // No operation
 }

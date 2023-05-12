@@ -230,20 +230,20 @@ public:
     clearHitsAndFractions();
     clearHitsEnergy();
     clearHitsTime();
-  } 
+  }
 
   /** @brief computes the time of the cluster */
-  float computeClusterTime() { 
+  float computeClusterTime() const {
     float time = 0.;
     float tot_en = 0.;
-    for (uint32_t i = 0; i < times_.size(); i++){
-      time += times_[i]*energies_[i];
+    for (uint32_t i = 0; i < times_.size(); i++) {
+      time += times_[i] * energies_[i];
       tot_en += energies_[i];
     }
     if (tot_en != 0.)
-      time = time / tot_en; 	
+      time = time / tot_en;
     return time;
- }
+  }
 
   /** @brief returns the accumulated sim energy in the cluster */
   float simEnergy() const { return simhit_energy_; }

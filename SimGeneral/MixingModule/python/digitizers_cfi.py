@@ -86,7 +86,7 @@ from Configuration.Eras.Modifier_phase2_timing_layer_cff import phase2_timing_la
 phase2_timing_layer.toModify( theDigitizers,
                               fastTimingLayer = mtdDigitizer.clone(),
                               MC_fastTimingLayer = mtdDigitizer.clone(
-    accumulatorType   = cms.string("MtdTruthAccumulator"),#  ("MTDDigiProducer"),
+    accumulatorType   = cms.string("MtdTruthAccumulator"),
     MinEnergy = cms.double(0.5),
     MaxPseudoRapidity = cms.double(5.0),
     premixStage1 = cms.bool(False),
@@ -121,10 +121,6 @@ premix_stage2.toModify(theDigitizers,
     hfnoseDigitizer = dict(premixStage1 = True),
 )
 (premix_stage2 & phase2_timing_layer).toModify(theDigitizers,
-#    fastTimingLayer = dict(
-#        barrelDigitizer = dict(premixStage1 = True),
-#        endcapDigitizer = dict(premixStage1 = True)
-#    )
     fastTimingLayer = dict(premixStage1 = True),
     MC_fastTimingLayer = dict(premixStage1 = True),
 )

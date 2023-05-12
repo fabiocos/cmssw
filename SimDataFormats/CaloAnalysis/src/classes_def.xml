@@ -1,4 +1,5 @@
-<lcgdict>                                                                                                                                                                                     <class name="CaloParticle"  ClassVersion="5">
+<lcgdict>
+   <class name="CaloParticle"  ClassVersion="5">
    <version ClassVersion="5" checksum="1448606389"/>
    <version ClassVersion="4" checksum="1423471036"/>
   </class>
