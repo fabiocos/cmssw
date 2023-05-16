@@ -12,16 +12,6 @@
 
 using namespace mtd;
 
-namespace {
-  template <typename GEOM>
-  inline void check_geom(const GEOM* geom) {
-    if (nullptr == geom) {
-      throw cms::Exception("mtd::MTDGeomUtil") << "Geometry not provided yet to mtd::MTDGeomUtil!";
-    }
-  }
-
-}  // namespace
-
 void MTDGeomUtil::setGeometry(const MTDGeometry* geom) { geom_ = geom; }
 
 void MTDGeomUtil::setTopology(const MTDTopology* topo) { topology_ = topo; }
@@ -40,12 +30,11 @@ bool MTDGeomUtil::isBTL(const DetId& id) const { return !(isETL(id)); }
 
 // row and column set to 0 by default since they are not needed for BTL
 GlobalPoint MTDGeomUtil::getPosition(const DetId& id, int row, int column) const {
-  auto geom = getGeometry();
   GlobalPoint global_point(0., 0., 0.);
   if (isBTL(id)) {
     BTLDetId detId{id};
     DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(getTopology()->getMTDTopologyMode()));
-    const MTDGeomDet* thedet = geom->idToDet(geoId);
+    const MTDGeomDet* thedet = geom_->idToDet(geoId);
     if (thedet == nullptr)
       throw cms::Exception("mtd::MTDGeomUtil") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
                                                << detId.rawId() << ") is invalid!" << std::dec << std::endl;
@@ -58,7 +47,7 @@ GlobalPoint MTDGeomUtil::getPosition(const DetId& id, int row, int column) const
   } else if (isETL(id)) {
     ETLDetId detId{id};
     DetId geoId = detId.geographicalId();
-    const MTDGeomDet* thedet = geom->idToDet(geoId);
+    const MTDGeomDet* thedet = geom_->idToDet(geoId);
     if (thedet == nullptr)
       throw cms::Exception("mtd::MTDGeomUtil") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
                                                << detId.rawId() << ") is invalid!" << std::dec << std::endl;
@@ -74,12 +63,11 @@ GlobalPoint MTDGeomUtil::getPosition(const DetId& id, int row, int column) const
 }
 
 GlobalPoint MTDGeomUtil::getPosition(const DetId& id, const LocalPoint& local_point) const {
-  auto geom = getGeometry();
   auto global_point = GlobalPoint(0., 0., 0.);
   if (isBTL(id)) {
     BTLDetId detId{id};
     DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(getTopology()->getMTDTopologyMode()));
-    const MTDGeomDet* thedet = geom->idToDet(geoId);
+    const MTDGeomDet* thedet = geom_->idToDet(geoId);
     if (thedet == nullptr)
       throw cms::Exception("mtd::MTDGeomUtil") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
                                                << detId.rawId() << ") is invalid!" << std::dec << std::endl;
@@ -91,7 +79,7 @@ GlobalPoint MTDGeomUtil::getPosition(const DetId& id, const LocalPoint& local_po
   } else if (isETL(id)) {
     ETLDetId detId{id};
     DetId geoId = detId.geographicalId();
-    const MTDGeomDet* thedet = geom->idToDet(geoId);
+    const MTDGeomDet* thedet = geom_->idToDet(geoId);
     if (thedet == nullptr)
       throw cms::Exception("mtd::MTDGeomUtil") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
                                                << detId.rawId() << ") is invalid!" << std::dec << std::endl;
