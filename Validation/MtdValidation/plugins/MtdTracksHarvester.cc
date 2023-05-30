@@ -49,7 +49,6 @@ private:
   MonitorElement* meTPmtdEtaSelEff_;
   MonitorElement* meTPmtdPtMatchEff_;
   MonitorElement* meTPmtdEtaMatchEff_;
-  MonitorElement* meTPAssocEff_;
 };
 
 // ------------ constructor and destructor --------------
@@ -116,8 +115,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meTrackMatchedTPEffEtaEtl2Mtd = igetter.get(folder_ + "MatchedTPEffEtaEtl2Mtd");
   MonitorElement* meTrackMatchedTPmtdEffEtaTot = igetter.get(folder_ + "MatchedTPmtdEffEtaTot");
   MonitorElement* meTrackMatchedTPmtdEffEtaMtd = igetter.get(folder_ + "MatchedTPmtdEffEtaMtd");
-  MonitorElement* meNTrackingParticles = igetter.get(folder_ + "NTrackingParticles");
-  MonitorElement* meUnassDeposit = igetter.get(folder_ + "UnassDeposit");
 
   if (!meBTLTrackEffEtaTot || !meBTLTrackEffPhiTot || !meBTLTrackEffPtTot || !meBTLTrackEffEtaMtd ||
       !meBTLTrackEffPhiMtd || !meBTLTrackEffPtMtd || !meETLTrackEffEtaTotZneg || !meETLTrackEffPhiTotZneg ||
@@ -129,8 +126,7 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
       !meMVATrackMatchedEffEtaTot || !meMVATrackMatchedEffEtaMtd || !meTrackMatchedTPEffPtTot ||
       !meTrackMatchedTPEffPtMtd || !meTrackMatchedTPEffPtEtl2Mtd || !meTrackMatchedTPmtdEffPtTot ||
       !meTrackMatchedTPmtdEffPtMtd || !meTrackMatchedTPEffEtaTot || !meTrackMatchedTPEffEtaMtd ||
-      !meTrackMatchedTPEffEtaEtl2Mtd || !meTrackMatchedTPmtdEffEtaTot || !meTrackMatchedTPmtdEffEtaMtd ||
-      !meNTrackingParticles || !meUnassDeposit) {
+      !meTrackMatchedTPEffEtaEtl2Mtd || !meTrackMatchedTPmtdEffEtaTot || !meTrackMatchedTPmtdEffEtaMtd) {
     edm::LogError("MtdTracksHarvester") << "Monitoring histograms not found!" << std::endl;
     return;
   }
@@ -368,15 +364,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
                                      meTrackMatchedTPmtdEffEtaTot->getTH1()->GetXaxis()->GetXmax());
   meTPmtdEtaMatchEff_->getTH1()->SetMinimum(0.);
   computeEfficiency1D(meTrackMatchedTPmtdEffEtaMtd, meTrackMatchedTPmtdEffEtaTot, meTPmtdEtaMatchEff_);
-
-  meTPAssocEff_ =
-      ibook.book1D("TPAssocEff",
-                   "Tracking particles not associated to any MTD cell in events with at least one cell over threshold",
-                   meNTrackingParticles->getNbinsX(),
-                   meNTrackingParticles->getTH1()->GetXaxis()->GetXmin(),
-                   meNTrackingParticles->getTH1()->GetXaxis()->GetXmax());
-  meTPAssocEff_->getTH1()->SetMinimum(0.);
-  computeEfficiency1D(meUnassDeposit, meNTrackingParticles, meTPAssocEff_);
 
   meBtlEtaEff_->getTH1()->SetMinimum(0.);
   meBtlPhiEff_->getTH1()->SetMinimum(0.);
