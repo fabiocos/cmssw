@@ -29,10 +29,14 @@
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
+#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerClusterFwd.h"
+
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
 #include "Geometry/Records/interface/MTDTopologyRcd.h"
 #include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
 #include "Geometry/MTDNumberingBuilder/interface/MTDTopology.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeomUtil.h"
 
 #include "Geometry/MTDGeometryBuilder/interface/ProxyMTDTopology.h"
 #include "Geometry/MTDGeometryBuilder/interface/RectangularMTDTopology.h"
@@ -59,6 +63,7 @@ private:
   const float hitMinEnergy_;
 
   edm::EDGetTokenT<CrossingFrame<PSimHit> > btlSimHitsToken_;
+  edm::EDGetTokenT<MtdSimLayerClusterCollection> btlSimCluToken_;
 
   edm::ESGetToken<MTDGeometry, MTDDigiGeometryRecord> mtdgeoToken_;
   edm::ESGetToken<MTDTopology, MTDTopologyRcd> mtdtopoToken_;
@@ -69,6 +74,7 @@ private:
 
   MonitorElement* meNhits_;
   MonitorElement* meNtrkPerCell_;
+  MonitorElement* meNhitsSameId_;
 
   MonitorElement* meHitEnergy_;
   MonitorElement* meHitLogEnergy_;
@@ -93,6 +99,13 @@ private:
   MonitorElement* meHitTvsPhi_;
   MonitorElement* meHitTvsEta_;
   MonitorElement* meHitTvsZ_;
+
+  MonitorElement* meCluLogEnergy_;
+  MonitorElement* meCluPhi_;
+  MonitorElement* meCluEta_;
+  MonitorElement* meCluEvsEta_;
+  MonitorElement* meCluTvsEta_;
+  MonitorElement* meCluMvsEta_;
 };
 
 // ------------ constructor and destructor --------------
@@ -100,6 +113,7 @@ BtlSimHitsValidation::BtlSimHitsValidation(const edm::ParameterSet& iConfig)
     : folder_(iConfig.getParameter<std::string>("folder")),
       hitMinEnergy_(iConfig.getParameter<double>("hitMinimumEnergy")) {
   btlSimHitsToken_ = consumes<CrossingFrame<PSimHit> >(iConfig.getParameter<edm::InputTag>("inputTag"));
+  btlSimCluToken_ = consumes<MtdSimLayerClusterCollection>(iConfig.getParameter<edm::InputTag>("simCluTag"));
   mtdgeoToken_ = esConsumes<MTDGeometry, MTDDigiGeometryRecord>();
   mtdtopoToken_ = esConsumes<MTDTopology, MTDTopologyRcd>();
 }
@@ -117,11 +131,17 @@ void BtlSimHitsValidation::analyze(const edm::Event& iEvent, const edm::EventSet
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
 
+  mtd::MTDGeomUtil GeomTools;
+  GeomTools.setGeometry(geom);
+  GeomTools.setTopology(topology);
+
   auto btlSimHitsHandle = makeValid(iEvent.getHandle(btlSimHitsToken_));
   MixCollection<PSimHit> btlSimHits(btlSimHitsHandle.product());
 
+  auto btlSimCluHandle = makeValid(iEvent.getHandle(btlSimCluToken_));
+
   std::unordered_map<uint32_t, MTDHit> m_btlHits;
-  std::unordered_map<uint32_t, std::set<int> > m_btlTrkPerCell;
+  std::unordered_map<uint32_t, std::multiset<int> > m_btlTrkPerCell;
 
   // --- Loop over the BLT SIM hits
   for (auto const& simHit : btlSimHits) {
@@ -157,8 +177,17 @@ void BtlSimHitsValidation::analyze(const edm::Event& iEvent, const edm::EventSet
   if (!m_btlHits.empty())
     meNhits_->Fill(log10(m_btlHits.size()));
 
-  for (auto const& hit : m_btlTrkPerCell)
-    meNtrkPerCell_->Fill((hit.second).size());
+  for (auto const& cell : m_btlTrkPerCell) {
+    size_t ctot(0), cpart(0);
+    std::multiset<int>::iterator it = cell.second.begin();
+    while (it != cell.second.end()) {
+      cpart = cell.second.count(*it);
+      meNhitsSameId_->Fill(cpart);
+      ctot++;
+      std::advance(it, cpart);
+    }
+    meNtrkPerCell_->Fill(ctot);
+  }
 
   for (auto const& hit : m_btlHits) {
     meHitLogEnergy_->Fill(log10((hit.second).energy));
@@ -167,20 +196,8 @@ void BtlSimHitsValidation::analyze(const edm::Event& iEvent, const edm::EventSet
       continue;
 
     // --- Get the SIM hit global position
-    BTLDetId detId(hit.first);
-    DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
-    const MTDGeomDet* thedet = geom->idToDet(geoId);
-    if (thedet == nullptr)
-      throw cms::Exception("BtlSimHitsValidation") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
-                                                   << detId.rawId() << ") is invalid!" << std::dec << std::endl;
-    const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
-    const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
 
-    Local3DPoint local_point(
-        convertMmToCm((hit.second).x), convertMmToCm((hit.second).y), convertMmToCm((hit.second).z));
-
-    local_point = topo.pixelToModuleLocalPoint(local_point, detId.row(topo.nrows()), detId.column(topo.nrows()));
-    const auto& global_point = thedet->toGlobal(local_point);
+    const auto& global_point = GeomTools.getPosition(hit.first, 0, 0);
 
     // --- Fill the histograms
     meHitEnergy_->Fill((hit.second).energy);
@@ -208,6 +225,17 @@ void BtlSimHitsValidation::analyze(const edm::Event& iEvent, const edm::EventSet
 
   }  // hit loop
 
+  for (const auto& sc : *btlSimCluHandle) {
+    if (GeomTools.getLayer((DetId)sc.hits_and_fractions()[0].first) != 0)
+      continue;  // do not print etl clusters
+    meCluLogEnergy_->Fill(log10(sc.simEnergy()));
+    meCluPhi_->Fill(sc.phi());
+    meCluEta_->Fill(sc.eta());
+    meCluEvsEta_->Fill(sc.eta(), sc.simEnergy());
+    meCluTvsEta_->Fill(sc.eta(), sc.simTime());
+    meCluMvsEta_->Fill(sc.eta(), sc.numberOfSimHits());
+  }
+
   // --- This is to count the number of processed events, needed in the harvesting step
   meNevents_->Fill(0.5);
 }
@@ -224,6 +252,7 @@ void BtlSimHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
 
   meNhits_ = ibook.book1D("BtlNhits", "Number of BTL cells with SIM hits;log_{10}(N_{BTL cells})", 100, 0., 5.25);
   meNtrkPerCell_ = ibook.book1D("BtlNtrkPerCell", "Number of tracks per BTL cell;N_{trk}", 10, 0., 10.);
+  meNhitsSameId_ = ibook.book1D("BtlNhitsSameId", "Number of BTL SIM hits from same track Id in a cell", 10, 0., 10.);
 
   meHitEnergy_ = ibook.book1D("BtlHitEnergy", "BTL SIM hits energy;E_{SIM} [MeV]", 100, 0., 20.);
   meHitLogEnergy_ = ibook.book1D("BtlHitLogEnergy", "BTL SIM hits energy;log_{10}(E_{SIM} [MeV])", 200, -6., 3.);
@@ -256,6 +285,16 @@ void BtlSimHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
       ibook.bookProfile("BtlHitTvsEta", "BTL SIM time vs #eta;#eta_{SIM};T_{SIM} [ns]", 50, -1.55, 1.55, 0., 100.);
   meHitTvsZ_ =
       ibook.bookProfile("BtlHitTvsZ", "BTL SIM time vs Z;Z_{SIM} [cm];T_{SIM} [ns]", 50, -260., 260., 0., 100.);
+
+  meCluLogEnergy_ = ibook.book1D("BtlCluLogEnergy", "BTL SIM cluster energy;log_{10}(E_{SIM} [MeV])", 200, -6., 3.);
+  meCluPhi_ = ibook.book1D("BtlCluPhi", "BTL SIM cluster #phi;#phi_{SIM} [rad]", 200, -3.15, 3.15);
+  meCluEta_ = ibook.book1D("BtlCluEta", "BTL SIM cluster #eta;#eta_{SIM}", 100, -1.55, 1.55);
+  meCluEvsEta_ = ibook.bookProfile(
+      "BtlCluEvsEta", "BTL SIM cluster energy vs #eta;#eta_{SIM};E_{SIM} [MeV]", 50, -1.55, 1.55, 0., 100.);
+  meCluTvsEta_ = ibook.bookProfile(
+      "BtlCluTvsEta", "BTL SIM cluster time vs #eta;#eta_{SIM};E_{SIM} [MeV]", 50, -1.55, 1.55, 0., 100.);
+  meCluMvsEta_ = ibook.bookProfile(
+      "BtlCluMvsEta", "BTL SIM cluster DetId multiplicity vs #eta;#eta_{SIM};E_{SIM} [MeV]", 50, -1.55, 1.55, 0., 100.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -264,6 +303,7 @@ void BtlSimHitsValidation::fillDescriptions(edm::ConfigurationDescriptions& desc
 
   desc.add<std::string>("folder", "MTD/BTL/SimHits");
   desc.add<edm::InputTag>("inputTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
+  desc.add<edm::InputTag>("simCluTag", edm::InputTag("mix", "MergedMtdTruthLC"));
   desc.add<double>("hitMinimumEnergy", 1.);  // [MeV]
 
   descriptions.add("btlSimHitsValid", desc);
