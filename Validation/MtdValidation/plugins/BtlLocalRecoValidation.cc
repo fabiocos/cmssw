@@ -41,8 +41,10 @@
 
 #include "Geometry/MTDCommonData/interface/MTDTopologyMode.h"
 
-#include "RecoLocalFastTime/Records/interface/MTDCPERecord.h"
-#include "RecoLocalFastTime/FTLClusterizer/interface/MTDClusterParameterEstimator.h"
+//#include "RecoLocalFastTime/Records/interface/MTDCPERecord.h"
+//#include "RecoLocalFastTime/FTLClusterizer/interface/MTDClusterParameterEstimator.h"
+#include "DataFormats/GeometryVector/interface/LocalPoint.h"
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 
 #include "MTDHit.h"
 
@@ -76,7 +78,7 @@ private:
 
   const MTDGeometry* geom;
   const MTDTopology* topo;
-  const MTDClusterParameterEstimator* cpe;
+  //const MTDClusterParameterEstimator* cpe;
 
   // --- histograms declaration
 
@@ -236,9 +238,9 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
   iSetup.get<MTDTopologyRcd>().get(mtdTopoH);
   topo = mtdTopoH.product();
 
-  edm::ESHandle<MTDClusterParameterEstimator> cpeH;
-  iSetup.get<MTDCPERecord>().get(cpeH);
-  cpe = cpeH.product();
+  //edm::ESHandle<MTDClusterParameterEstimator> cpeH;
+  //iSetup.get<MTDCPERecord>().get(cpeH);
+  //cpe = cpeH.product();
 
   edm::Handle< FTLRecHitCollection > btlRecHitsHandle;
   iEvent.getByToken(btlRecHitsToken_, btlRecHitsHandle);
@@ -384,18 +386,18 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(genericDet->topology());
       const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
 
-      MTDClusterParameterEstimator::ReturnType tuple = cpe->getParameters(cluster, *genericDet);
+      //MTDClusterParameterEstimator::ReturnType tuple = cpe->getParameters(cluster, *genericDet);
 
       // --- Cluster position in the module reference frame
-      LocalPoint local_point(std::get<0>(tuple));
-      const auto& global_point = genericDet->toGlobal(local_point);
+      //LocalPoint local_point(std::get<0>(tuple));
+      //const auto& global_point = genericDet->toGlobal(local_point);
 
       meCluEnergy_->Fill(cluster.energy());
       meCluTime_->Fill(cluster.time());
       meCluTimeError_->Fill(cluster.timeError());
-      meCluPhi_->Fill(global_point.phi());
-      meCluEta_->Fill(global_point.eta());
-      meCluZvsPhi_->Fill(global_point.z(), global_point.phi());
+      //meCluPhi_->Fill(global_point.phi());
+      //meCluEta_->Fill(global_point.eta());
+      //meCluZvsPhi_->Fill(global_point.z(), global_point.phi());
       meCluHits_->Fill(cluster.size());
 
       // --- Get the SIM hits associated to the cluster and calculate
@@ -406,6 +408,8 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
       double cluLocXSIM = 0.;
       double cluLocYSIM = 0.;
       double cluLocZSIM = 0.;
+      LocalPoint local_point;
+      GlobalPoint global_point;
 
       for (int ihit = 0; ihit < cluster.size(); ++ihit) {
         int hit_row = cluster.minHitRow() + cluster.hitOffset()[ihit * 2];
@@ -457,6 +461,8 @@ void BtlLocalRecoValidation::analyze(const edm::Event& iEvent, const edm::EventS
         if (isSameCluster(trkHit.mtdCluster(), cluster)) {
           comp = trkHit.clone();
           matchClu = true;
+          LocalPoint local_point = trkHit.localPosition();
+          global_point = genericDet->toGlobal(local_point);
           break;
         }
       }

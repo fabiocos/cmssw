@@ -143,7 +143,7 @@ private:
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
 
-  edm::EDGetTokenT<edm::ValueMap<int>> trackAssocToken_;
+  //edm::EDGetTokenT<edm::ValueMap<int>> trackAssocToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> pathLengthToken_;
 
   edm::EDGetTokenT<edm::ValueMap<float>> tmtdToken_;
@@ -154,7 +154,7 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> Sigmat0PidToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> t0SafePidToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> Sigmat0SafePidToken_;
-  edm::EDGetTokenT<edm::ValueMap<float>> trackMVAQualToken_;
+  //edm::EDGetTokenT<edm::ValueMap<float>> trackMVAQualToken_;
 
   MonitorElement* meBTLTrackRPTime_;
   MonitorElement* meBTLTrackEffEtaTot_;
@@ -242,7 +242,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("etlSimHits"));
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("btlRecHits"));
   etlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("etlRecHits"));
-  trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
+  //trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
   pathLengthToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("pathLengthSrc"));
   tmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tmtd"));
   SigmatmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatmtd"));
@@ -252,7 +252,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   Sigmat0PidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmat0PID"));
   t0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("t0SafePID"));
   Sigmat0SafePidToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmat0SafePID"));
-  trackMVAQualToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("trackMVAQual"));
+  //trackMVAQualToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("trackMVAQual"));
 }
 
 MtdTracksValidation::~MtdTracksValidation() {}
@@ -299,12 +299,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::Handle<edm::ValueMap<float>> Sigmat0SafeH;
   iEvent.getByToken(Sigmat0SafePidToken_, Sigmat0SafeH);
   const auto& Sigmat0Safe = *Sigmat0SafeH;
-  edm::Handle<edm::ValueMap<float>> mtdQualMVAH;
-  iEvent.getByToken(trackMVAQualToken_, mtdQualMVAH);
-  const auto& mtdQualMVA = *mtdQualMVAH;
-  edm::Handle<edm::ValueMap<float>> trackAssocH;
-  iEvent.getByToken(trackAssocToken_, trackAssocH);
-  const auto& trackAssoc = *trackAssocH;
+  //edm::Handle<edm::ValueMap<float>> mtdQualMVAH;
+  //iEvent.getByToken(trackMVAQualToken_, mtdQualMVAH);
+  //const auto& mtdQualMVA = *mtdQualMVAH;
+  //edm::Handle<edm::ValueMap<int>> trackAssocH;
+  //iEvent.getByToken(trackAssocToken_, trackAssocH);
+  //const auto& trackAssoc = *trackAssocH;
   edm::Handle<edm::ValueMap<float>> pathLengthH;
   iEvent.getByToken(pathLengthToken_, pathLengthH);
   const auto& pathLength = *pathLengthH;
@@ -410,14 +410,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     const reco::TrackRef trackref(GenRecTrackHandle, index);
     index++;
 
-    if (trackAssoc[trackref] == -1) {
-      LogInfo("mtdTracks") << "Extended track not associated";
-      continue;
-    }
+    //if (trackAssoc[trackref] == -1) {
+      //LogInfo("mtdTracks") << "Extended track not associated";
+      //continue;
+    //}
 
     //const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
-    const reco::TrackRef mtdTrackref = reco::TrackRef(RecTrackHandle, trackAssoc[trackref]);
-    const reco::Track& track = *mtdTrackref;
+    //const reco::TrackRef mtdTrackref = reco::TrackRef(RecTrackHandle, trackAssoc[trackref]);
+    //const reco::Track& track = *mtdTrackref;
+    const reco::Track& track = trackGen;
 
     bool isBTL = false;
     bool isETL = false;
@@ -438,7 +439,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
       meTrackSigmat0Pid_->Fill(Sigmat0Pid[trackref]);
       meTrackt0SafePid_->Fill(t0Safe[trackref]);
       meTrackSigmat0SafePid_->Fill(Sigmat0Safe[trackref]);
-      meTrackMVAQual_->Fill(mtdQualMVA[trackref]);
+      //meTrackMVAQual_->Fill(mtdQualMVA[trackref]);
 
       meTrackPathLenghtvsEta_->Fill(std::abs(track.eta()), pathLength[trackref]);
 
@@ -641,7 +642,8 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
   const MagneticField* mfield = mfieldH.product();
 
   edm::ESHandle<TransientTrackBuilder> ttbuilderH;
-  iSetup.get<TransientTrackRecord>().get(ttbuilderH);
+  const std::string transientTrackBuilder_("TransientTrackBuilder");
+  iSetup.get<TransientTrackRecord>().get(transientTrackBuilder_, ttbuilderH);
   const TransientTrackBuilder* ttrackBuilder = ttbuilderH.product();
 
   auto tTrack = ttrackBuilder->build(track);
