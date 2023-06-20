@@ -53,6 +53,9 @@ validationNoHLT.remove(condDataValidation) # foca d'ovatta !
 validation = cms.Sequence(validationNoHLT
                          *hltvalidation)
 
+from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
+phase2_common.toReplaceWith(validation, validation.copyAndExclude([validationNoHLT]))
+
 _validation_fastsim = validation.copy()
 for _entry in [globaldigisanalyze,globalhitsanalyze,globalrechitsanalyze,hltvalidation]:
     _validation_fastsim.remove(_entry)
