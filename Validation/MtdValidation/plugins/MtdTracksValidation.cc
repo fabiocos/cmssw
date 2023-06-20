@@ -143,7 +143,7 @@ private:
   edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
   edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
 
-  //edm::EDGetTokenT<edm::ValueMap<int>> trackAssocToken_;
+  edm::EDGetTokenT<edm::ValueMap<int>> trackAssocToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> pathLengthToken_;
 
   edm::EDGetTokenT<edm::ValueMap<float>> tmtdToken_;
@@ -242,7 +242,7 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
   etlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("etlSimHits"));
   btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("btlRecHits"));
   etlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("etlRecHits"));
-  //trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
+  trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
   pathLengthToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("pathLengthSrc"));
   tmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("tmtd"));
   SigmatmtdToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatmtd"));
@@ -302,9 +302,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
   //edm::Handle<edm::ValueMap<float>> mtdQualMVAH;
   //iEvent.getByToken(trackMVAQualToken_, mtdQualMVAH);
   //const auto& mtdQualMVA = *mtdQualMVAH;
-  //edm::Handle<edm::ValueMap<int>> trackAssocH;
-  //iEvent.getByToken(trackAssocToken_, trackAssocH);
-  //const auto& trackAssoc = *trackAssocH;
+  edm::Handle<edm::ValueMap<int>> trackAssocH;
+  iEvent.getByToken(trackAssocToken_, trackAssocH);
+  const auto& trackAssoc = *trackAssocH;
   edm::Handle<edm::ValueMap<float>> pathLengthH;
   iEvent.getByToken(pathLengthToken_, pathLengthH);
   const auto& pathLength = *pathLengthH;
@@ -410,15 +410,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     const reco::TrackRef trackref(GenRecTrackHandle, index);
     index++;
 
-    //if (trackAssoc[trackref] == -1) {
-      //LogInfo("mtdTracks") << "Extended track not associated";
-      //continue;
-    //}
+    if (trackAssoc[trackref] == -1) {
+      LogInfo("mtdTracks") << "Extended track not associated";
+      continue;
+    }
 
     //const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
-    //const reco::TrackRef mtdTrackref = reco::TrackRef(RecTrackHandle, trackAssoc[trackref]);
-    //const reco::Track& track = *mtdTrackref;
-    const reco::Track& track = trackGen;
+    const reco::TrackRef mtdTrackref = reco::TrackRef(RecTrackHandle, trackAssoc[trackref]);
+    const reco::Track& track = *mtdTrackref;
+    //const reco::Track& track = trackGen;
 
     bool isBTL = false;
     bool isETL = false;
@@ -539,12 +539,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           float selvar(0.);
           auto accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar);
           if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
-            meExtraPhiAtBTL_->Fill(extphi*180./std::acos(1.));
+            meExtraPhiAtBTL_->Fill(extphi*180./std::acos(-1.));
             meExtraBTLeneInCone_->Fill(selvar);
           }
           if (accept.second) {
             if (std::abs(exteta) < trackMaxBtlEta_) {
-              meExtraPhiAtBTLmatched_->Fill(extphi*180./std::acos(1.));
+              meExtraPhiAtBTLmatched_->Fill(extphi*180./std::acos(-1.));
             }
             if (noCrack) {
               meExtraPtMtd_->Fill(trackGen.pt());
