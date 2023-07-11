@@ -218,6 +218,8 @@ private:
   MonitorElement* meExtraPhiAtBTL_;
   MonitorElement* meExtraPhiAtBTLmatched_;
   MonitorElement* meExtraBTLeneInCone_;
+  MonitorElement* meExtraBTLfailExtenderEta_;
+  MonitorElement* meExtraBTLfailExtenderPt_;
 };
 
 // ------------ constructor and destructor --------------
@@ -462,9 +464,6 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           }
         }
         meTrackNumHits_->Fill(numMTDBtlvalidhits);
-        if (isBTL && Sigmat0Safe[trackref] < 0.) {
-          meTrackNumHitsNT_->Fill(numMTDBtlvalidhits);
-        }
 
         // --- keeping only tracks with last hit in MTD ---
         if (MTDBtl == true) {
@@ -474,6 +473,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           meBTLTrackEffPtMtd_->Fill(track.pt());
           meBTLTrackRPTime_->Fill(track.t0());
           meBTLTrackPtRes_->Fill((trackGen.pt() - track.pt()) / trackGen.pt());
+        }
+        if (isBTL && Sigmat0Safe[trackref] < 0.) {
+          meTrackNumHitsNT_->Fill(numMTDBtlvalidhits);
         }
       }  //loop over (geometrical) BTL tracks
 
@@ -555,6 +557,12 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             meExtraEtaMtd_->Fill(std::abs(trackGen.eta()));
             if (nlayers == 2) {
               meExtraEtaEtl2Mtd_->Fill(trackGen.eta());
+            }
+            if (accept.first && accept.second && !isBTL) {
+              meExtraBTLfailExtenderEta_->Fill(std::abs(trackGen.eta()));
+              if (noCrack) {
+                meExtraBTLfailExtenderPt_->Fill(trackGen.pt());
+              }
             }
           }
         }
@@ -945,10 +953,24 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                      180.);
     meExtraBTLeneInCone_ = ibook.book1D(
         "ExtraBTLeneInCone", "BTL reconstructed energy in cone arounnd extrapolated track; E [MeV]", 100, 0., 50.);
+    meExtraBTLfailExtenderEta_ =
+        ibook.book1D("ExtraBTLfailExtenderEta",
+                     "Eta of tracks extrapolated to BTL with no track extender match to hits; track eta",
+                     66,
+                     0.,
+                     3.3);
+    ;
+    meExtraBTLfailExtenderPt_ =
+        ibook.book1D("ExtraBTLfailExtenderPt",
+                     "Pt of tracks extrapolated to BTL with no track extender match to hits; track pt [GeV] ",
+                     110,
+                     0.,
+                     11.);
+
   }
 }
 
-// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+// ----------- method fills 'descriptions' with the allowed parameters for the module  ------------
 
 void MtdTracksValidation::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
