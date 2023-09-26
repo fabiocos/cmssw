@@ -10,6 +10,12 @@ namespace cms_units {
 
   using angle_units::piRadians;  // Needed by files the include this file
 
+  constexpr double c_cm_ns = 29.9792458;  // speed of light in cms/ns
+
+  constexpr double m_pionpm = 0.13957039;     // pion mass PDG 2023, GeV
+  constexpr double m_kaonpm = 0.493677;       // kaon mass PDG 2023, GeV
+  constexpr double m_proton = 0.93827208816;  // proton mass PDF 2023, GeV
+
   namespace operators {
 
     // The following are needed by files that include this header

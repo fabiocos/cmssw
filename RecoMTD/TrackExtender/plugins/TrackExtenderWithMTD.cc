@@ -1,4 +1,3 @@
-#include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -51,9 +50,8 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-#include "DataFormats/Math/interface/GeantUnits.h"
+#include "DataFormats/Math/interface/CMSUnits.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
-#include "CLHEP/Units/GlobalPhysicalConstants.h"
 #include "DataFormats/Math/interface/Rounding.h"
 
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -64,8 +62,12 @@ using namespace edm;
 using namespace reco;
 
 namespace {
-  constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
-  constexpr float c_inv = 1.0f / c_cm_ns;
+
+  constexpr float c_cm_ns_f = static_cast<float>(cms_units::c_cm_ns);
+  constexpr float c_inv = static_cast<float>(1.0 / cms_units::c_cm_ns);
+  constexpr float m_pi_inv2 = static_cast<float>(1.0 / cms_units::m_pionpm / cms_units::m_pionpm);
+  constexpr float m_k_inv2 = static_cast<float>(1.0 / cms_units::m_kaonpm / cms_units::m_kaonpm);
+  constexpr float m_p_inv2 = static_cast<float>(1.0 / cms_units::m_proton / cms_units::m_proton);
 
   class MTDHitMatchingInfo {
   public:
@@ -189,13 +191,6 @@ namespace {
                                                float t_vtx_err,
                                                bool addPIDError = true,
                                                TofCalc choice = TofCalc::kCost) {
-    constexpr float m_pi = 0.13957018f;
-    constexpr float m_pi_inv2 = 1.0f / m_pi / m_pi;
-    constexpr float m_k = 0.493677f;
-    constexpr float m_k_inv2 = 1.0f / m_k / m_k;
-    constexpr float m_p = 0.9382720813f;
-    constexpr float m_p_inv2 = 1.0f / m_p / m_p;
-
     TrackTofPidInfo tofpid;
 
     tofpid.tmtd = t_mtd;
@@ -1229,7 +1224,7 @@ reco::Track TrackExtenderWithMTDT<TrackCollection>::buildTrack(const reco::Track
       validmtd = true;
     } else if (ihitcount == 2 && ietlcount == 2) {
       std::pair<float, float> lastStep = trs.getSegmentPathAndMom2(0);
-      float etlpathlength = std::abs(lastStep.first * c_cm_ns);
+      float etlpathlength = std::abs(lastStep.first * c_cm_ns_f);
       //
       // The information of the two ETL hits is combined and attributed to the innermost hit
       //

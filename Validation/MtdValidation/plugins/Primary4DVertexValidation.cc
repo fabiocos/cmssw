@@ -47,8 +47,7 @@
 #include "DQMServices/Core/interface/DQMStore.h"
 
 #include "DataFormats/Math/interface/deltaR.h"
-#include "DataFormats/Math/interface/GeantUnits.h"
-#include "CLHEP/Units/PhysicalConstants.h"
+#include "DataFormats/Math/interface/CMSUnits.h"
 
 //class declaration
 class Primary4DVertexValidation : public DQMEDAnalyzer {
@@ -209,9 +208,8 @@ private:
 
   const std::string folder_;
   static constexpr unsigned int NOT_MATCHED = 66666;
-  static constexpr double simUnit_ = 1e9;     //sim time in s while reco time in ns
-  static constexpr double c_ = 2.99792458e1;  //c in cm/ns
-  static constexpr double mvaL_ = 0.5;        //MVA cuts for MVA categories
+  static constexpr double simUnit_ = 1e9;  //sim time in s while reco time in ns
+  static constexpr double mvaL_ = 0.5;     //MVA cuts for MVA categories
   static constexpr double mvaH_ = 0.8;
   static constexpr double selNdof_ = 4.;
   static constexpr double maxRank_ = 8.;
@@ -225,8 +223,6 @@ private:
   static constexpr double trackMinEtlEta_ = 1.6;
   static constexpr double trackMaxEtlEta_ = 3.;
   static constexpr double tol_ = 1.e-4;  // tolerance on reconstructed track time, [ns]
-
-  static constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
 
   bool use_only_charged_tracks_;
   bool debug_;
@@ -779,7 +775,7 @@ const edm::Ref<std::vector<TrackingParticle>>* Primary4DVertexValidation::getMat
 double Primary4DVertexValidation::timeFromTrueMass(double mass, double pathlength, double momentum, double time) {
   if (time > 0 && pathlength > 0 && mass > 0) {
     double gammasq = 1. + momentum * momentum / (mass * mass);
-    double v = c_ * std::sqrt(1. - 1. / gammasq);  // cm / ns
+    double v = cms_units::c_cm_ns * std::sqrt(1. - 1. / gammasq);  // cm / ns
     double t_est = time - (pathlength / v);
 
     return t_est;
@@ -1017,7 +1013,7 @@ void Primary4DVertexValidation::matchReco2Sim(std::vector<recoPrimaryVertex>& re
 
           if (sigmat0[(*iTrack)] > 0) {
             double sigmaZ = (*BS).sigmaZ();
-            double sigmaT = sigmaZ / c_;  // c in cm/ns
+            double sigmaT = sigmaZ / cms_units::c_cm_ns;  // c in cm/ns
             wos = wos / erf(sigmat0[(*iTrack)] / sigmaT);
           }
           simpv.at(iev).addTrack(iv, wos, wnt);

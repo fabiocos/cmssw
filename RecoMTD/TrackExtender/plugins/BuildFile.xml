@@ -2,7 +2,7 @@
 <use name="RecoMTD/Records"/>
 <use name="FWCore/Framework"/>
 <library file="TrackExtenderWithMTD.cc" name="RecoMTDTrackExtenderPlugins">
-  <use name="clhep"/>
+  <use name="DataFormats/Math"/>
   <use name="TrackingTools/TrackRefitter"/>
   <use name="TrackingTools/Records"/>
   <use name="TrackingTools/TransientTrack"/>
