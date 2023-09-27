@@ -134,6 +134,7 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meMVATrackEffEtaTot = igetter.get(folder_ + "MVAEffEtaTot");
   MonitorElement* meMVATrackMatchedEffEtaTot = igetter.get(folder_ + "MVAMatchedEffEtaTot");
   MonitorElement* meMVATrackMatchedEffEtaMtd = igetter.get(folder_ + "MVAMatchedEffEtaMtd");
+  MonitorElement* meExtraEtaWrong = igetter.get(folder_ + "ExtraEtaWrong");
   MonitorElement* meExtraEtaMtd = igetter.get(folder_ + "ExtraEtaMtd");
   MonitorElement* meExtraEtaEtl2Mtd = igetter.get(folder_ + "ExtraEtaEtl2Mtd");
   MonitorElement* meTrackMatchedTPEffEtaTot = igetter.get(folder_ + "MatchedTPEffEtaTot");
@@ -310,7 +311,8 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
                                   meMVATrackEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
                                   meMVATrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
     meExtraEtaEff_->getTH1()->SetMinimum(0.);
-    computeEfficiency1D(meExtraEtaMtd, meTrackMatchedTPEffEtaTot, meExtraEtaEff_);
+    //computeEfficiency1D(meExtraEtaMtd, meTrackMatchedTPEffEtaTot, meExtraEtaEff_);
+    computeEfficiency1D(meExtraEtaMtd, meExtraEtaWrong, meExtraEtaEff_);
 
     meExtraEtaEtl2Eff_ = ibook.book1D("ExtraEtaEtl2Eff",
                                       "MTD matching efficiency (2 ETL) wrt extrapolated track VS Eta;Eta;Efficiency",
@@ -473,14 +475,6 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
                                      meMVATrackEffPtTot->getTH1()->GetXaxis()->GetXmax());
     meExtraPtEtl2Eff_->getTH1()->SetMinimum(0.);
     computeEfficiency1D(meExtraPtEtl2Mtd, meTrackMatchedTPEffPtTot, meExtraPtEtl2Eff_);
-
-    meExtraEtaEff_ = ibook.book1D("ExtraEtaEff",
-                                  "MTD matching efficiency wrt extrapolated track VS Eta;Eta;Efficiency",
-                                  meMVATrackEffEtaTot->getNbinsX(),
-                                  meMVATrackEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
-                                  meMVATrackEffEtaTot->getTH1()->GetXaxis()->GetXmax());
-    meExtraEtaEff_->getTH1()->SetMinimum(0.);
-    computeEfficiency1D(meExtraEtaMtd, meTrackMatchedTPEffEtaTot, meExtraEtaEff_);
 
     meExtraEtaEtl2Eff_ = ibook.book1D("ExtraEtaEtl2Eff",
                                       "MTD matching efficiency (2 ETL) wrt extrapolated track VS Eta;Eta;Efficiency",

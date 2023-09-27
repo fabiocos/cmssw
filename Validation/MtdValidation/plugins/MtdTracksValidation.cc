@@ -204,6 +204,7 @@ private:
   MonitorElement* meMVATrackEffEtaTot_;
   MonitorElement* meMVATrackMatchedEffEtaTot_;
   MonitorElement* meMVATrackMatchedEffEtaMtd_;
+  MonitorElement* meExtraEtaWrong_;
   MonitorElement* meExtraEtaMtd_;
   MonitorElement* meExtraEtaEtl2Mtd_;
   MonitorElement* meTrackMatchedTPEffEtaTot_;
@@ -541,6 +542,7 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           float selvar(0.);
           auto accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar);
           if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
+            meExtraEtaWrong_->Fill(std::abs(trackGen.eta()));
             meExtraPhiAtBTL_->Fill(extphi*180./std::acos(-1.));
             meExtraBTLeneInCone_->Fill(selvar);
           }
@@ -678,7 +680,7 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
     if (!comp.first)
       continue;
     if (!inBTL) {
-      inBTL = true;
+      //inBTL = true;
       extrho = comp.second.globalPosition().perp();
       exteta = comp.second.globalPosition().eta();
       extphi = comp.second.globalPosition().phi();
@@ -686,6 +688,9 @@ const std::pair<bool, bool> MtdTracksValidation::checkAcceptance(const reco::Tra
           << "Extrapolation at BTL surface, rho= " << extrho << " eta= " << exteta << " phi= " << extphi;
     }
     std::vector<DetLayer::DetWithState> compDets = ilay->compatibleDets(tsos, prop, *theEstimator);
+    if (compDets.size() > 0 && !inBTL) {
+      inBTL = true;
+    }
     for (const auto& detWithState : compDets) {
       const auto& det = detWithState.first;
 
@@ -916,6 +921,7 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
       "MVAMatchedEffEtaMtd", "Eta of tracks associated to LV matched to GEN with time; track eta ", 66, 0., 3.3);
 
   if (optionalPlots_) {
+    meExtraEtaWrong_ = ibook.book1D("ExtraEtaWrong", "Eta of tracks extrapolated to hits; track eta ", 66, 0., 3.3);
     meExtraEtaMtd_ = ibook.book1D("ExtraEtaMtd", "Eta of tracks extrapolated to hits; track eta ", 66, 0., 3.3);
     meExtraEtaEtl2Mtd_ =
         ibook.book1D("ExtraEtaEtl2Mtd", "Eta of tracks extrapolated to hits, 2 ETL layers; track eta ", 66, 0., 3.3);
