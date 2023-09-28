@@ -1023,11 +1023,11 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
       "ExtraBTLeneInCone", "BTL reconstructed energy in cone arounnd extrapolated track; E [MeV]", 100, 0., 50.);
   if (optionalPlots_) {
     meExtraPhiDetailAtBTL_ =
-        ibook.book1D("ExtraPhiDetailAtBTL", "Phi at BTL surface of extrapolated tracks; phi [deg]", 100, 0., 20.);
+        ibook.book1D("ExtraPhiDetailAtBTL", "Phi at BTL surface of extrapolated tracks; phi [deg]", 200, 0., 20.);
     meExtraPhiDetailAtBTLmatched_ =
         ibook.book1D("ExtraPhiDetailAtBTLmatched",
                      "Phi at BTL surface of extrapolated tracks matched with BTL hits; phi [deg]",
-                     100,
+                     200,
                      0.,
                      20.);
     meExtraMTDfailExtenderEta_ =
