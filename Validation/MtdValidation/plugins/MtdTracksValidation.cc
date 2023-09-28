@@ -11,6 +11,7 @@
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 
@@ -217,6 +218,8 @@ private:
 
   MonitorElement* meExtraPhiAtBTL_;
   MonitorElement* meExtraPhiAtBTLmatched_;
+  MonitorElement* meExtraPhiDetailAtBTL_;
+  MonitorElement* meExtraPhiDetailAtBTLmatched_;
   MonitorElement* meExtraBTLeneInCone_;
   MonitorElement* meExtraBTLfailExtenderEta_;
   MonitorElement* meExtraBTLfailExtenderPt_;
@@ -539,14 +542,28 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           float exteta(0.);
           float extphi(0.);
           float selvar(0.);
+          float extphidet(0.);
           auto accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar);
           if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
             meExtraPhiAtBTL_->Fill(extphi*180./std::acos(-1.));
             meExtraBTLeneInCone_->Fill(selvar);
+           extphidet = extphi*180./std::acos(-1.);
+            if (extphidet < 0.) {
+              extphidet += 180.;
+            }
+            float traymin(2.000008f), traymax(177.999992f),
+                traybin(9.777764705882353f);  // from btl v2 tray positions
+            if (extphidet > traymin && extphidet < traymax) {
+              extphidet = std::fmod(extphidet - traymin, 2. * traybin) + traymin;
+            } else if (extphidet >= traymax) {
+              extphidet -= 16. * traybin;
+            }
+            meExtraPhiDetailAtBTL_->Fill(extphidet);
           }
           if (accept.second) {
             if (std::abs(exteta) < trackMaxBtlEta_) {
               meExtraPhiAtBTLmatched_->Fill(extphi*180./std::acos(-1.));
+           meExtraPhiDetailAtBTLmatched_->Fill(extphidet);
             }
             if (noCrack) {
               meExtraPtMtd_->Fill(trackGen.pt());
@@ -556,9 +573,9 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
             }
             meExtraEtaMtd_->Fill(std::abs(trackGen.eta()));
             if (nlayers == 2) {
-              meExtraEtaEtl2Mtd_->Fill(trackGen.eta());
+              meExtraEtaEtl2Mtd_->Fill(std::abs(trackGen.eta()));
             }
-            if (accept.first && accept.second && !isBTL) {
+            if (accept.first && accept.second && !(isBTL || isETL)) {
               meExtraBTLfailExtenderEta_->Fill(std::abs(trackGen.eta()));
               if (noCrack) {
                 meExtraBTLfailExtenderPt_->Fill(trackGen.pt());
@@ -951,6 +968,14 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                      720,
                      -180.,
                      180.);
+    meExtraPhiDetailAtBTL_ =
+        ibook.book1D("ExtraPhiDetailAtBTL", "Phi at BTL surface of extrapolated tracks; phi [deg]", 200, 0., 20.);
+    meExtraPhiDetailAtBTLmatched_ =
+        ibook.book1D("ExtraPhiDetailAtBTLmatched",
+                     "Phi at BTL surface of extrapolated tracks matched with BTL hits; phi [deg]",
+                     200,
+                     0.,
+                     20.);
     meExtraBTLeneInCone_ = ibook.book1D(
         "ExtraBTLeneInCone", "BTL reconstructed energy in cone arounnd extrapolated track; E [MeV]", 100, 0., 50.);
     meExtraBTLfailExtenderEta_ =
