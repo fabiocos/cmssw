@@ -11,6 +11,7 @@
 
 #include "DataFormats/Common/interface/ValidHandle.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "DataFormats/Math/interface/angle_units.h"
 #include "DataFormats/ForwardDetId/interface/ETLDetId.h"
@@ -126,6 +127,8 @@ private:
   static constexpr double etaMatchCut_ = 0.05;
   static constexpr double cluDRradius_ = 0.05;  // to cluster rechits around extrapolated track
 
+  bool optionalPlots_;
+
   const reco::RecoToSimCollection* r2s_;
   const reco::SimToRecoCollection* s2r_;
 
@@ -223,6 +226,8 @@ private:
 
   MonitorElement* meExtraPhiAtBTL_;
   MonitorElement* meExtraPhiAtBTLmatched_;
+  MonitorElement* meExtraPhiDetailAtBTL_;
+  MonitorElement* meExtraPhiDetailAtBTLmatched_;
   MonitorElement* meExtraBTLeneInCone_;
   MonitorElement* meExtraMTDfailExtenderEta_;
   MonitorElement* meExtraMTDfailExtenderPt_;
@@ -234,7 +239,8 @@ MtdTracksValidation::MtdTracksValidation(const edm::ParameterSet& iConfig)
       trackMinPt_(iConfig.getParameter<double>("trackMinimumPt")),
       trackMaxBtlEta_(iConfig.getParameter<double>("trackMaximumBtlEta")),
       trackMinEtlEta_(iConfig.getParameter<double>("trackMinimumEtlEta")),
-      trackMaxEtlEta_(iConfig.getParameter<double>("trackMaximumEtlEta")) {
+      trackMaxEtlEta_(iConfig.getParameter<double>("trackMaximumEtlEta")),
+      optionalPlots_(iConfig.getUntrackedParameter<bool>("optionalPlots")) {
   GenRecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagG"));
   RecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagT"));
   RecVertexToken_ = consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("inputTagV"));
@@ -590,14 +596,32 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
         float exteta(0.);
         float extphi(0.);
         float selvar(0.);
+        float extphidet(0.);
         auto accept = checkAcceptance(trackGen, iEvent, iSetup, nlayers, extrho, exteta, extphi, selvar);
         if (accept.first && std::abs(exteta) < trackMaxBtlEta_) {
           meExtraPhiAtBTL_->Fill(angle_units::operators::convertRadToDeg(extphi));
+          if (optionalPlots_) {
+            extphidet = angle_units::operators::convertRadToDeg(extphi);
+            if (extphidet < 0.) {
+              extphidet += 180.;
+            }
+            float traymin(4.7368421f), traymax(175.2631577f),
+                traybin(9.4736842f);  // from btl v2 tray positions
+            if (extphidet > traymin && extphidet < traymax) {
+              extphidet = std::fmod(extphidet - traymin, 2. * traybin) + traymin;
+            } else if (extphidet >= traymax) {
+              extphidet -= 16. * traybin;
+            }
+            meExtraPhiDetailAtBTL_->Fill(extphidet);
+          }
           meExtraBTLeneInCone_->Fill(selvar);
         }
         if (accept.second) {
           if (std::abs(exteta) < trackMaxBtlEta_) {
             meExtraPhiAtBTLmatched_->Fill(angle_units::operators::convertRadToDeg(extphi));
+            if (optionalPlots_) {
+              meExtraPhiDetailAtBTLmatched_->Fill(extphidet);
+            }
           }
           if (noCrack) {
             meExtraPtMtd_->Fill(trackGen.pt());
@@ -609,13 +633,15 @@ void MtdTracksValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
           if (nlayers == 2) {
             meExtraEtaEtl2Mtd_->Fill(std::abs(trackGen.eta()));
           }
-          if (accept.first && accept.second && !(isBTL || isETL)) {
-            edm::LogInfo("MtdTracksValidation")
-                << "MtdTracksValidation: extender fail in " << iEvent.id().run() << " " << iEvent.id().event()
-                << " pt= " << trackGen.pt() << " eta= " << trackGen.eta();
-            meExtraMTDfailExtenderEta_->Fill(std::abs(trackGen.eta()));
-            if (noCrack) {
-              meExtraMTDfailExtenderPt_->Fill(trackGen.pt());
+          if (optionalPlots_) {
+            if (accept.first && accept.second && !(isBTL || isETL)) {
+              edm::LogInfo("MtdTracksValidation")
+                  << "MtdTracksValidation: extender fail in " << iEvent.id().run() << " " << iEvent.id().event()
+                  << " pt= " << trackGen.pt() << " eta= " << trackGen.eta();
+              meExtraMTDfailExtenderEta_->Fill(std::abs(trackGen.eta()));
+              if (noCrack) {
+                meExtraMTDfailExtenderPt_->Fill(trackGen.pt());
+              }
             }
           }
         }
@@ -992,21 +1018,32 @@ void MtdTracksValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
                                          720,
                                          -180.,
                                          180.);
+
   meExtraBTLeneInCone_ = ibook.book1D(
       "ExtraBTLeneInCone", "BTL reconstructed energy in cone arounnd extrapolated track; E [MeV]", 100, 0., 50.);
-  meExtraMTDfailExtenderEta_ =
-      ibook.book1D("ExtraMTDfailExtenderEta",
-                   "Eta of tracks extrapolated to MTD with no track extender match to hits; track eta",
-                   66,
-                   0.,
-                   3.3);
-  ;
-  meExtraMTDfailExtenderPt_ =
-      ibook.book1D("ExtraMTDfailExtenderPt",
-                   "Pt of tracks extrapolated to MTD with no track extender match to hits; track pt [GeV] ",
-                   110,
-                   0.,
-                   11.);
+  if (optionalPlots_) {
+    meExtraPhiDetailAtBTL_ =
+        ibook.book1D("ExtraPhiDetailAtBTL", "Phi at BTL surface of extrapolated tracks; phi [deg]", 100, 0., 20.);
+    meExtraPhiDetailAtBTLmatched_ =
+        ibook.book1D("ExtraPhiDetailAtBTLmatched",
+                     "Phi at BTL surface of extrapolated tracks matched with BTL hits; phi [deg]",
+                     100,
+                     0.,
+                     20.);
+    meExtraMTDfailExtenderEta_ =
+        ibook.book1D("ExtraMTDfailExtenderEta",
+                     "Eta of tracks extrapolated to MTD with no track extender match to hits; track eta",
+                     66,
+                     0.,
+                     3.3);
+    ;
+    meExtraMTDfailExtenderPt_ =
+        ibook.book1D("ExtraMTDfailExtenderPt",
+                     "Pt of tracks extrapolated to MTD with no track extender match to hits; track pt [GeV] ",
+                     110,
+                     0.,
+                     11.);
+  }
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

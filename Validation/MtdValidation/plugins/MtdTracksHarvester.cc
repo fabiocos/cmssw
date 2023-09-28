@@ -56,6 +56,7 @@ private:
   MonitorElement* meExtraEtaEff_;
   MonitorElement* meExtraEtaEtl2Eff_;
   MonitorElement* meExtraPhiAtBTLEff_;
+  MonitorElement* meExtraPhiDetailAtBTLEff_;
   MonitorElement* meExtraMTDfailExtenderEtaEff_;
   MonitorElement* meExtraMTDfailExtenderPtEff_;
 };
@@ -145,6 +146,8 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
   MonitorElement* meTrackNumHitsNT = igetter.get(folder_ + "TrackNumHitsNT");
   MonitorElement* meExtraPhiAtBTL = igetter.get(folder_ + "ExtraPhiAtBTL");
   MonitorElement* meExtraPhiAtBTLmatched = igetter.get(folder_ + "ExtraPhiAtBTLmatched");
+  MonitorElement* meExtraPhiDetailAtBTL = igetter.get(folder_ + "ExtraPhiDetailAtBTL");
+  MonitorElement* meExtraPhiDetailAtBTLmatched = igetter.get(folder_ + "ExtraPhiDetailAtBTLmatched");
   MonitorElement* meExtraBTLeneInCone = igetter.get(folder_ + "ExtraBTLeneInCone");
   MonitorElement* meExtraMTDfailExtenderEta = igetter.get(folder_ + "ExtraMTDfailExtenderEta");
   MonitorElement* meExtraMTDfailExtenderPt = igetter.get(folder_ + "ExtraMTDfailExtenderPt");
@@ -161,8 +164,7 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
       !meTrackMatchedTPmtdEffPtMtd || !meTrackMatchedTPEffEtaTot || !meTrackMatchedTPEffEtaMtd ||
       !meTrackMatchedTPEffEtaEtl2Mtd || !meTrackMatchedTPmtdEffEtaTot || !meTrackMatchedTPmtdEffEtaMtd ||
       !meTrackNumHits || !meTrackNumHitsNT || !meTrackPtTot || !meTrackEtaTot || !meExtraPtMtd || !meExtraPtEtl2Mtd ||
-      !meExtraEtaMtd || !meExtraEtaEtl2Mtd || !meExtraPhiAtBTL || !meExtraPhiAtBTLmatched || !meExtraBTLeneInCone ||
-      !meExtraMTDfailExtenderEta || !meExtraMTDfailExtenderPt) {
+      !meExtraEtaMtd || !meExtraEtaEtl2Mtd || !meExtraPhiAtBTL || !meExtraPhiAtBTLmatched || !meExtraBTLeneInCone) {
     edm::LogError("MtdTracksHarvester") << "Monitoring histograms not found!" << std::endl;
     return;
   }
@@ -467,23 +469,33 @@ void MtdTracksHarvester::dqmEndJob(DQMStore::IBooker& ibook, DQMStore::IGetter& 
 
   normalize(meExtraBTLeneInCone, 1.);
 
-  meExtraMTDfailExtenderEtaEff_ =
-      ibook.book1D("ExtraMTDfailExtenderEtaEff",
-                   "Track extrapolated at MTD surface no extender efficiency VS Eta;Eta;Efficiency",
-                   meTrackMatchedTPEffEtaTot->getNbinsX(),
-                   meTrackMatchedTPEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
-                   meTrackMatchedTPEffEtaTot->getTH1()->GetXaxis()->GetXmax());
-  meExtraMTDfailExtenderEtaEff_->getTH1()->SetMinimum(0.);
-  computeEfficiency1D(meExtraMTDfailExtenderEta, meTrackMatchedTPEffEtaTot, meExtraMTDfailExtenderEtaEff_);
+  if (meExtraPhiDetailAtBTL && meExtraPhiDetailAtBTLmatched && meExtraMTDfailExtenderEta && meExtraMTDfailExtenderPt) {
+    meExtraPhiDetailAtBTLEff_ = ibook.book1D("ExtraPhiDetailAtBTLEff",
+                                             "Efficiency to match hits at BTL surface",
+                                             meExtraPhiDetailAtBTL->getNbinsX(),
+                                             meExtraPhiDetailAtBTL->getTH1()->GetXaxis()->GetXmin(),
+                                             meExtraPhiDetailAtBTL->getTH1()->GetXaxis()->GetXmax());
+    meExtraPhiDetailAtBTLEff_->getTH1()->SetMinimum(0.);
+    computeEfficiency1D(meExtraPhiDetailAtBTLmatched, meExtraPhiDetailAtBTL, meExtraPhiDetailAtBTLEff_);
 
-  meExtraMTDfailExtenderPtEff_ =
-      ibook.book1D("ExtraMTDfailExtenderPtEff",
-                   "Track extrapolated at MTD surface no extender efficiency VS Pt;Pt [GeV];Efficiency",
-                   meTrackMatchedTPEffPtTot->getNbinsX(),
-                   meTrackMatchedTPEffPtTot->getTH1()->GetXaxis()->GetXmin(),
-                   meTrackMatchedTPEffPtTot->getTH1()->GetXaxis()->GetXmax());
-  meExtraMTDfailExtenderPtEff_->getTH1()->SetMinimum(0.);
-  computeEfficiency1D(meExtraMTDfailExtenderPt, meTrackMatchedTPEffPtTot, meExtraMTDfailExtenderPtEff_);
+    meExtraMTDfailExtenderEtaEff_ =
+        ibook.book1D("ExtraMTDfailExtenderEtaEff",
+                     "Track extrapolated at MTD surface no extender efficiency VS Eta;Eta;Efficiency",
+                     meTrackMatchedTPEffEtaTot->getNbinsX(),
+                     meTrackMatchedTPEffEtaTot->getTH1()->GetXaxis()->GetXmin(),
+                     meTrackMatchedTPEffEtaTot->getTH1()->GetXaxis()->GetXmax());
+    meExtraMTDfailExtenderEtaEff_->getTH1()->SetMinimum(0.);
+    computeEfficiency1D(meExtraMTDfailExtenderEta, meTrackMatchedTPEffEtaTot, meExtraMTDfailExtenderEtaEff_);
+
+    meExtraMTDfailExtenderPtEff_ =
+        ibook.book1D("ExtraMTDfailExtenderPtEff",
+                     "Track extrapolated at MTD surface no extender efficiency VS Pt;Pt [GeV];Efficiency",
+                     meTrackMatchedTPEffPtTot->getNbinsX(),
+                     meTrackMatchedTPEffPtTot->getTH1()->GetXaxis()->GetXmin(),
+                     meTrackMatchedTPEffPtTot->getTH1()->GetXaxis()->GetXmax());
+    meExtraMTDfailExtenderPtEff_->getTH1()->SetMinimum(0.);
+    computeEfficiency1D(meExtraMTDfailExtenderPt, meTrackMatchedTPEffPtTot, meExtraMTDfailExtenderPtEff_);
+  }
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ----------
