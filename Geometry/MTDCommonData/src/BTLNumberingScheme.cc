@@ -143,7 +143,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
       uint32_t modulesInDM = 2;
 
       dmodCopy = int(((modCopy-1)/modulesInRURow)/modulesInDM) + ((modCopy-1)%modulesInRURow)*modulesInRULine + 1;
-      smodCopy = int((modCopy-1)/modulesInRURow) % modulesInDM;
+      smodCopy = int((modCopy-1)/modulesInRURow) % modulesInDM + 1;
       
       // error checking
 
@@ -175,7 +175,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
         return 0;
       }
 
-      if (1 > smodCopy+1 || BTLDetId::kSModulesPerDM < smodCopy+1) {
+      if (1 > smodCopy || BTLDetId::kSModulesPerDM < smodCopy) {
         edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
                                    << "****************** Bad detector module copy = " << smodCopy
                                    << ", Volume Number = " << baseNumber.getCopyNumber(1);

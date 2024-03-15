@@ -115,7 +115,7 @@ public:
     id_ |= (MTDType::BTL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
            (rod & kRodRingMask) << kRodRingOffset | (runit & kBTLRUMask) << kBTLRUOffset | 
            (dmodule & kBTLdetectorModMask) << kBTLdetectorModOffset |
-           (smodule & kBTLsensorModMask) << kBTLsensorModOffset  |
+           ((smodule - 1) & kBTLsensorModMask) << kBTLsensorModOffset  |
            ((crystal - 1) & kBTLCrystalMask) << kBTLCrystalOffset;
     id_ |= kBTLNewFormat;
   }
@@ -130,13 +130,10 @@ public:
   inline int dmodule() const { return (id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask; }
 
   /** Returns BTL sensor module number. */
-  inline int smodule() const { return (id_ >> kBTLsensorModOffset) & kBTLsensorModMask; }
+  inline int smodule() const { return ((id_ >> kBTLsensorModOffset) & kBTLsensorModMask) + 1; }
 
   /** Returns BTL module number [1-24] (OLD BTL NUMBERING). */
-  inline int module() const { 
-    int d = dmodule();
-    int s = smodule();
-    return ( ((d-1)%modulesInRULine)*(modulesInDM*modulesInRURow)+1 + int((d-1)/modulesInRULine) + modulesInRURow*s);
+  inline int module() const {  return ( ((dmodule()-1)%modulesInRULine)*(modulesInDM*modulesInRURow)+1 + int((dmodule()-1)/modulesInRULine) + modulesInRURow*(smodule()-1));
   }
 
   /** Returns BTL crystal type number [1-3] (OLD BTL NUMBERING). */
