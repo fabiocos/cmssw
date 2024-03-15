@@ -131,6 +131,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
       if (isV2) {
         // V2: the type is embedded in crystal name
         modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(2)).back());
+        runitCopy += (modtyp-1)*2;
       } else {
         // V3: build type from global RU number
         modtyp = globalru2type[runitCopy - 1];
