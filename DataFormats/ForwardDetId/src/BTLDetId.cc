@@ -20,12 +20,14 @@ BTLDetId BTLDetId::geographicalId(CrysLayout lay) const {
 std::ostream& operator<<(std::ostream& os, const BTLDetId& id) {
   os << (MTDDetId&)id;
   os << " BTL " << std::endl
-     << " Side        : " << id.mtdSide() << std::endl
-     << " Rod         : " << id.mtdRR() << std::endl
-     << " Crystal type: " << id.modType() << std::endl
-     << " Readout unit: " << id.runit() << std::endl
-     << " Global RU   : " << id.globalRunit() << std::endl
-     << " Module      : " << id.module() << std::endl
-     << " Crystal     : " << id.crystal() << std::endl;
+     << " Side           : " << id.mtdSide() << std::endl
+     << " Rod            : " << id.mtdRR() << std::endl
+     << " Crystal type   : " << id.modType() << std::endl
+     << " Readout unit   : " << id.runit() << std::endl
+     << " Global RU      : " << id.globalRunit() << std::endl
+     << " Detector module: " << id.dmodule() << std::endl
+     << " Sensor module  : " << id.smodule() << std::endl
+     << " Module         : " << id.module() << std::endl
+     << " Crystal        : " << id.crystal() << std::endl;
   return os;
 }
