@@ -1,3 +1,5 @@
+#define EDM_ML_DEBUG 
+
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "Geometry/MTDCommonData/interface/BTLNumberingScheme.h"
@@ -242,56 +244,80 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
     LogDebug("MTDGeom") << "BTLNumberingScheme::getUnitID(): isV2 " << isV2;
 #endif
 
+
     if (isV2) {
       // V2: the type is embedded in crystal name
       modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(1)).back());
+      runitCopy += (modtyp-1)*2;
     } else {
-      // V3: build type and RU number per type from global RU number
+      // V3: build type from global RU number
       modtyp = globalru2type[runitCopy - 1];
-      runitCopy = globalru2ru[runitCopy - 1];
     }
+      
+    // eval detector and sensor module numbers from global module number 1-24 
+    uint32_t modulesInRURow = 3;
+    uint32_t modulesInRULine = 4;
+    uint32_t modulesInDM = 2;
 
+    dmodCopy = int(((modCopy-1)/modulesInRURow)/modulesInDM) + ((modCopy-1)%modulesInRURow)*modulesInRULine + 1;
+    smodCopy = int((modCopy-1)/modulesInRURow) % modulesInDM + 1;
+    
     // error checking
 
     if (1 > modtyp || 3 < modtyp) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-                                 << "****************** Bad RU name, Volume Name = "
-                                 << bareBaseName(baseNumber.getLevelName(1));
+                                << "****************** Bad RU name, Volume Name = "
+                                << bareBaseName(baseNumber.getLevelName(1));
       return 0;
     }
 
     if (1 > modCopy || BTLDetId::kModulesPerRUV2 < modCopy) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-                                 << "****************** Bad module copy = " << modCopy
-                                 << ", Volume Number = " << baseNumber.getCopyNumber(0);
+                                << "****************** Bad module copy = " << modCopy
+                                << ", Volume Number = " << baseNumber.getCopyNumber(0);
       return 0;
     }
 
-    if (1 > runitCopy || BTLDetId::kRUPerTypeV2 < runitCopy) {
+    if (1 > dmodCopy || BTLDetId::kDModulesPerRU < dmodCopy) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-                                 << "****************** Bad readout unit copy = " << runitCopy
-                                 << ", Volume Number = " << baseNumber.getCopyNumber(1);
+                                << "****************** Bad detector module copy = " << dmodCopy
+                                << ", Volume Number = " << baseNumber.getCopyNumber(1);
+      return 0;
+    }
+
+    if (1 > smodCopy || BTLDetId::kSModulesPerDM < smodCopy) {
+      edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
+                                << "****************** Bad detector module copy = " << smodCopy
+                                << ", Volume Number = " << baseNumber.getCopyNumber(1);
+      return 0;
+    }
+
+    if (1 > runitCopy || BTLDetId::kRUPerRod < runitCopy) {
+      edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
+                                << "****************** Bad readout unit copy = " << runitCopy
+                                << ", Volume Number = " << baseNumber.getCopyNumber(1);
       return 0;
     }
 
     if (1 > rodCopy || BTLDetId::HALF_ROD < rodCopy) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-                                 << "****************** Bad rod copy = " << rodCopy
-                                 << ", Volume Number = " << baseNumber.getCopyNumber(2);
+                                << "****************** Bad rod copy = " << rodCopy
+                                << ", Volume Number = " << baseNumber.getCopyNumber(2);
       return 0;
     }
 
     if (1 < zside) {
       edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
-                                 << "****************** Bad side = " << zside
-                                 << ", Volume Name = " << baseNumber.getLevelName(2);
+                                << "****************** Bad side = " << zside
+                                << ", Volume Name = " << baseNumber.getLevelName(2);
       return 0;
     }
-
+  
     // all inputs are fine. Go ahead and decode
 
-    BTLDetId thisBTLdetid(zside, rodCopy, runitCopy, modCopy, modtyp, 0);
+    BTLDetId thisBTLdetid(zside, rodCopy, runitCopy, dmodCopy, smodCopy, 0);
     intindex = thisBTLdetid.geographicalId(BTLDetId::CrysLayout::v2).rawId();
+  
 
   } else {
     edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
