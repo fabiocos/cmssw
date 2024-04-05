@@ -27,7 +27,7 @@
 class BTLDetId : public MTDDetId {
 public:
 
-  // old BTLDetID module number
+  // old BTLDetID RU and module number scheme
   static constexpr uint32_t kBTLoldModuleOffset = 10;
   static constexpr uint32_t kBTLoldModuleMask = 0x3F;
   static constexpr uint32_t kBTLoldModTypeOffset = 8;
@@ -44,9 +44,7 @@ public:
   static constexpr uint32_t kBTLsensorModMask = 0x1;
   static constexpr uint32_t kBTLCrystalOffset = 0;
   static constexpr uint32_t kBTLCrystalMask = 0x1F;
-  uint32_t modulesInRURow = 3;
-  uint32_t modulesInRULine = 4;
-  uint32_t modulesInDM = 2;
+  
 
   /// range constants, need two sets for the time being (one for tiles and one for bars)
   static constexpr uint32_t HALF_ROD = 36;
@@ -57,6 +55,9 @@ public:
   static constexpr uint32_t kModulesPerRUV2 = 24;
   static constexpr uint32_t kDModulesPerRU = 12;
   static constexpr uint32_t kSModulesPerDM = 2;
+  static constexpr uint32_t kDModulesInRURow = 3;
+  static constexpr uint32_t kDModulesInRULine = 4;
+  static constexpr uint32_t kSModulesInDM = 2;
   static constexpr uint32_t kCrystalsPerModuleV2 = 16;
   static constexpr uint32_t kModulesPerTrkV2 = 3;
   static constexpr uint32_t kCrystalTypes = 3;
@@ -112,9 +113,11 @@ public:
   BTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodule, uint32_t crystal)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
 
+    //RU, DM, SM & Xtal numbers start from 0
     id_ |= (MTDType::BTL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
-           (rod & kRodRingMask) << kRodRingOffset | (runit & kBTLRUMask) << kBTLRUOffset | 
-           (dmodule & kBTLdetectorModMask) << kBTLdetectorModOffset |
+           (rod & kRodRingMask) << kRodRingOffset | 
+           ((runit   - 1) & kBTLRUMask) << kBTLRUOffset | 
+           ((dmodule - 1) & kBTLdetectorModMask) << kBTLdetectorModOffset |
            ((smodule - 1) & kBTLsensorModMask) << kBTLsensorModOffset  |
            ((crystal - 1) & kBTLCrystalMask) << kBTLCrystalOffset;
     id_ |= kBTLNewFormat;
@@ -127,13 +130,13 @@ public:
 
 
   /** Returns BTL detector module number. */
-  inline int dmodule() const { return (id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask; }
+  inline int dmodule() const { return ((id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask) + 1; }
 
   /** Returns BTL sensor module number. */
   inline int smodule() const { return ((id_ >> kBTLsensorModOffset) & kBTLsensorModMask) + 1; }
 
   /** Returns BTL module number [1-24] (OLD BTL NUMBERING). */
-  inline int module() const {  return ( ((dmodule()-1)%modulesInRULine)*(modulesInDM*modulesInRURow)+1 + int((dmodule()-1)/modulesInRULine) + modulesInRURow*(smodule()-1));
+  inline int module() const {  return ( ((dmodule()-1)%kDModulesInRULine)*(kSModulesInDM*kDModulesInRURow)+1 + int((dmodule()-1)/kDModulesInRULine) + kDModulesInRURow*(smodule()-1));
   }
 
   /** Returns BTL crystal type number [1-3] (OLD BTL NUMBERING). */
@@ -147,6 +150,10 @@ public:
 
   /** Returns BTL global readout unit number. */
   inline int globalRunit() const {
+    return ((id_ >> kBTLRUOffset) & kBTLRUMask) + 1;
+  }
+  // old globalRU function
+  // inline int globalRunit() const {
     // if (runit() == 0) {
     //   // pre-V2: build a RU identifier from available information
     //   return (module() - 1) / kModulePerTypeBarPhiFlat / kRUPerTypeV2 + 1;
@@ -154,9 +161,8 @@ public:
     //   // V2/V3: build global RU identifier from RU per type and type
     //   return (modType() - 1) * kRUPerTypeV2 + runit();
     // }
-    return (id_ >> kBTLRUOffset) & kBTLRUMask;
-  }
-
+  // }
+  
   /** return the row in GeomDet language **/
   inline int row(unsigned nrows = kCrystalsPerModuleV2) const {
     return (crystal() - 1) % nrows;  // anything else for now
@@ -171,15 +177,14 @@ public:
   /** conversion from old to new BTLDetID**/
   uint32_t newForm(const uint32_t& rawid) {
 
-
     uint32_t fixedP = rawid & (0xFFFFFFFF - kBTLoldFieldMask);          // unchanged part of id
     
     // convert old module number into detector module + sensor module numbers
     uint32_t oldModule = (rawid >> kBTLoldModuleOffset) & kBTLoldModuleMask;  
-    uint32_t detModule = int( (oldModule-1)/(modulesInRURow*modulesInDM) ) + 1 + modulesInRULine * ( int( (oldModule%6)/modulesInDM ) );
-    uint32_t senModule = (oldModule-1) % modulesInDM;
-    // uint32_t detModule = ((int((oldModule - 1)/modulesInRURow)/modulesInDM)*3) + ((oldModule-1)%3 + 1);
-    // uint32_t senModule = int((oldModule - 1)/modulesInRURow)%2;
+    uint32_t detModule = int( (oldModule-1)/(kDModulesInRURow*kSModulesInDM) ) + 1 + kDModulesInRULine * ( int( (oldModule%6)/kSModulesInDM ) );
+    uint32_t senModule = (oldModule-1) % kSModulesInDM;
+    // uint32_t detModule = ((int((oldModule - 1)/kDModulesInRURow)/kSModulesInDM)*3) + ((oldModule-1)%3 + 1);
+    // uint32_t senModule = int((oldModule - 1)/kDModulesInRURow)%2;
 
     // convert old RU and type number into new RU number
     uint32_t oldRU   = (rawid >> kBTLoldRUOffset) & kBTLoldRUMask;  
@@ -189,19 +194,6 @@ public:
     
     // get crystal number
     uint32_t crystal = (rawid & kBTLCrystalMask) >> kBTLCrystalOffset; 
-
-    // std::cout << " oldRU: " << oldRU << std::endl;
-    // std::cout << " oldType: " << oldType << std::endl;
-    // std::cout << " newRU " << oldRU << std::endl;
-    // std::cout << " Raw ID: " << rawid << std::endl;
-    // std::cout << " fixedP: " << fixedP << std::endl;
-    // std::cout << " Crystal type: " << oldType << std::endl;
-    // std::cout << " Readout unit: " << oldRU << std::endl;
-    // std::cout << " Global RU   : " << newRU << std::endl;
-    // std::cout << " Module (v2 geom) : " << oldModule << std::endl;
-    // std::cout << " detModule      : " << detModule << std::endl;
-    // std::cout << " senModule      : " << senModule << std::endl;
-    // std::cout << " Crystal     : " << crystal << std::endl;
 
     // return new BTLDetID for v3 geom
     return (fixedP | (newRU & kBTLRUMask) << kBTLRUOffset | 
