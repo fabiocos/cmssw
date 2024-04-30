@@ -9,7 +9,8 @@ BTLDetId BTLDetId::geographicalId(CrysLayout lay) const {
   } else if (lay == CrysLayout::v2 || lay == CrysLayout::v3) {
     // v2: set number of crystals to 17 to distinguish from crystal BTLDetId
     // v3: set number of crystals to 17 to distinguish from crystal BTLDetId, build V2-like type and RU number as in BTLNumberingScheme
-    return BTLDetId(mtdSide(), mtdRR(), runit(), module(), modType(), kCrystalsPerModuleV2 + 1);
+    // return BTLDetId(mtdSide(), mtdRR(), runit(), module(), modType(), kCrystalsPerModuleV2 + 1); #old BTLDetID format
+    return BTLDetId(mtdSide(), mtdRR(), globalRunit(), dmodule(), smodule(), kCrystalsPerModuleV2 + 1);
   }
 
   return 0;
