@@ -10,7 +10,7 @@
   <flags EDM_PLUGIN="1"/>
 </library>
 
-<library name="DD4hep_TestMTDIdealGeometry" file="DD4hep_TestMTDIdealGeometry.cc">
+<library name="Test_BTLElectronicsMapping" file="TestBTLElectronicsMapping.cc">
   <use name="DataFormats/ForwardDetId"/>
   <use name="DataFormats/Math"/>
   <use name="DetectorDescription/DDCMS"/>
