@@ -231,8 +231,17 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
         
         if (isBarrel) {
           BTLDetId theId(btlNS_.getUnitID(thisN_));
-          edm::LogInfo("DD4hep_TestMTDNumbering") << "SiPMChA: " << elMap_.SiPMCh(theId, 0) << "\tTOFHIRChA: " << elMap_.TOFHIRCh(theId, 0)
-                                                  << "\nSiPMChB: " << elMap_.SiPMCh(theId, 1) << "\tTOFHIRChB: " << elMap_.TOFHIRCh(theId, 1);
+          BTLElectronicsMapping::SiPMChPair SiPMChs = elMap_.GetSiPMChPair(theId);
+          BTLElectronicsMapping::TOFHIRChPair TOFHIRChs = elMap_.GetTOFHIRChPair(theId);
+
+          edm::LogInfo("DD4hep_TestMTDNumbering") << "SiPMCh and TOFHIRCh from pair\n" << "SiPMChMinus: " << SiPMChs.Minus << "\tTOFHIRChMinus: " << TOFHIRChs.Minus
+                                                  << "\nSiPMChPlus : " << SiPMChs.Plus << "\tTOFHIRChPlus : " <<  TOFHIRChs.Plus;
+          edm::LogInfo("DD4hep_TestMTDNumbering") <<  "SiPMChMinus: " << elMap_.SiPMCh(theId, 0) << "\tTOFHIRChMinus: " << elMap_.TOFHIRCh(theId, 0)
+                                                  << "\nSiPMChPlus : " << elMap_.SiPMCh(theId, 1) << "\tTOFHIRChPlus : " << elMap_.TOFHIRCh(theId, 1);
+          // edm::LogInfo("DD4hep_TestMTDNumbering") << "Xtal from TOFHIR Channel Minus: " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
+          //                                         << "\nXtal from TOFHIR Channel Plus : " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
+          // edm::LogInfo("DD4hep_TestMTDNumbering") << "Xtal BTLDetId from TOFHIR Channel Minus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
+          //                                         << "\nXtal BTLDetId from TOFHIR Channel Plus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
         }
         
         //
