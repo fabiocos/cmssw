@@ -7,6 +7,9 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 
 /** \brief BTL TOFHIR channel mapping with crystal BTLDetId
+    Convention:
+      SiPMside 0 == Minus Side
+      SiPMside 1 == Plus Side
  */
 
 
@@ -57,10 +60,9 @@ public:
   TOFHIRChPair GetTOFHIRChPair(BTLDetId det);
   TOFHIRChPair GetTOFHIRChPair(uint32_t rawID);
 
-
+  // Get crystal number/BTLDetId from TOFHIR channel 
   int THChToXtal(uint32_t smodCopy, uint32_t THCh);
   BTLDetId THChToBTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodCopy, uint32_t THCh);
-  // int BTLElectronicsMapping::SiPMChToXtal(uint32_t zside, uint32_t smodCopy, uint32_t SiPMCh);
 
 private:
 };
