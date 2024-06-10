@@ -82,28 +82,28 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
   auto pSP = iSetup.getTransientHandle(dspecToken_);
 
   if (ddTopNodeName_ != "BarrelTimingLayer" && ddTopNodeName_ != "EndcapTimingLayer") {
-    edm::LogWarning("Test_BTLElectronicsMapping") << ddTopNodeName_ << "Not valid top MTD volume";
+    edm::LogWarning("DD4hep_BTLElectronicsMapping") << ddTopNodeName_ << "Not valid top MTD volume";
     return;
   }
 
   if (!pDD.isValid()) {
-    edm::LogError("Test_BTLElectronicsMapping") << "ESTransientHandle<DDCompactView> pDD is not valid!";
+    edm::LogError("DD4hep_BTLElectronicsMapping") << "ESTransientHandle<DDCompactView> pDD is not valid!";
     return;
   }
   if (pDD.description()) {
-    edm::LogInfo("Test_BTLElectronicsMapping") << pDD.description()->type_ << " label: " << pDD.description()->label_;
+    edm::LogInfo("DD4hep_BTLElectronicsMapping") << pDD.description()->type_ << " label: " << pDD.description()->label_;
   } else {
-    edm::LogWarning("Test_BTLElectronicsMapping") << "NO label found pDD.description() returned false.";
+    edm::LogWarning("DD4hep_BTLElectronicsMapping") << "NO label found pDD.description() returned false.";
   }
 
   if (!pSP.isValid()) {
-    edm::LogError("Test_BTLElectronicsMapping") << "ESTransientHandle<DDSpecParRegistry> pSP is not valid!";
+    edm::LogError("DD4hep_BTLElectronicsMapping") << "ESTransientHandle<DDSpecParRegistry> pSP is not valid!";
     return;
   }
 
   DDFilteredView fv(pDD.product(), pDD.product()->description()->worldVolume());
   fv.next(0);
-  edm::LogInfo("Test_BTLElectronicsMapping") << fv.name();
+  edm::LogInfo("DD4hep_BTLElectronicsMapping") << fv.name();
 
   DDSpecParRefs specs;
   std::string attribute("ReadOutName"), name;
@@ -113,7 +113,7 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
     name = "FastTimerHitsEndcap";
   }
   if (name.empty()) {
-    edm::LogError("Test_BTLElectronicsMapping") << "No sensitive detector provided, abort";
+    edm::LogError("DD4hep_BTLElectronicsMapping") << "No sensitive detector provided, abort";
     return;
   }
   pSP.product()->filter(specs, attribute, name);
@@ -144,10 +144,10 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
   do {
     if (dd4hep::dd::noNamespace(fv.name()) == "BarrelTimingLayer") {
       isBarrel = true;
-      edm::LogInfo("Test_BTLElectronicsMapping") << "isBarrel = " << isBarrel;
+      edm::LogInfo("DD4hep_BTLElectronicsMapping") << "isBarrel = " << isBarrel;
     } else if (dd4hep::dd::noNamespace(fv.name()) == "EndcapTimingLayer") {
       isBarrel = false;
-      edm::LogInfo("Test_BTLElectronicsMapping") << "isBarrel = " << isBarrel;
+      edm::LogInfo("DD4hep_BTLElectronicsMapping") << "isBarrel = " << isBarrel;
     }
 
     if (level > 0 && fv.navPos().size() < level) {
@@ -196,7 +196,7 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
 
       print_path();
 
-      edm::LogInfo("DD4hep_TestMTDPath") << ss.str();
+      edm::LogInfo("DD4hep_BTLElectronicsMapping") << ss.str();
 
       bool isSens = false;
 
@@ -217,33 +217,18 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
         std::stringstream sunitt;
         std::stringstream snum;
 
-        if (isBarrel) {
-          BTLDetId theId(btlNS_.getUnitID(thisN_));
-          sunitt << theId.rawId();
-          snum << theId;
-          snum << "\n";
-        } else {
-          ETLDetId theId(etlNS_.getUnitID(thisN_));
-          sunitt << theId.rawId();
-          snum << theId;
+        if (!isBarrel) {
+          continue;
         }
-        edm::LogInfo("DD4hep_TestMTDNumbering") << snum.str();
-        
-        if (isBarrel) {
-          BTLDetId theId(btlNS_.getUnitID(thisN_));
-          BTLElectronicsMapping::SiPMChPair SiPMChs = elMap_.GetSiPMChPair(theId);
-          BTLElectronicsMapping::TOFHIRChPair TOFHIRChs = elMap_.GetTOFHIRChPair(theId);
+        BTLDetId theId(btlNS_.getUnitID(thisN_));
+        sunitt << theId.rawId();
+        snum << theId;
+        snum << "\n";
+        edm::LogInfo("DD4hep_BTLElectronicsMapping") << snum.str();
 
-          edm::LogInfo("DD4hep_TestMTDNumbering") << "SiPMCh and TOFHIRCh from pair\n" << "SiPMChMinus: " << SiPMChs.Minus << "\tTOFHIRChMinus: " << TOFHIRChs.Minus
-                                                  << "\nSiPMChPlus : " << SiPMChs.Plus << "\tTOFHIRChPlus : " <<  TOFHIRChs.Plus;
-          edm::LogInfo("DD4hep_TestMTDNumbering") <<  "SiPMChMinus: " << elMap_.SiPMCh(theId, 0) << "\tTOFHIRChMinus: " << elMap_.TOFHIRCh(theId, 0)
-                                                  << "\nSiPMChPlus : " << elMap_.SiPMCh(theId, 1) << "\tTOFHIRChPlus : " << elMap_.TOFHIRCh(theId, 1);
-          // edm::LogInfo("DD4hep_TestMTDNumbering") << "Xtal from TOFHIR Channel Minus: " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
-          //                                         << "\nXtal from TOFHIR Channel Plus : " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
-          // edm::LogInfo("DD4hep_TestMTDNumbering") << "Xtal BTLDetId from TOFHIR Channel Minus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
-          //                                         << "\nXtal BTLDetId from TOFHIR Channel Plus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
-        }
-        
+        BTLElectronicsMapping::SiPMChPair SiPMChs = elMap_.GetSiPMChPair(theId);
+        BTLElectronicsMapping::TOFHIRChPair TOFHIRChs = elMap_.GetTOFHIRChPair(theId);
+
         //
         // Test of positions for sensitive detectors
         //
@@ -257,51 +242,46 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
         };
 
         if (!dd4hep::isA<dd4hep::Box>(fv.solid())) {
-          throw cms::Exception("TestMTDIdealGeometry") << "MTD sensitive element not a DDBox";
+          throw cms::Exception("DD4hep_BTLElectronicsMapping") << "MTD sensitive element not a DDBox";
           break;
         }
-
         dd4hep::Box mySens(fv.solid());
-        spos << "Solid shape name: " << DDSolidShapesName::name(fv.legacyShape(fv.shape())) << "\n";
-        spos << "Box dimensions: " << fround(mySens.x() / dd4hep::mm) << " " << fround(mySens.y() / dd4hep::mm) << " "
-             << fround(mySens.z() / dd4hep::mm) << "\n";
 
-        DD3Vector x, y, z;
-        fv.rotation().GetComponents(x, y, z);
-        spos << "Translation vector components: " << fround(fv.translation().x() / dd4hep::mm) << " "
-             << fround(fv.translation().y() / dd4hep::mm) << " " << fround(fv.translation().z() / dd4hep::mm) << " "
-             << "\n";
-        spos << "Rotation matrix components: " << fround(x.X()) << " " << fround(x.Y()) << " " << fround(x.Z()) << " "
-             << fround(y.X()) << " " << fround(y.Y()) << " " << fround(y.Z()) << " " << fround(z.X()) << " "
-             << fround(z.Y()) << " " << fround(z.Z()) << "\n";
+        DD3Vector sidePlusLocal(mySens.x(), 0., 0.);
+        DD3Vector sideMinusLocal(-mySens.x(), 0., 0.);
+        DD3Vector sidePlusGlobal = (fv.rotation())(sidePlusLocal) + fv.translation();
+        DD3Vector sideMinusGlobal = (fv.rotation())(sideMinusLocal) + fv.translation();
 
-        DD3Vector zeroLocal(0., 0., 0.);
-        DD3Vector cn1Local(mySens.x(), mySens.y(), mySens.z());
-        double distLocal = cn1Local.R();
-        DD3Vector zeroGlobal = (fv.rotation())(zeroLocal) + fv.translation();
-        DD3Vector cn1Global = (fv.rotation())(cn1Local) + fv.translation();
-        double distGlobal =
-            std::sqrt(std::pow(zeroGlobal.X() - cn1Global.X(), 2) + std::pow(zeroGlobal.Y() - cn1Global.Y(), 2) +
-                      std::pow(zeroGlobal.Z() - cn1Global.Z(), 2));
+        spos << "global z = " << fround(fv.translation().z() / dd4hep::mm) << "\n";
 
-        spos << "Center global   = " << fround(zeroGlobal.X() / dd4hep::mm) << fround(zeroGlobal.Y() / dd4hep::mm)
-             << fround(zeroGlobal.Z() / dd4hep::mm) << " r = " << fround(zeroGlobal.Rho() / dd4hep::mm)
-             << " phi = " << fround(convertRadToDeg(zeroGlobal.Phi())) << "\n";
+        spos << "Side minus local  = " << fround(sideMinusLocal.X() / dd4hep::mm)
+             << fround(sideMinusLocal.Y() / dd4hep::mm) << fround(sideMinusLocal.Z() / dd4hep::mm)
+             << " global phi = " << fround(convertRadToDeg(sideMinusGlobal.Phi())) << " SiPMChMinus: " << SiPMChs.Minus
+             << " TOFHIRChMinus: " << TOFHIRChs.Minus << "\n";
 
-        spos << "Corner 1 local  = " << fround(cn1Local.X() / dd4hep::mm) << fround(cn1Local.Y() / dd4hep::mm)
-             << fround(cn1Local.Z() / dd4hep::mm) << " DeltaR = " << fround(distLocal / dd4hep::mm) << "\n";
+        spos << "Side plus  local  = " << fround(sidePlusLocal.X() / dd4hep::mm)
+             << fround(sidePlusLocal.Y() / dd4hep::mm) << fround(sidePlusLocal.Z() / dd4hep::mm)
+             << " global phi = " << fround(convertRadToDeg(sidePlusGlobal.Phi())) << " SiPMChPlus:  " << SiPMChs.Minus
+             << " TOFHIRChPlus:  " << TOFHIRChs.Minus << "\n";
 
-        spos << "Corner 1 global = " << fround(cn1Global.X() / dd4hep::mm) << fround(cn1Global.Y() / dd4hep::mm)
-             << fround(cn1Global.Z() / dd4hep::mm) << " DeltaR = " << fround(distGlobal / dd4hep::mm) << "\n";
-
-        spos << "\n";
-        if (std::fabs(distGlobal - distLocal) / dd4hep::mm > 1.e-6) {
-          spos << "DIFFERENCE IN DISTANCE \n";
+        if (SiPMChs.Minus != elMap_.SiPMCh(theId, 0) || SiPMChs.Plus != elMap_.SiPMCh(theId, 1)) {
+          spos << "DIFFERENCE IN SiPMChs calculation methods \n";
         }
-        sunitt << fround(zeroGlobal.X() / dd4hep::mm) << fround(zeroGlobal.Y() / dd4hep::mm)
-               << fround(zeroGlobal.Z() / dd4hep::mm) << fround(cn1Global.X() / dd4hep::mm)
-               << fround(cn1Global.Y() / dd4hep::mm) << fround(cn1Global.Z() / dd4hep::mm);
-        edm::LogInfo("DD4hep_TestMTDPosition") << spos.str();
+        if (TOFHIRChs.Minus != elMap_.TOFHIRCh(theId, 0) || TOFHIRChs.Plus != elMap_.TOFHIRCh(theId, 1)) {
+          spos << "DIFFERENCE IN TOFHIRChs calculation methods \n";
+        }
+
+        // edm::LogInfo("DD4hep_BTLElectronicsMapping") << "Xtal from TOFHIR Channel Minus: " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
+        //                                         << "\nXtal from TOFHIR Channel Plus : " << elMap_.THChToXtal(theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
+        // edm::LogInfo("DD4hep_BTLElectronicsMapping") << "Xtal BTLDetId from TOFHIR Channel Minus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 0))
+        //                                         << "\nXtal BTLDetId from TOFHIR Channel Plus: " << elMap_.THChToBTLDetId(theId.zside(), theId.mtdRR(), theId.runit(), theId.dmodule(), theId.smodule(),  elMap_.TOFHIRCh(theId, 1));
+        edm::LogInfo("DD4hep_BTLElectronicsMapping") << spos.str();
+
+        sunitt << fround(fv.translation().z() / dd4hep::mm) << " " << fround(sideMinusLocal.X() / dd4hep::mm) << " "
+               << fround(convertRadToDeg(sideMinusGlobal.Phi())) << " " << std::setw(2) << SiPMChs.Minus << " "
+               << std::setw(2) << TOFHIRChs.Minus << " " << fround(sidePlusLocal.X() / dd4hep::mm) << " "
+               << fround(convertRadToDeg(sidePlusGlobal.Phi())) << " " << std::setw(2) << SiPMChs.Plus << " "
+               << std::setw(2) << TOFHIRChs.Plus;
 
         edm::LogVerbatim("MTDUnitTest") << sunitt.str();
       }
@@ -318,7 +298,7 @@ void Test_BTLElectronicsMapping::theBaseNumber(cms::DDFilteredView& fv) {
     size_t ipos = name.rfind('_');
     thisN_.addLevel(name.substr(0, ipos), fv.copyNos()[ii]);
 #ifdef EDM_ML_DEBUG
-    edm::LogVerbatim("Test_BTLElectronicsMapping") << ii << " " << name.substr(0, ipos) << " " << fv.copyNos()[ii];
+    edm::LogVerbatim("DD4hep_BTLElectronicsMapping") << ii << " " << name.substr(0, ipos) << " " << fv.copyNos()[ii];
 #endif
   }
 }

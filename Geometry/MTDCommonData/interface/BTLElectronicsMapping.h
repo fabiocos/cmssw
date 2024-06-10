@@ -12,11 +12,8 @@
       SiPMside 1 == Plus Side
  */
 
-
-
 class BTLElectronicsMapping {
 public:
-
   struct SiPMChPair {
     int Minus;
     int Plus;
@@ -29,15 +26,17 @@ public:
 
   // Map SiPM Channel to crystal bars for Forward module orientation
   static constexpr std::array<uint32_t, BTLDetId::kCrystalsPerModuleV2 * 2> SiPMChannelMapFW{
-    {15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}};
+      {15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
+       16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}};
   // Map SiPM Channel to crystal bars for Backward module orientation
   static constexpr std::array<uint32_t, BTLDetId::kCrystalsPerModuleV2 * 2> SiPMChannelMapBW{
-    {31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15}};
+      {31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15}};
 
   // Map TOFHIR Channel to SiPM Channel
   static constexpr std::array<uint32_t, BTLDetId::kCrystalsPerModuleV2 * 2> THChannelMap{
-    { 4,  1,  0,  3,  2,  6,  7,  9,  5, 11,  8, 12, 10, 14, 15, 13, 17, 16, 18, 19, 20, 23, 21, 26, 22, 27, 28, 31, 30, 24, 25, 29}};
-
+      {4,  1,  0,  3,  2,  6,  7,  9,  5,  11, 8,  12, 10, 14, 15, 13,
+       17, 16, 18, 19, 20, 23, 21, 26, 22, 27, 28, 31, 30, 24, 25, 29}};
 
   /** Default constructor -- invalid value */
   BTLElectronicsMapping();
@@ -60,9 +59,10 @@ public:
   TOFHIRChPair GetTOFHIRChPair(BTLDetId det);
   TOFHIRChPair GetTOFHIRChPair(uint32_t rawID);
 
-  // Get crystal number/BTLDetId from TOFHIR channel 
   int THChToXtal(uint32_t smodCopy, uint32_t THCh);
-  BTLDetId THChToBTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodCopy, uint32_t THCh);
+  BTLDetId THChToBTLDetId(
+      uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodCopy, uint32_t THCh);
+  // int BTLElectronicsMapping::SiPMChToXtal(uint32_t zside, uint32_t smodCopy, uint32_t SiPMCh);
 
 private:
 };
