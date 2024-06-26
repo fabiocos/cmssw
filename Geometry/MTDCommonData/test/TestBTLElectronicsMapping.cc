@@ -261,8 +261,8 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
 
         spos << "Side plus  local  = " << fround(sidePlusLocal.X() / dd4hep::mm)
              << fround(sidePlusLocal.Y() / dd4hep::mm) << fround(sidePlusLocal.Z() / dd4hep::mm)
-             << " global phi = " << fround(convertRadToDeg(sidePlusGlobal.Phi())) << " SiPMChPlus:  " << SiPMChs.Minus
-             << " TOFHIRChPlus:  " << TOFHIRChs.Minus << "\n";
+             << " global phi = " << fround(convertRadToDeg(sidePlusGlobal.Phi())) << " SiPMChPlus:  " << SiPMChs.Plus
+             << " TOFHIRChPlus:  " << TOFHIRChs.Plus << "\n";
 
         if (SiPMChs.Minus != elMap_.SiPMCh(theId, 0) || SiPMChs.Plus != elMap_.SiPMCh(theId, 1)) {
           spos << "DIFFERENCE IN SiPMChs calculation methods \n";
