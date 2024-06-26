@@ -53,8 +53,8 @@ public:
   static constexpr uint32_t kModulesPerRUV2 = 24;
   static constexpr uint32_t kDModulesPerRU = 12;
   static constexpr uint32_t kSModulesPerDM = 2;
-  static constexpr uint32_t kDModulesInRURow = 3;
-  static constexpr uint32_t kDModulesInRULine = 4;
+  static constexpr uint32_t kDModulesInRUCol = 3;
+  static constexpr uint32_t kDModulesInRURow = 4;
   static constexpr uint32_t kSModulesInDM = 2;
   static constexpr uint32_t kCrystalsPerModuleV2 = 16;
   static constexpr uint32_t kModulesPerTrkV2 = 3;
@@ -108,7 +108,7 @@ public:
     id_ |= kBTLNewFormat;
   }
 
-  /** Construct from complete geometry information, v2 **/
+  /** Construct from complete geometry information, v2, v3 **/
   BTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodule, uint32_t crystal)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
     //RU, DM, SM & Xtal numbers start from 0
@@ -123,7 +123,14 @@ public:
   // ---------- Common methods ----------
 
   /** Returns BTL crystal number. */
-  inline int crystal() const { return ((id_ >> kBTLCrystalOffset) & kBTLCrystalMask) + 1; }
+  inline int crystal() const { return ((id_ >> kBTLCrystalOffset) & kBTLCrystalMask) + 1;}
+
+  /** Returns BTL crystal number in construction database. */
+  inline int crystalConsDB() const { 
+    if (crystal() == kCrystalsPerModuleV2 + 1) return -1;
+    if (smodule() == 1) return kCrystalsPerModuleV2 - crystal();
+    else return crystal()- 1;
+  }
 
   /** Returns BTL detector module number. */
   inline int dmodule() const { return ((id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask) + 1; }
@@ -131,10 +138,25 @@ public:
   /** Returns BTL sensor module number. */
   inline int smodule() const { return ((id_ >> kBTLsensorModOffset) & kBTLsensorModMask) + 1; }
 
+  /** Returns TOFHIR ASIC number in construction database. */
+  // if dmodule [1-12] is odd number 
+  //    SM1 --> TOFHIR A0 (simply 0)
+  //    SM2 --> TOFHIR A1 (simply 1)
+  // else if dmodule is odd number the order is inverted
+  //    SM1 --> TOFHIR A1 (simply 1)
+  //    SM2 --> TOFHIR A0 (simply 0)
+  inline int TOFHIRASIC() const { 
+    if (dmodule()%kSModulesInDM == 1) return smodule()-1; 
+    else return kSModulesInDM - smodule();
+  }
+
+  /** Returns FE number. */
+  inline int frontend() const { return ((id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask) + 1; }
+
   /** Returns BTL module number [1-24] (OLD BTL NUMBERING). */
   inline int module() const {
-    return (((dmodule() - 1) % kDModulesInRULine) * (kSModulesInDM * kDModulesInRURow) + 1 +
-            int((dmodule() - 1) / kDModulesInRULine) + kDModulesInRURow * (smodule() - 1));
+    return (((dmodule() - 1) % kDModulesInRURow) * (kSModulesInDM * kDModulesInRUCol) + 1 +
+            int((dmodule() - 1) / kDModulesInRURow) + kDModulesInRUCol * (smodule() - 1));
   }
 
   /** Returns BTL crystal type number [1-3] (OLD BTL NUMBERING). */
@@ -176,11 +198,11 @@ public:
 
     // convert old module number into detector module + sensor module numbers
     uint32_t oldModule = (rawid >> kBTLoldModuleOffset) & kBTLoldModuleMask;
-    uint32_t detModule = int((oldModule - 1) / (kDModulesInRURow * kSModulesInDM)) + 1 +
-                         kDModulesInRULine * (int((oldModule % 6) / kSModulesInDM));
+    uint32_t detModule = int((oldModule - 1) / (kDModulesInRUCol * kSModulesInDM)) + 1 +
+                         kDModulesInRURow * (int((oldModule % 6) / kSModulesInDM));
     uint32_t senModule = (oldModule - 1) % kSModulesInDM;
-    // uint32_t detModule = ((int((oldModule - 1)/kDModulesInRURow)/kSModulesInDM)*3) + ((oldModule-1)%3 + 1);
-    // uint32_t senModule = int((oldModule - 1)/kDModulesInRURow)%2;
+    // uint32_t detModule = ((int((oldModule - 1)/kDModulesInRUCol)/kSModulesInDM)*3) + ((oldModule-1)%3 + 1);
+    // uint32_t senModule = int((oldModule - 1)/kDModulesInRUCol)%2;
 
     // convert old RU and type number into new RU number
     uint32_t oldRU = (rawid >> kBTLoldRUOffset) & kBTLoldRUMask;

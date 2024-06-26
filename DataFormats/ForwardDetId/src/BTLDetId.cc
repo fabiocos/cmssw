@@ -28,7 +28,9 @@ std::ostream& operator<<(std::ostream& os, const BTLDetId& id) {
      << " Global RU      : " << id.globalRunit() << std::endl
      << " Detector module: " << id.dmodule() << std::endl
      << " Sensor module  : " << id.smodule() << std::endl
+     << " TOFHIR ASIC    : " << id.TOFHIRASIC() << std::endl
      << " Module         : " << id.module() << std::endl
-     << " Crystal        : " << id.crystal() << std::endl;
+     << " Crystal        : " << id.crystal() << std::endl
+     << " Crystal in ConsDB: " << id.crystalConsDB() << std::endl;
   return os;
 }
