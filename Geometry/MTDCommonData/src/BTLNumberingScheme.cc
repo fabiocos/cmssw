@@ -38,6 +38,7 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   };
 
   if (nLevels == kBTLcrystalLevel || isDD4hepOK) {
+    // barphiflat scenario
     LogDebug("MTDGeom") << bareBaseName(baseNumber.getLevelName(0)) << "[" << baseNumber.getCopyNumber(0) << "], "
                         << bareBaseName(baseNumber.getLevelName(1)) << "[" << baseNumber.getCopyNumber(1) << "], "
                         << bareBaseName(baseNumber.getLevelName(2)) << "[" << baseNumber.getCopyNumber(2) << "], "
@@ -48,7 +49,6 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
                         << bareBaseName(baseNumber.getLevelName(7)) << "[" << baseNumber.getCopyNumber(7) << "], "
                         << bareBaseName(baseNumber.getLevelName(8)) << "[" << baseNumber.getCopyNumber(8) << "]";
 
-    // barphiflat scenario
 
     if (baseNumber.getLevelName(0).find("Timingactive") != std::string_view::npos) {
       crystal = baseNumber.getCopyNumber(0);
@@ -108,20 +108,26 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
     } else if (baseNumber.getLevelName(0).find("BTLCrystal") != std::string_view::npos) {
       // v2 or v3 scenario
 
-      crystal = baseNumber.getCopyNumber(0);
-      modCopy = baseNumber.getCopyNumber(1);
-      runitCopy = baseNumber.getCopyNumber(2);
-      rodCopy = baseNumber.getCopyNumber(3);
 
+      // zside copy number
       const std::string_view& rodName(baseNumber.getLevelName(3));  // name of module volume
       uint32_t pos = rodName.find("Zpos");
       zside = (pos <= rodName.size() ? 1 : 0);
 
-      // for negative side swap module numbers betwee sides of the tray, so as to keep the same number for the same phi angle
-      // in the existing model. This introduces a misalignemtn between module number and volume copy for the negative side.
-      if (zside == 0) {
-        modCopy = negModCopy[modCopy - 1];
-      }
+      // rod (tray) copy number
+      rodCopy = baseNumber.getCopyNumber(3);
+      
+      // RU copy number
+      runitCopy = baseNumber.getCopyNumber(2);
+
+      // global module and module type numbers
+      modCopy = baseNumber.getCopyNumber(1);
+
+      // // for negative side swap module numbers betwee sides of the tray, so as to keep the same number for the same phi angle
+      // // in the existing model. This introduces a misalignemtn between module number and volume copy for the negative side.
+      // if (zside == 0) {
+      //   modCopy = negModCopy[modCopy - 1];
+      // }
 
       bool isV2(bareBaseName(baseNumber.getLevelName(0)).back() != 'l');
 
@@ -138,15 +144,13 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
         modtyp = globalru2type[runitCopy - 1];
       }
 
-      // eval detector and sensor module numbers from global module number 1-24
-      uint32_t modulesInRURow = 3;
-      uint32_t modulesInRULine = 4;
-      uint32_t modulesInDM = 2;
-
-      dmodCopy =
-          int(((modCopy - 1) / modulesInRURow) / modulesInDM) + ((modCopy - 1) % modulesInRURow) * modulesInRULine + 1;
-      smodCopy = int((modCopy - 1) / modulesInRURow) % modulesInDM + 1;
-
+      // Detector and sensor module numbers from global module number 1-24
+      dmodCopy = int(((modCopy - 1) / BTLDetId::kDModulesInRUCol) / BTLDetId::kSModulesInDM) + ((modCopy - 1) % BTLDetId::kDModulesInRUCol) * BTLDetId::kDModulesInRURow + 1;
+      smodCopy = int( (modCopy-1) / BTLDetId::kDModulesInRUCol ) % BTLDetId::kSModulesInDM  + 1;
+      
+      // crystal copy number
+      crystal = baseNumber.getCopyNumber(0);
+      
       // error checking
 
       if (1 > crystal || BTLDetId::kCrystalsPerModuleV2 < crystal) {
@@ -232,11 +236,11 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
     uint32_t pos = rodName.find("Zpos");
     zside = (pos <= rodName.size() ? 1 : 0);
 
-    // for negative side swap module numbers betwee sides of the tray, so as to keep the same number for the same phi angle
-    // in the existing model. This introduces a misalignemtn between module number and volume copy for the negative side.
-    if (zside == 0) {
-      modCopy = negModCopy[modCopy - 1];
-    }
+    // // for negative side swap module numbers betwee sides of the tray, so as to keep the same number for the same phi angle
+    // // in the existing model. This introduces a misalignemtn between module number and volume copy for the negative side.
+    // if (zside == 0) {
+    //   modCopy = negModCopy[modCopy - 1];
+    // }
 
     bool isV2(bareBaseName(baseNumber.getLevelName(0)).back() != 'e');
 
@@ -254,13 +258,9 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
     }
 
     // eval detector and sensor module numbers from global module number 1-24
-    uint32_t modulesInRURow = 3;
-    uint32_t modulesInRULine = 4;
-    uint32_t modulesInDM = 2;
-
     dmodCopy =
-        int(((modCopy - 1) / modulesInRURow) / modulesInDM) + ((modCopy - 1) % modulesInRURow) * modulesInRULine + 1;
-    smodCopy = int((modCopy - 1) / modulesInRURow) % modulesInDM + 1;
+        int(((modCopy - 1) / BTLDetId::kDModulesInRUCol) / BTLDetId::kSModulesInDM) + ((modCopy - 1) % BTLDetId::kDModulesInRUCol) * BTLDetId::kDModulesInRURow + 1;
+    smodCopy = int((modCopy - 1) / BTLDetId::kDModulesInRUCol) % BTLDetId::kSModulesInDM + 1;
 
     // error checking
 
