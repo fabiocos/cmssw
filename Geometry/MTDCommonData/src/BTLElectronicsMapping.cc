@@ -158,3 +158,41 @@ BTLDetId BTLElectronicsMapping::THChToBTLDetId(
 
   return BTLDetId(zside, rod, runit, dmodule, smodCopy, crystal);
 }
+
+// Get TOFHIR asic number
+// if dmodule is odd number (DM range [1-12]) 
+//    SM1 --> TOFHIR A0 (simply 0)
+//    SM2 --> TOFHIR A1 (simply 1)
+// else if dmodule is even number the order is inverted
+//    SM1 --> TOFHIR A1 (simply 1)
+//    SM2 --> TOFHIR A0 (simply 0)
+int BTLElectronicsMapping::TOFHIRASIC(uint32_t dmodule, uint32_t smodCopy) { 
+    if (dmodule % BTLDetId::kSModulesInDM == 1) return smodCopy-1; 
+    else return BTLDetId::kSModulesInDM - smodCopy;
+  }
+
+int BTLElectronicsMapping::TOFHIRASIC(BTLDetId det) {
+  uint32_t dmodule = det.dmodule();
+  uint32_t smodCopy = det.smodule();
+  return BTLElectronicsMapping::TOFHIRASIC(dmodule, smodCopy);
+}
+
+int BTLElectronicsMapping::TOFHIRASIC(uint32_t rawID) {
+  BTLDetId theId(rawID);
+  return BTLElectronicsMapping::TOFHIRASIC(theId);
+}
+
+
+/** Returns FE board number */
+int BTLElectronicsMapping::FEBoardFromDM(uint32_t dmodule) { return dmodule - 1; }
+
+int BTLElectronicsMapping::FEBoard(BTLDetId det) {
+  uint32_t dmodule = det.dmodule();
+  return BTLElectronicsMapping::FEBoard(dmodule);
+}
+
+int BTLElectronicsMapping::FEBoard(uint32_t rawID) {
+  BTLDetId theId(rawID);
+  return BTLElectronicsMapping::FEBoardFromDM(theId);
+}
+

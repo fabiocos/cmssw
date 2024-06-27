@@ -138,21 +138,6 @@ public:
   /** Returns BTL sensor module number. */
   inline int smodule() const { return ((id_ >> kBTLsensorModOffset) & kBTLsensorModMask) + 1; }
 
-  /** Returns TOFHIR ASIC number in construction database. */
-  // if dmodule [1-12] is odd number 
-  //    SM1 --> TOFHIR A0 (simply 0)
-  //    SM2 --> TOFHIR A1 (simply 1)
-  // else if dmodule is odd number the order is inverted
-  //    SM1 --> TOFHIR A1 (simply 1)
-  //    SM2 --> TOFHIR A0 (simply 0)
-  inline int TOFHIRASIC() const { 
-    if (dmodule()%kSModulesInDM == 1) return smodule()-1; 
-    else return kSModulesInDM - smodule();
-  }
-
-  /** Returns FE number. */
-  inline int frontend() const { return ((id_ >> kBTLdetectorModOffset) & kBTLdetectorModMask) + 1; }
-
   /** Returns BTL module number [1-24] (OLD BTL NUMBERING). */
   inline int module() const {
     return (((dmodule() - 1) % kDModulesInRURow) * (kSModulesInDM * kDModulesInRUCol) + 1 +

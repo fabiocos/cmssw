@@ -59,10 +59,20 @@ public:
   TOFHIRChPair GetTOFHIRChPair(BTLDetId det);
   TOFHIRChPair GetTOFHIRChPair(uint32_t rawID);
 
+  // Get xtal from TOFHIR Channel number
   int THChToXtal(uint32_t smodCopy, uint32_t THCh);
-  BTLDetId THChToBTLDetId(
-      uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodCopy, uint32_t THCh);
+  BTLDetId THChToBTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodCopy, uint32_t THCh);
   // int BTLElectronicsMapping::SiPMChToXtal(uint32_t zside, uint32_t smodCopy, uint32_t SiPMCh);
+
+  /** Returns TOFHIR ASIC number in construction database. */
+  int TOFHIRASIC(uint32_t dmodule, uint32_t smodCopy);
+  int TOFHIRASIC(BTLDetId det);
+  int TOFHIRASIC(uint32_t rawID);
+
+  /** Returns FE board number */
+  int FEBoardFromDM(uint32_t dmodule);
+  int FEBoard(BTLDetId det);
+  int FEBoard(uint32_t rawID);
 
 private:
 };
