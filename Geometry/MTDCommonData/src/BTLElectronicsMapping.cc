@@ -188,11 +188,11 @@ int BTLElectronicsMapping::FEBoardFromDM(uint32_t dmodule) { return dmodule - 1;
 
 int BTLElectronicsMapping::FEBoard(BTLDetId det) {
   uint32_t dmodule = det.dmodule();
-  return BTLElectronicsMapping::FEBoard(dmodule);
+  return BTLElectronicsMapping::FEBoardFromDM(dmodule);
 }
 
 int BTLElectronicsMapping::FEBoard(uint32_t rawID) {
   BTLDetId theId(rawID);
-  return BTLElectronicsMapping::FEBoardFromDM(theId);
+  return BTLElectronicsMapping::FEBoard(theId);
 }
 
