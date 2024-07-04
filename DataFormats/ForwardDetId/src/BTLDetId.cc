@@ -1,16 +1,24 @@
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 BTLDetId BTLDetId::geographicalId(CrysLayout lay) const {
   // For tracking geometry navigation
 
-  if (lay == CrysLayout::barphiflat) {
-    // barphiflat: count modules in a rod, combining all types
-    return BTLDetId(mtdSide(), mtdRR(), module() + kModulePerTypeBarPhiFlat * (modType() - 1), 0, 1);
-  } else if (lay == CrysLayout::v2 || lay == CrysLayout::v3) {
-    // v2: set number of crystals to 17 to distinguish from crystal BTLDetId
-    // v3: set number of crystals to 17 to distinguish from crystal BTLDetId, build V2-like type and RU number as in BTLNumberingScheme
-    // return BTLDetId(mtdSide(), mtdRR(), runit(), module(), modType(), kCrystalsPerModuleV2 + 1); #old BTLDetID format
-    return BTLDetId(mtdSide(), mtdRR(), globalRunit(), dmodule(), smodule(), kCrystalsPerModuleV2 + 1);
+  // if (lay == CrysLayout::barphiflat) {
+  //   // barphiflat: count modules in a rod, combining all types
+  //   return BTLDetId(mtdSide(), mtdRR(), module() + kModulePerTypeBarPhiFlat * (modType() - 1), 0, 1);
+  // } else if (lay == CrysLayout::v2 || lay == CrysLayout::v3) {
+  //   // v2: set number of crystals to 17 to distinguish from crystal BTLDetId
+  //   // v3: set number of crystals to 17 to distinguish from crystal BTLDetId, build V2-like type and RU number as in BTLNumberingScheme
+  //   // return BTLDetId(mtdSide(), mtdRR(), runit(), module(), modType(), kCrystalsPerModuleV2 + 1); #old BTLDetID format
+  //   return BTLDetId(mtdSide(), mtdRR(), globalRunit(), dmodule(), smodule(), kCrystalsPerModuleV2 + 1);
+  // }
+  // v2: set number of crystals to 17 to distinguish from crystal BTLDetId
+  
+  if (lay == CrysLayout::v2 || lay == CrysLayout::v3) {
+    return BTLDetId(mtdSide(), mtdRR(), globalRunit(), dmodule(), smodule(), kCrystalsPerModuleV2);
+  } else {
+    edm::LogWarning("MTDGeom") << "CrysLayout could only be v2 or v3";
   }
 
   return 0;
@@ -23,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const BTLDetId& id) {
   os << " BTL " << std::endl
      << " Side           : " << id.mtdSide() << std::endl
      << " Rod            : " << id.mtdRR() << std::endl
-     << " Crystal type   : " << id.modType() << std::endl
+     // << " Crystal type   : " << id.modType() << std::endl // crystal type in v1 geometry scheme
      << " Readout unit   : " << id.runit() << std::endl
      << " Global RU      : " << id.globalRunit() << std::endl
      << " Detector module: " << id.dmodule() << std::endl
