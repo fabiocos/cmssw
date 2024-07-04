@@ -228,6 +228,8 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
 
         BTLElectronicsMapping::SiPMChPair SiPMChs = elMap_.GetSiPMChPair(theId);
         BTLElectronicsMapping::TOFHIRChPair TOFHIRChs = elMap_.GetTOFHIRChPair(theId);
+        int TOFHIRASIC = elMap_.TOFHIRASIC(theId);
+        int FEBoard    = elMap_.FEBoard(theId);
 
         //
         // Test of positions for sensitive detectors
@@ -263,6 +265,9 @@ void Test_BTLElectronicsMapping::analyze(const edm::Event& iEvent, const edm::Ev
              << fround(sidePlusLocal.Y() / dd4hep::mm) << fround(sidePlusLocal.Z() / dd4hep::mm)
              << " global phi = " << fround(convertRadToDeg(sidePlusGlobal.Phi())) << " SiPMChPlus:  " << SiPMChs.Plus
              << " TOFHIRChPlus:  " << TOFHIRChs.Plus << "\n";
+
+        spos << "TOFHIR ASIC " << TOFHIRASIC
+             << "\tFEBoard " << FEBoard << "\n";
 
         if (SiPMChs.Minus != elMap_.SiPMCh(theId, 0) || SiPMChs.Plus != elMap_.SiPMCh(theId, 1)) {
           spos << "DIFFERENCE IN SiPMChs calculation methods \n";
