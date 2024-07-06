@@ -118,7 +118,15 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
       
       // RU, global module and crystal copy numbers
       // (make everything start from 0)
+
+      // V3: RU number is global RU number
       runitCopy = baseNumber.getCopyNumber(2) - 1;
+      // V2: the type is embedded in crystal name and RU number is by type
+      if (bareBaseName(baseNumber.getLevelName(0)).back() != 'l') {
+        modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(2)).back());
+        runitCopy = (modtyp - 1) * BTLDetId::kRUPerTypeV2 + baseNumber.getCopyNumber(2) - 1;
+      }
+
       modCopy = baseNumber.getCopyNumber(1) - 1;
       crystal = baseNumber.getCopyNumber(0) - 1;
 
@@ -203,8 +211,15 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
 
     // RU, and global module copy numbers
     // (make everything start from 0)
+
+    // V3: RU number is global RU number
+    runitCopy = baseNumber.getCopyNumber(2) - 1;
+    // V2: the type is embedded in crystal name and RU number is by type
+    if (bareBaseName(baseNumber.getLevelName(0)).back() != 'l') {
+      modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(2)).back());
+      runitCopy = (modtyp - 1) * BTLDetId::kRUPerTypeV2 - 1;
+    }
     modCopy = baseNumber.getCopyNumber(0) - 1;
-    runitCopy = baseNumber.getCopyNumber(1) - 1;
 
     // eval detector and sensor module numbers from global module number 1-24
     dmodCopy = int((modCopy / BTLDetId::kDModulesInRUCol) / BTLDetId::kSModulesInDM) + (modCopy % BTLDetId::kDModulesInRUCol) * BTLDetId::kDModulesInRURow;

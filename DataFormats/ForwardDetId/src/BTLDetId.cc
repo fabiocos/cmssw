@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const BTLDetId& id) {
   os << " BTL " << std::endl
      << " Side           : " << id.mtdSide() << std::endl
      << " Rod            : " << id.mtdRR() << std::endl
-     // << " Crystal type   : " << id.modType() << std::endl // crystal type in v1 geometry scheme
+     << " Crystal type   : " << id.modType() << std::endl // crystal type in v1 geometry scheme
      << " Readout unit   : " << id.runit() << std::endl
      << " Global RU      : " << id.globalRunit() << std::endl
      << " Detector module: " << id.dmodule() << std::endl
