@@ -98,6 +98,16 @@ public:
     id_ = MTDDetId(tmpId).rawId();
   }
 
+  /** Construct from complete geometry information, v1 **/
+  BTLDetId(uint32_t zside, uint32_t rod, uint32_t module, uint32_t modtyp, uint32_t crystal)
+      : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
+    id_ |= (MTDType::BTL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
+           (rod & kRodRingMask) << kRodRingOffset | (module & kBTLoldModuleMask) << kBTLoldModuleOffset |
+           (modtyp & kBTLoldModTypeMask) << kBTLoldModTypeOffset |
+           ((crystal - 1) & kBTLCrystalMask) << kBTLCrystalOffset;
+    id_ |= kBTLNewFormat;
+  }
+
   /** Construct from complete geometry information, v2, v3 **/
   BTLDetId(uint32_t zside, uint32_t rod, uint32_t runit, uint32_t dmodule, uint32_t smodule, uint32_t crystal)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
