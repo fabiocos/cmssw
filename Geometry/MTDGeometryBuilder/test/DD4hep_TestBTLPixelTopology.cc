@@ -222,10 +222,23 @@ void DD4hep_TestBTLPixelTopology::analyze(const edm::Event& iEvent, const edm::E
 
       int origRow = theId.row(topo.nrows());
       int origCol = theId.column(topo.nrows());
-      spix << "rawId= " << theId.rawId() << " geoId= " << geoId.rawId() << " side/rod= " << theId.mtdSide() << " / "
-           << theId.mtdRR() << " type/RU= " << theId.modType() << " / " << theId.runit()
-           << " module/geomodule= " << theId.module() << " / " << static_cast<BTLDetId>(geoId).module()
-           << " crys= " << theId.crystal() << " BTLDetId row/col= " << origRow << " / " << origCol;
+
+      // Print in old BTL Numbering scheme for geometry V1-V2
+      // 3 types of modules
+      // no Detector Module level
+      // spix << "rawId= " << theId.rawId() << " geoId= " << geoId.rawId() << " side/rod= " << theId.mtdSide() << " / "
+      //      << theId.mtdRR() << " type/RU= " << theId.modType() << " / " << theId.runit()
+      //      << " module/geomodule= " << theId.module() << " / " << static_cast<BTLDetId>(geoId).module()
+      //      << " crys= " << theId.crystal() << " BTLDetId row/col= " << origRow << " / " << origCol;
+      // spix << "\n";
+
+      // Print in old BTL Numbering scheme for geometry V2-V3
+      // single type of modules
+      // Detector Module and Sensor Module level
+      spix << "rawId= " << theId.rawId() << " geoId= " << geoId.rawId(); 
+      spix << " BTL side " << theId.mtdSide() << " Rod " << theId.mtdRR() << " RU " << theId.globalRunit()
+           << " Detector Module " << theId.dmodule() << " Sensor Module " << theId.smodule()
+           << " crys= " << theId.crystal();
       spix << "\n";
 
       //
