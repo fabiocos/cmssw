@@ -166,6 +166,8 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
       if (0 > int(runitCopy) || BTLDetId::kRUPerRod < runitCopy) {
         edm::LogWarning("MTDGeom") << "BTLNumberingScheme::getUnitID(): "
                                    << "****************** Bad readout unit copy = " << int(runitCopy)
+                                   << " module type = " << int(modtyp)
+                                   << ", Volume Name= " << baseNumber.getLevelName(2)
                                    << ", Volume Number (counting from 0)= " << baseNumber.getCopyNumber(2) - 1;
         return 0;
       }
@@ -213,11 +215,11 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
     // (make everything start from 0)
 
     // V3: RU number is global RU number
-    runitCopy = baseNumber.getCopyNumber(2) - 1;
+    runitCopy = baseNumber.getCopyNumber(1) - 1;
     // V2: the type is embedded in crystal name and RU number is by type
-    if (bareBaseName(baseNumber.getLevelName(0)).back() != 'l') {
-      modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(2)).back());
-      runitCopy = (modtyp - 1) * BTLDetId::kRUPerTypeV2 - 1;
+    if (bareBaseName(baseNumber.getLevelName(0)).back() != 'e') {
+      modtyp = ::atoi(&bareBaseName(baseNumber.getLevelName(1)).back());
+      runitCopy = (modtyp - 1) * BTLDetId::kRUPerTypeV2 + baseNumber.getCopyNumber(1) - 1;
     }
     modCopy = baseNumber.getCopyNumber(0) - 1;
 
