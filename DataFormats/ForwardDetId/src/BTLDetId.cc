@@ -16,7 +16,7 @@ BTLDetId BTLDetId::geographicalId(CrysLayout lay) const {
   // v2: set number of crystals to 17 to distinguish from crystal BTLDetId
   
   if (lay == CrysLayout::v2 || lay == CrysLayout::v3) {
-    return BTLDetId(mtdSide(), mtdRR(), globalRunit(), dmodule(), smodule(), kCrystalsPerModuleV2);
+    return BTLDetId(mtdSide(), mtdRR(), runit(), dmodule(), smodule(), kCrystalsPerModuleV2);
   } else {
     edm::LogWarning("MTDGeom") << "CrysLayout could only be v2 or v3";
   }
@@ -32,8 +32,8 @@ std::ostream& operator<<(std::ostream& os, const BTLDetId& id) {
      << " Side           : " << id.mtdSide() << std::endl
      << " Rod            : " << id.mtdRR() << std::endl
      << " Crystal type   : " << id.modType() << std::endl // crystal type in v1 geometry scheme
+     << " Runit by Type  : " << id.runitByType() << std::endl
      << " Readout unit   : " << id.runit() << std::endl
-     << " Global RU      : " << id.globalRunit() << std::endl
      << " Detector module: " << id.dmodule() << std::endl
      << " Sensor module  : " << id.smodule() << std::endl
      << " Module         : " << id.module() << std::endl

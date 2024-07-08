@@ -146,25 +146,15 @@ public:
 
   /** Returns BTL crystal type number [1-3] (OLD BTL NUMBERING). */
   inline int modType() const {
-    int gRU = globalRunit();
+    int gRU = runit();
     return int(gRU / kRUPerTypeV2 + 1);
   }
 
   /** Returns BTL readout unit number per type [1-2], from Global RU number [1-6]. */
-  inline int runit() const { return (globalRunit() % kRUPerTypeV2); }
+  inline int runitByType() const { return (runit() % kRUPerTypeV2); }
 
   /** Returns BTL global readout unit number. */
-  inline int globalRunit() const { return ((id_ >> kBTLRUOffset) & kBTLRUMask); }
-  // old globalRU function
-  // inline int globalRunit() const {
-  // if (runit() == 0) {
-  //   // pre-V2: build a RU identifier from available information
-  //   return (module() - 1) / kModulePerTypeBarPhiFlat / kRUPerTypeV2 + 1;
-  // } else if (runit() > 0 && modType() > 0) {
-  //   // V2/V3: build global RU identifier from RU per type and type
-  //   return (modType() - 1) * kRUPerTypeV2 + runit();
-  // }
-  // }
+  inline int runit() const { return ((id_ >> kBTLRUOffset) & kBTLRUMask); }
 
   /** return the row in GeomDet language **/
   inline int row(unsigned nrows = kCrystalsPerModuleV2) const {
