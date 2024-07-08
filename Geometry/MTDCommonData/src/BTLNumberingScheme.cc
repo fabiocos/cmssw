@@ -283,8 +283,8 @@ uint32_t BTLNumberingScheme::getUnitID(const MTDBaseNumber& baseNumber) const {
   }
 
   LogDebug("MTDGeom") << "BTL Numbering scheme: "
-                      << " zside = " << zside << " rod = " << rodCopy << " modtyp = " << modtyp << " RU = " << runitCopy
-                      << " module = " << modCopy << " crystal = " << crystal << " Raw Id = " << intindex << "\n"
+                      << " Raw Id = " << intindex << " zside = " << zside << " rod = " << rodCopy << " runit = " << runitCopy
+                      << " dmodule = " << dmodCopy << " smodule = " << smodCopy << " module = " << modCopy+1 << " crystal = " << crystal << "\n"
                       << BTLDetId(intindex);
 
   return intindex;
