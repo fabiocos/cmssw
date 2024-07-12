@@ -35,7 +35,7 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackClusterizerInZ.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZT_vect.h"
-
+#include "RecoVertex/PrimaryVertexProducer/interface/ClusterizerinGNN.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/HITrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GapClusterizerInZ.h"
@@ -55,22 +55,28 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexTimeAlgorithmBase.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexTimeAlgorithmFromTracksPID.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexTimeAlgorithmLegacy4D.h"
-
+#include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
+#include "TracksGraph.h"
+#include <iostream>
+#include <vector>
 //
 // class declaration
 //
+using namespace cms::Ort;
 
-class PrimaryVertexProducer : public edm::stream::EDProducer<> {
+class PrimaryVertexProducer : public edm::stream::EDProducer<edm::GlobalCache<ONNXRuntime>> {
 public:
-  PrimaryVertexProducer(const edm::ParameterSet&);
+  PrimaryVertexProducer(const edm::ParameterSet&, const ONNXRuntime*);
   ~PrimaryVertexProducer() override;
 
   void produce(edm::Event&, const edm::EventSetup&) override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
   // access to config
   edm::ParameterSet config() const { return theConfig; }
+
+  static std::unique_ptr<ONNXRuntime> initializeGlobalCache(const edm::ParameterSet&);
+  static void globalEndJob(const ONNXRuntime*);
 
 private:
   // ----------member data ---------------------------
@@ -102,10 +108,27 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float> > trkTimesToken;
   edm::EDGetTokenT<edm::ValueMap<float> > trkTimeResosToken;
   edm::EDGetTokenT<edm::ValueMap<float> > trackMTDTimeQualityToken;
+  edm::EDGetTokenT<edm::ValueMap<int> > trkMTDAssocToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > MTDtimeToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > sigmaMTDtimeToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > pathLengthToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > btlMatchChi2Token;
+  edm::EDGetTokenT<edm::ValueMap<float> > btlMatchTime_Chi2Token;
+  edm::EDGetTokenT<edm::ValueMap<float> > etlMatchChi2Token;
+  edm::EDGetTokenT<edm::ValueMap<float> > etlMatchTime_Chi2Token;
+  edm::EDGetTokenT<edm::ValueMap<float> > trkTimePiToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > trkTimeKToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > trkTimePToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > sigmaTrkTimePiToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > sigmaTrkTimeKToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > sigmaTrkTimePToken;
+  edm::EDGetTokenT<edm::ValueMap<int>> npixBarrelToken;
+  edm::EDGetTokenT<edm::ValueMap<int>> npixEndcapToken;
 
   bool useTransientTrackTime_;
   bool useMVASelection_;
   edm::ValueMap<float> trackMTDTimeQualities_;
   edm::ValueMap<float> trackTimes_;
   double minTrackTimeQuality_;
+
 };

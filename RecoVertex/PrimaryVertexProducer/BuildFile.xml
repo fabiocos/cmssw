@@ -10,6 +10,7 @@
 <use name="RecoVertex/VertexTools"/>
 <use name="TrackingTools/Records"/>
 <use name="TrackingTools/TransientTrack"/>
+<use name="PhysicsTools/ONNXRuntime"/>
 <use name="vdt_headers"/>
 <export>
   <lib name="1"/>

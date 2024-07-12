@@ -232,3 +232,64 @@ vector<TransientTrack> TransientTrackBuilder::build(const edm::Handle<edm::View<
 TransientTrack TransientTrackBuilder::build(const FreeTrajectoryState& fts) const {
   return TransientTrack(new TransientTrackFromFTS(fts));
 }
+
+
+vector<TransientTrack> TransientTrackBuilder::build(const edm::Handle<reco::TrackCollection>& trkColl,
+						    const reco::BeamSpot& beamSpot,
+                                                    const edm::ValueMap<float>& trackTimes,
+                                                    const edm::ValueMap<float>& trackTimeResos,
+                                                    const edm::ValueMap<int>& trackMTDAssoc,
+                                                    const edm::ValueMap<float>& MTDtime,
+                                                    const edm::ValueMap<float>& sigmaMTDtime,
+                                                    const edm::ValueMap<float>& MVAquality,
+                                                    const edm::ValueMap<float>& pathLength,
+                                                    const edm::ValueMap<float>& btlmatchChi2,
+                                                    const edm::ValueMap<float>& btlmatchTime_Chi2,
+                                                    const edm::ValueMap<float>& etlmatchChi2,
+                                                    const edm::ValueMap<float>& etlmatchTime_Chi2,
+                                                    const edm::ValueMap<float>& trackTime_pi,
+                                                    const edm::ValueMap<float>& trackTime_k,
+                                                    const edm::ValueMap<float>& trackTime_p,
+                                                    const edm::ValueMap<float>& sigmatrackTime_pi,
+                                                    const edm::ValueMap<float>& sigmatrackTime_k,
+                                                    const edm::ValueMap<float>& sigmatrackTime_p,
+                                                    const edm::ValueMap<int>& tracknpixBarrel,
+                                                    const edm::ValueMap<int>& tracknpixEndcap ) const {
+  vector<TransientTrack> ttVect;
+  ttVect.reserve((*trkColl).size());
+  for (unsigned int i = 0; i < (*trkColl).size(); i++) {
+    TrackRef ref(trkColl, i);
+    double time = trackTimes[ref];
+    double timeReso = trackTimeResos[ref];
+    int trackAsoc_mtd = trackMTDAssoc[ref];
+    float MTDtime_mtd = MTDtime[ref];
+    float MTDtimeErr_mtd = sigmaMTDtime[ref];
+    float MVAquality_mtd = MVAquality[ref];
+    float pathLength_mtd = pathLength[ref];
+    float btlMatch_chi2_mtd = btlmatchChi2[ref];
+    float btlMatchTime_chi2_mtd = btlmatchTime_Chi2[ref];
+    float etlMatch_chi2_mtd = etlmatchChi2[ref];
+    float etlMatchTime_chi2_mtd = etlmatchTime_Chi2[ref];
+    float trackTime_pi_mtd = trackTime_pi[ref];
+    float trackTime_k_mtd = trackTime_k[ref];
+    float trackTime_p_mtd = trackTime_p[ref];
+    float track_sigmaTime_pi_mtd = sigmatrackTime_pi[ref];
+    float track_sigmaTime_k_mtd = sigmatrackTime_k[ref];
+    float track_sigmaTime_p_mtd = sigmatrackTime_p[ref];
+    int npixBarrel = tracknpixBarrel[ref];
+    int npixEndcap = tracknpixEndcap[ref];
+
+
+    timeReso = (timeReso > 1e-6 ? timeReso
+                                : defaultInvalidTrackTimeReso);  // make the error much larger than the BS time width
+    if (edm::isNotFinite(time)) {
+      time = 0.0;
+      timeReso = defaultInvalidTrackTimeReso;
+    }
+    ttVect.push_back(TransientTrack(ref, time, timeReso, theField,  theTrackingGeometry, trackAsoc_mtd, MTDtime_mtd, MTDtimeErr_mtd, MVAquality_mtd, pathLength_mtd, btlMatch_chi2_mtd, btlMatchTime_chi2_mtd, etlMatch_chi2_mtd, etlMatchTime_chi2_mtd, trackTime_pi_mtd, trackTime_k_mtd, trackTime_p_mtd, track_sigmaTime_pi_mtd, track_sigmaTime_k_mtd, track_sigmaTime_p_mtd,npixBarrel, npixEndcap));
+  }
+  for (unsigned int i = 0; i < ttVect.size(); i++) {
+    ttVect[i].setBeamSpot(beamSpot);
+  }
+  return ttVect;
+}
