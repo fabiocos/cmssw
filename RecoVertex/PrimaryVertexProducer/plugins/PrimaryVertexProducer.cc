@@ -10,12 +10,12 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/VertexTools/interface/VertexDistanceXY.h"
+
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
-#include "RecoVertex/VertexTools/interface/GeometricAnnealing.h"
-#include "vdt/vdtMath.h"
 
-//PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, cms::Ort::ONNXRuntime const *onnxRuntime)
+#include "RecoVertex/VertexTools/interface/GeometricAnnealing.h"
+
 PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, const ONNXRuntime *cache) 
    : theTTBToken(esConsumes(edm::ESInputTag("", "TransientTrackBuilder"))), theConfig(conf) {
   fVerbose = conf.getUntrackedParameter<bool>("verbose", false);
@@ -181,8 +181,6 @@ void PrimaryVertexProducer::globalEndJob(const ONNXRuntime *cache) {}
 
 void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // get the BeamSpot, it will always be needed, even when not used as a constraint
-
-
   reco::BeamSpot beamSpot;
   edm::Handle<reco::BeamSpot> recoBeamSpotHandle;
   iEvent.getByToken(bsToken, recoBeamSpotHandle);
@@ -220,7 +218,6 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   // `tks` can be used as a ptr to a reco::TrackCollection
   edm::Handle<reco::TrackCollection> tks;
   iEvent.getByToken(trkToken, tks);
-
 
   // mechanism to put the beamspot if the track collection is empty
   if (!tks.isValid()) {
@@ -295,7 +292,8 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
           trackTimes_[ref] = std::numeric_limits<double>::max();
         }
       }
-      t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_);
+    //  t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_);
+    t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_, trackMTDAssoc_, trackMTDTimes_, trackMTDTimesRes_, trackMTDTimeQualities_, pathlength_, btlMatch_, btlMatchTime_, etlMatch_, etlMatchTime_, trkPiTime_, trkKTime_, trkPTime_, sigmatrkPiTime_, sigmatrkKTime_, sigmatrkPTime_, npixbarrel_, npixendcap_);
     } else {
       t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_, trackMTDAssoc_, trackMTDTimes_, trackMTDTimesRes_, trackMTDTimeQualities_, pathlength_, btlMatch_, btlMatchTime_, etlMatch_, etlMatchTime_, trkPiTime_, trkKTime_, trkPTime_, sigmatrkPiTime_, sigmatrkKTime_, sigmatrkPTime_, npixbarrel_, npixendcap_);
     }
@@ -303,9 +301,12 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
     t_tks = (*theB).build(tks, beamSpot);
   }
 
+  // select tracks
   std::vector<reco::TransientTrack>&& seltks = theTrackFilter->select(t_tks);
-
+ 
+  // clusterize tracks in Z
   std::vector<TransientVertex>&&  clusters = theTrackClusterizer->vertices(seltks);
+ 
   if (fVerbose) {
     edm::LogPrint("PrimaryVertexProducer")
         << " bool useTransientTrackTime_ "<<useTransientTrackTime_<<" Clustering returned " << clusters.size() << " clusters from " << seltks.size() << " selected tracks";
