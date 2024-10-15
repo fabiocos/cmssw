@@ -373,6 +373,9 @@ private:
   MonitorElement* meRecPVT_;
   MonitorElement* meSimPVZ_;
 
+  MonitorElement* mePUvsRealVbin_[30];
+  MonitorElement* mePUvsFakeVbin_[30];
+
   MonitorElement* meVtxTrackMult_;
   MonitorElement* meVtxTrackW_;
   MonitorElement* meVtxTrackWnt_;
@@ -669,6 +672,14 @@ void Primary4DVertexValidation::bookHistograms(DQMStore::IBooker& ibook,
       ibook.bookProfile("PUvsReal", "#PU vertices vs #real matched vertices;#PU;#real ", 100, 0, 300, 100, 0, 200);
   mePUvsFakeV_ =
       ibook.bookProfile("PUvsFake", "#PU vertices vs #fake matched vertices;#PU;#fake ", 100, 0, 300, 100, 0, 20);
+  for (size_t index = 0; index < 30; index++) {
+      std::string name1 = "PUvsReal"+std::to_string(index);
+  mePUvsRealVbin_[index] =
+      ibook.book1D(name1, "#PU vertices in bin #real matched vertices", 100, 0, 200);
+      std::string name2 = "PUvsFake"+std::to_string(index);
+  mePUvsFakeVbin_[index] =
+      ibook.book1D(name2, "#PU vertices in bin #fake matched vertices", 100, 0, 20);
+  }
   mePUvsOtherFakeV_ = ibook.bookProfile(
       "PUvsOtherFake", "#PU vertices vs #other fake matched vertices;#PU;#other fake ", 100, 0, 300, 100, 0, 20);
   mePUvsSplitV_ =
@@ -2644,6 +2655,12 @@ void Primary4DVertexValidation::analyze(const edm::Event& iEvent, const edm::Eve
   mePUvsFakeV_->Fill(simpv.size(), fake);
   mePUvsOtherFakeV_->Fill(simpv.size(), other_fake);
   mePUvsSplitV_->Fill(simpv.size(), split);
+  for (size_t index = 0; index < 30; index++) {
+    if (simpv.size() >= 150+index*3 && simpv.size() < 153+index*3) {
+  mePUvsRealVbin_[index]->Fill(real);
+  mePUvsFakeVbin_[index]->Fill(fake);
+    }
+  }
 
   // fill vertices histograms here in a new loop
   for (unsigned int is = 0; is < simpv.size(); is++) {
