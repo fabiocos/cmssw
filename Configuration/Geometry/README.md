@@ -125,6 +125,7 @@ Fast Timing system:
 * I15: Same as I14, addition of notch and revision of envelope
 * I16: Starting from I15, revised BTL with complete passive material description, it needs Tracker T31 or newer
 * I17: Same as I16, BTL with one crystal thickness (type) only, ETL with LGAD split into two sensors
+* I18: BTL I17, ETL tentative final layout summer 2024
 
 The script also handles the common and forward elements of the geometry:
 * O4: detailed cavern description, changes for modified CALO region for endcap part, no overlaps inside the Muon System 
@@ -162,4 +163,5 @@ Several detector combinations have been generated:
 * D112 = T37+C24+M11+I17+O9+F8
 * D113 = T38+C24+M11+I17+O9+F8
 * D114 = T39+C19+M11+I17+O9+F8
-
+* D115 = T35+C20+M11+I17+O9+F8
+* D116 = T35+C18+M11+I18+O9+F8
