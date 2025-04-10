@@ -60,7 +60,7 @@ void MCTruthUtil::secondary(G4Track *aTrack, const G4Track &mother, int flag) {
   }
 
   // for MTD
-  if (!trkInfo->isPrimary() && !isInBTL(aTrack)) {
+  if (!trkInfo->storeTrack() && !isInBTL(aTrack)) {
     trkInfo->setExtSecondary();
   }
   if (motherInfo->isExtSecondary()) {
@@ -84,7 +84,7 @@ void MCTruthUtil::secondary(G4Track *aTrack, const G4Track &mother, int flag) {
 bool MCTruthUtil::isInBTL(const G4Track *aTrack) {
   bool out = false;
   G4String tName(aTrack->GetVolume()->GetLogicalVolume()->GetRegion()->GetName());
-  if (tName == "FastTimerRegionBTL" || tName == "FastTimerRegionSensBTL") {
+  if (tName == "FastTimerRegionSensBTL") {
     out = true;
   }
   return out;

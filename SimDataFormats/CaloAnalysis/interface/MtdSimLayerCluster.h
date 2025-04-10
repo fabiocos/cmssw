@@ -8,6 +8,8 @@
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimCluster.h"
 #include <vector>
 
+#include <limits>
+
 class MtdSimLayerCluster : public MtdSimCluster {
   friend std::ostream &operator<<(std::ostream &s, MtdSimLayerCluster const &tp);
 
@@ -21,14 +23,18 @@ public:
 
   /** @brief computes the time of the cluster */
   float computeClusterTime() {
-    simLC_time_ = 0.;
-    float tot_en = 0.;
+    //    simLC_time_ = 0.;
+    //    float tot_en = 0.;
+    //    for (uint32_t i = 0; i < times_.size(); i++) {
+    //      simLC_time_ += times_[i] * energies_[i];
+    //      tot_en += energies_[i];
+    //    }
+    //    if (tot_en != 0.)
+    //      simLC_time_ = simLC_time_ / tot_en;
+    simLC_time_ = std::numeric_limits<float>::max();
     for (uint32_t i = 0; i < times_.size(); i++) {
-      simLC_time_ += times_[i] * energies_[i];
-      tot_en += energies_[i];
+      simLC_time_ = std::min(simLC_time_, times_[i]);
     }
-    if (tot_en != 0.)
-      simLC_time_ = simLC_time_ / tot_en;
     return simLC_time_;
   }
 
