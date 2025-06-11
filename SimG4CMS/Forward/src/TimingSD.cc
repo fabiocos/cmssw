@@ -250,6 +250,8 @@ bool TimingSD::checkHit(const G4Step*, BscG4Hit* hit) {
     hit->setProcessId(theEnumerator->processId(theTrack->GetCreatorProcess()));
 
     hit->setVertexPosition(theTrack->GetVertexPosition());
+
+    hit->setPathLength(theTrack->GetTrackLength());
   }
   return true;
 }
@@ -307,6 +309,8 @@ void TimingSD::createNewHit(const G4Step* aStep) {
 
   currentHit->setVertexPosition(theTrack->GetVertexPosition());
 
+  currentHit->setPathLength(theTrack->GetTrackLength());
+
   updateHit();
   storeHit(currentHit);
 }
@@ -344,6 +348,7 @@ void TimingSD::EndOfEvent(G4HCofThisEvent*) {
 #ifdef EDM_ML_DEBUG
     edm::LogVerbatim("TimingSim") << "TimingSD: Hit for storage \n"
                                   << *aHit << "\n Entry point: " << locEntryPoint << "\n Exit  point: " << locExitPoint;
+    edm::LogVerbatim("TimingSim") << "TimingSD: path length at hit: " << aHit->getPathLenght();
 #endif
 
     slave->processHits(PSimHit(locEntryPoint,
@@ -356,7 +361,8 @@ void TimingSD::EndOfEvent(G4HCofThisEvent*) {
                                aHit->getTrackID(),
                                aHit->getThetaAtEntry(),
                                aHit->getPhiAtEntry(),
-                               aHit->getProcessId()));
+                               aHit->getProcessId(),
+                               aHit->getPathLength()));
   }
 }
 

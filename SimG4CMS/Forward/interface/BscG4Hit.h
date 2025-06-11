@@ -68,6 +68,7 @@ public:
   float getTof() const { return theTof; };
   float getEnergyLoss() const { return theEnergyLoss; };
   int getParticleType() const { return theParticleType; };
+  float getPathLength() const { return thePathLength; }
 
   void setPabs(float e) { thePabs = e; };
   void setTof(float e) { theTof = e; };
@@ -102,6 +103,8 @@ public:
   void setVy(float p) { theVy = p; };
   void setVz(float p) { theVz = p; };
 
+  void setPathLength(float pathlength) { thePathLength = pathlength; }
+
 private:
   G4ThreeVector entry;      //Entry point
   G4ThreeVector entrylp;    //Entry  local point
@@ -130,6 +133,7 @@ private:
   float theVx;
   float theVy;
   float theVz;
+  float thePathLength;
 };
 
 std::ostream& operator<<(std::ostream&, const BscG4Hit&);

@@ -32,7 +32,8 @@
   <class name="SimClusterRefProd"/>
   <class name="SimClusterContainer"/>
 
-  <class name="MtdSimCluster" ClassVersion="6">
+  <class name="MtdSimCluster" ClassVersion="7">
+   <version ClassVersion="7" checksum="837518676"/>
     <version ClassVersion="6" checksum="3803328692"/>
     <version ClassVersion="5" checksum="3108339619"/>
     <version ClassVersion="4" checksum="3803328692"/>

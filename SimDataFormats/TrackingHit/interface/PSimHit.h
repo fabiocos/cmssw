@@ -28,7 +28,8 @@ public:
           unsigned int trackId,
           float theta,
           float phi,
-          unsigned short processType = 0)
+          unsigned short processType = 0,
+          float pathlength = 0.f)
       : theEntryPoint(entry),
         theSegment(exit - entry),
         thePabs(pabs),
@@ -38,6 +39,7 @@ public:
         theTof(tof),
         theParticleType(particleType),
         theProcessType(processType),
+        thePathLength(pathlength),
         theDetUnitId(detId),
         theTrackId(trackId) {}
 
@@ -90,6 +92,10 @@ public:
    */
   int particleType() const { return theParticleType; }
 
+  /** The path length of the mother track up to the hit
+   */
+  float pathLength() const { return thePathLength; }
+
   /** The DetUnit identifier, to be interpreted in the context of the
    *  detector system that produced the hit. E.g. in the Tracker
    *  this is index used with DetUnitNumbering<TrackerSimHitTag>.
@@ -132,6 +138,8 @@ public:
 
   void setTof(float tof) { theTof = tof; }
 
+  void setPathLength(float pathlength) { thePathLength = pathlength; }
+
 protected:
   // properties
   Local3DPoint theEntryPoint;  // position at entry
@@ -145,6 +153,8 @@ protected:
   int theParticleType;
   unsigned short theProcessType;  // ID of the process which created the track
                                   // which created the PSimHit
+
+  float thePathLength;  // mother track pathlength from its origin up to the hit
 
   // association
   unsigned int theDetUnitId;

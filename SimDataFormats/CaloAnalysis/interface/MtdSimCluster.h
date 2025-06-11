@@ -26,6 +26,11 @@ public:
     ++nsimhits_;
   }
 
+  /** @brief add hit path length */
+  void addPathLength(float pathlength) {
+    pathlengths_.emplace_back(pathlength);
+  }
+
   /** @brief add hit with fraction */
   void addHitAndFraction(uint64_t hit, float fraction) {
     mtdHits_.emplace_back(hit);
@@ -100,6 +105,9 @@ public:
   /** @brief clear the times list */
   void clearHitsTime() { std::vector<float>().swap(times_); }
 
+  /** @brief clear the times list */
+  void clearPathLengths() { std::vector<float>().swap(pathlengths_); }
+
   /** @brief clear the positions list */
   void clearHitsPosition() { std::vector<LocalPoint>().swap(positions_); }
 
@@ -107,6 +115,7 @@ public:
     clearHitsAndFractions();
     clearHitsEnergy();
     clearHitsTime();
+    clearPathLengths();
     clearHitsPosition();
   }
 
@@ -123,6 +132,7 @@ public:
 protected:
   std::vector<uint64_t> mtdHits_;
   std::vector<float> times_;
+  std::vector<float> pathlengths_;
   std::vector<LocalPoint> positions_;
   unsigned int idOffset_{0};
 };
