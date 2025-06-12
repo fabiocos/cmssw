@@ -348,7 +348,7 @@ void TimingSD::EndOfEvent(G4HCofThisEvent*) {
 #ifdef EDM_ML_DEBUG
     edm::LogVerbatim("TimingSim") << "TimingSD: Hit for storage \n"
                                   << *aHit << "\n Entry point: " << locEntryPoint << "\n Exit  point: " << locExitPoint;
-    edm::LogVerbatim("TimingSim") << "TimingSD: path length at hit: " << aHit->getPathLenght();
+    edm::LogVerbatim("TimingSim") << "TimingSD: path length at hit (cm): " << aHit->getPathLenght()/CLHEP::cm;
 #endif
 
     slave->processHits(PSimHit(locEntryPoint,

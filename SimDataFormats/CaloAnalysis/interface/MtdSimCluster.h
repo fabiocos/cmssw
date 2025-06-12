@@ -80,6 +80,17 @@ public:
   }
 
   /** @brief Returns list of hit IDs and times for this SimCluster */
+  std::vector<std::pair<uint64_t, float>> hits_and_pathlengths() const {
+    assert(mtdHits_.size() == pathlengths_.size());
+    std::vector<std::pair<uint64_t, float>> result;
+    result.reserve(mtdHits_.size());
+    for (size_t i = 0; i < mtdHits_.size(); ++i) {
+      result.emplace_back(mtdHits_[i], pathlengths_[i]);
+    }
+    return result;
+  }
+
+  /** @brief Returns list of hit IDs and times for this SimCluster */
   std::vector<std::pair<uint64_t, LocalPoint>> hits_and_positions() const {
     assert(mtdHits_.size() == times_.size());
     std::vector<std::pair<uint64_t, LocalPoint>> result;
