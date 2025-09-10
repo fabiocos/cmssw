@@ -144,4 +144,6 @@ GeometryConf={
     'DD4hepExtendedRun4D122' : 'DD4hepExtendedRun4D122,DD4hepExtendedRun4D122Reco',
     'ExtendedRun4D123' : 'ExtendedRun4D123,ExtendedRun4D123Reco',
     'DD4hepExtendedRun4D123' : 'DD4hepExtendedRun4D123,DD4hepExtendedRun4D123Reco',
+    'ExtendedRun4D200' : 'ExtendedRun4D200,ExtendedRun4D200Reco',
+    'DD4hepExtendedRun4D200' : 'DD4hepExtendedRun4D200,DD4hepExtendedRun4D200Reco',
 }
