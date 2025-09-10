@@ -5,7 +5,7 @@
     <ElementaryMaterial name="mtdtkLayout_Epoxy" symbol="Epoxy" atomicNumber="7" atomicWeight="13.9368*g/mole" density="1.16*g/cm3"/>
     <ElementaryMaterial name="mtdtkLayout_CFRP" symbol="CFRP" atomicNumber="6" atomicWeight="12.1475*g/mole" density="1.84*g/cm3"/>
     <ElementaryMaterial name="mtdtkLayout_PS-ROH-mix" symbol="PS-ROH-mix" atomicNumber="8" atomicWeight="15.1128*g/mole" density="1.54*g/cm3"/>
-    <CompositeMaterial name="mtdhybridcompositeBModule1Layer1PositiveZFSide" density="4.60957*g/cm3" method="mixture by weight">
+   <CompositeMaterial name="mtdhybridcompositeBModule1Layer1PositiveZFSide" density="4.60957*g/cm3" method="mixture by weight">
       <MaterialFraction fraction="0.0408204">
         <rMaterial name="mtdMaterial:mtdtkLayout_CFRP"/>
       </MaterialFraction>
@@ -43,6 +43,35 @@
         <rMaterial name="materials:Hydrogen"/>
       </MaterialFraction>
     </CompositeMaterial>
+    <CompositeMaterial name="glueLGAD_LairdFilm" density="1.0889*g/cm3" method="mixture by weight">
+     <MaterialFraction fraction="0.5556">
+      <rMaterial name="materials:Epoxy"/>
+     </MaterialFraction>
+    <MaterialFraction fraction="0.4444">
+      <rMaterial name="mtdMaterial:Laird"/>
+    </MaterialFraction>
+    </CompositeMaterial>
+    <CompositeMaterial name="Merged_ETROC_PCB_Connectors_Services" density="1.84*g/cm3" method="mixture by weight">
+     <MaterialFraction fraction="0.0073">
+      <rMaterial name="materials:Epoxy"/>
+     </MaterialFraction>
+     <MaterialFraction fraction="0.9924">
+      <rMaterial name="mtdMaterial:ServiceHybrid_PCB"/>
+     </MaterialFraction>
+     <MaterialFraction fraction="0.0001">
+      <rMaterial name="materials:Air"/>
+     </MaterialFraction>
+    </CompositeMaterial>
+    <CompositeMaterial name="glueLGAD_LairdFilm" density="1.0889*g/cm3" method="mixture by weight">
+     <MaterialFraction fraction="0.5556">
+      <rMaterial name="materials:Epoxy"/>
+     </MaterialFraction>
+     <MaterialFraction fraction="0.4444">
+      <rMaterial name="mtdMaterial:Laird"/>
+     </MaterialFraction>
+    </CompositeMaterial>
+
+
     <!-- Definition of thermal screen material (approx.) -->
     <CompositeMaterial name="CryogelZ" density="0.16*g/cm3" symbol="CryogelZ" method="mixture by weight">   
       <MaterialFraction fraction="0.27">
@@ -184,7 +213,7 @@
 
     <CompositeMaterial name="AW5083" density="2.71*g/cm3" symbol=" " method="mixture by weight">
        <MaterialFraction fraction="0.946">
-	<rMaterial name="materials:Aluminium"/>
+	  <rMaterial name="materials:Aluminium"/>
       </MaterialFraction>
       <MaterialFraction fraction="0.052">
 	<rMaterial name="materials:Magnesium"/>

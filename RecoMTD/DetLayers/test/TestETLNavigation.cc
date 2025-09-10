@@ -87,17 +87,22 @@ void TestETLNavigation::analyze(edm::StreamID, edm::Event const&, edm::EventSetu
         imodInd++;
         ETLDetId modId(imod->geographicalId().rawId());
         LogVerbatim("MTDLayerDumpFull") << std::fixed << std::setw(5) << imodInd << " ETLDetId " << modId.rawId()
+                                        << "Binary Id " << modId.geographicalId()
                                         << " side = " << std::setw(4) << modId.mtdSide()
                                         << " Disc/Side/Sector = " << std::setw(4) << modId.nDisc() << " "
                                         << std::setw(4) << modId.discSide() << " " << std::setw(4) << modId.sector()
-                                        << " mod/type = " << std::setw(4) << modId.module() << " " << std::setw(4)
-                                        << modId.modType() << " pos = " << fvecround(imod->position(), 4);
+                                        << " sh type/sh copy/mod copy/mod type = "
+                                        << std::setw(4) << modId.servType() << " " << std::setw(4) << modId.servCopy()
+                                        << std::setw(4) << modId.module() << " " << std::setw(4) << modId.modType() 
+                                        << " pos = " << fvecround(imod->position(), 4);
         LogVerbatim("MTDLayerDump") << std::fixed << std::setw(5) << imodInd << " ETLDetId " << modId.rawId()
+                                    << "Binary Id " << modId.geographicalId()
                                     << " side = " << std::setw(4) << modId.mtdSide()
                                     << " Disc/Side/Sector = " << std::setw(4) << modId.nDisc() << " " << std::setw(4)
-                                    << modId.discSide() << " " << std::setw(4) << modId.sector()
-                                    << " mod/type = " << std::setw(4) << modId.module() << " " << std::setw(4)
-                                    << modId.modType() << " pos = " << fvecround(imod->position(), 2);
+                                        << " sh type/sh copy/mod copy/mod type = "
+                                        << std::setw(1) << modId.servType() << " " << std::setw(2) << modId.servCopy()
+                                        << std::setw(1) << modId.module() << " " << std::setw(1) << modId.modType() 
+                                        << " pos = " << fvecround(imod->position(), 2);
         for (int iside = -1; iside <= 1; iside += 2) {
           size_t idetNew = isector->hshift(modId, iside);
           if (idetNew >= isector->basicComponents().size()) {
