@@ -17,6 +17,8 @@ namespace MTDTopologyMode {
       output = Mode::btlv4etlv9;
     } else if (value == prefix + "btlv4etlv10") {
       output = Mode::btlv4etlv10;
+    } else if (value == prefix + "btlv4etlv11") {
+      output = Mode::btlv4etlv11;
     } else {
       throw cms::Exception("MTDTopologyModeError") << "the value " << value << " is not defined.";
     }

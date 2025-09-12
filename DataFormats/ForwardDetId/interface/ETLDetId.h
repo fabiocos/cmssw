@@ -121,13 +121,21 @@ public:
     id_ |= kETLformatV2;
   }
   // from v11
-  ETLDetId(uint32_t zside, uint32_t ring, uint32_t version, uint32_t servicetyp, uint32_t serviceCopy, uint32_t module, uint32_t modtyp, uint32_t sensor)
+  ETLDetId(uint32_t zside,
+           uint32_t ring,
+           uint32_t version,
+           uint32_t servicetyp,
+           uint32_t serviceCopy,
+           uint32_t module,
+           uint32_t modtyp,
+           uint32_t sensor)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
     id_ |= (MTDType::ETL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
-           (ring & kRodRingMask) << kRodRingOffset | version << kETLVersionOffset | 
-           (servicetyp & kETLservicetypMask) << kETLservicetypOffset | (serviceCopy & kETLserviceCopyMask) << kETLserviceCopyOffset |
-           (module & kETLmodCopyv11Mask) << kETLmodCopyv11Offset | (modtyp & kETLmodTypev11Mask) << kETLmodTypev11Offset |
-           (sensor & kETLsensorv11Mask);
+           (ring & kRodRingMask) << kRodRingOffset | version << kETLVersionOffset |
+           (servicetyp & kETLservicetypMask) << kETLservicetypOffset |
+           (serviceCopy & kETLserviceCopyMask) << kETLserviceCopyOffset |
+           (module & kETLmodCopyv11Mask) << kETLmodCopyv11Offset |
+           (modtyp & kETLmodTypev11Mask) << kETLmodTypev11Offset | (sensor & kETLsensorv11Mask);
   }
 
   /** ETL TDR Construct and fill only the det and sub-det fields. */
@@ -154,7 +162,13 @@ public:
     id_ |= kETLformatV2;
   }
   // v8 - v10
-  ETLDetId(uint32_t zside, uint32_t disc, uint32_t discside, uint32_t sector, uint32_t module, uint32_t modtyp, uint32_t sensor)
+  ETLDetId(uint32_t zside,
+           uint32_t disc,
+           uint32_t discside,
+           uint32_t sector,
+           uint32_t module,
+           uint32_t modtyp,
+           uint32_t sensor)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
     id_ |= (MTDType::ETL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
            (encodeSector(disc, discside, sector) & kRodRingMask) << kRodRingOffset |
@@ -163,15 +177,24 @@ public:
     id_ |= kETLformatV2;
   }
   // from v11
-  ETLDetId(uint32_t zside, uint32_t disc, uint32_t discside, uint32_t sector, uint32_t version, uint32_t servicetyp, uint32_t serviceCopy, uint32_t module, uint32_t modtyp, uint32_t sensor)
+  ETLDetId(uint32_t zside,
+           uint32_t disc,
+           uint32_t discside,
+           uint32_t sector,
+           uint32_t version,
+           uint32_t servicetyp,
+           uint32_t serviceCopy,
+           uint32_t module,
+           uint32_t modtyp,
+           uint32_t sensor)
       : MTDDetId(DetId::Forward, ForwardSubdetector::FastTime) {
     id_ |= (MTDType::ETL & kMTDsubdMask) << kMTDsubdOffset | (zside & kZsideMask) << kZsideOffset |
-           (encodeSector(disc, discside, sector) & kRodRingMask) << kRodRingOffset | version << kETLVersionOffset | 
-           (servicetyp & kETLservicetypMask) << kETLservicetypOffset | (serviceCopy & kETLserviceCopyMask) << kETLserviceCopyOffset |
-           (module & kETLmodCopyv11Mask) << kETLmodCopyv11Offset | (modtyp & kETLmodTypev11Mask) << kETLmodTypev11Offset |
-           (sensor & kETLsensorv11Mask);
+           (encodeSector(disc, discside, sector) & kRodRingMask) << kRodRingOffset | version << kETLVersionOffset |
+           (servicetyp & kETLservicetypMask) << kETLservicetypOffset |
+           (serviceCopy & kETLserviceCopyMask) << kETLserviceCopyOffset |
+           (module & kETLmodCopyv11Mask) << kETLmodCopyv11Offset |
+           (modtyp & kETLmodTypev11Mask) << kETLmodTypev11Offset | (sensor & kETLsensorv11Mask);
   }
-
 
   // ---------- Common methods ----------
 
@@ -179,7 +202,7 @@ public:
 
   /** Returns 1 if bit15 is 1 (version 11 onwards) 0 if not. */
   inline int version() const { return (id_ >> kETLVersionOffset) & 0x1; }
-  
+
   /** Returns ETL service hybrid type from v11 onwards. */
   inline int servType() const { return (id_ >> kETLservicetypOffset) & kETLservicetypMask; }
 
@@ -188,22 +211,32 @@ public:
 
   /** Returns ETL module number. Uses version bit to decide between pre-v11 and v11+. */
   inline int module() const {
-    if (version() == 1) { return (id_ >> kETLmodCopyv11Offset) & kETLmodCopyv11Mask; } 
-    else { return (id_ >> kETLmoduleOffset) & kETLmoduleMask; }}
-  
+    if (version() == 1) {
+      return (id_ >> kETLmodCopyv11Offset) & kETLmodCopyv11Mask;
+    } else {
+      return (id_ >> kETLmoduleOffset) & kETLmoduleMask;
+    }
+  }
+
   /** Returns ETL module type number. Uses version bit to decide between pre-v11 and v11+. */
   inline int modType() const {
-    if (version() == 1) { 
+    if (version() == 1) {
       int mt = (id_ >> kETLmodTypev11Offset) & kETLmodTypev11Mask;
-      return (mt == 0 ? 2 : 1); }
-    else { return (id_ >> kETLmodTypeOffset) & kETLmodTypeMask; }}
+      return (mt == 0 ? 2 : 1);
+    } else {
+      return (id_ >> kETLmodTypeOffset) & kETLmodTypeMask;
+    }
+  }
 
   /** Returns ETL module sensor number. Uses version bit to decide between pre-v11 and v11+. */
   inline int sensor() const {
-    if (version() == 1) { 
+    if (version() == 1) {
       int s = (id_ & kETLsensorv11Mask);
-      return (s == 0 ? 2 : 1);}
-    else { return (id_ >> kETLsensorOffset) & kETLsensorMask; }}
+      return (s == 0 ? 2 : 1);
+    } else {
+      return (id_ >> kETLsensorOffset) & kETLsensorMask;
+    }
+  }
 
   ETLDetId geographicalId() const { return id_; }
 

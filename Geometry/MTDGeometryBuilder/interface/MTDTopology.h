@@ -12,7 +12,6 @@
 
 class MTDTopology {
 public:
-  
   struct BTLLayout {
     // number of logical rods, i.e. rows of sensor modules along eta/z in phi, and of modules per rod
     static constexpr uint32_t nBTLphi_ = BTLDetId::HALF_ROD * BTLDetId::kModulesPerTrkV2;
@@ -26,7 +25,7 @@ public:
   };
 
   using BTLValues = BTLLayout;
-  
+
   struct ETLfaceLayout {
     uint32_t idDiscSide_;  // disc face identifier: 0 disc1 F, 1 disc1 B, 2 disc2 F, 3 disc2 B
     uint32_t idDetType1_;  // module type id identifier for first row
@@ -38,7 +37,7 @@ public:
 
   using ETLValues = std::vector<ETLfaceLayout>;
 
-  // static const ETLValues* static_etlVals_; 
+  // static const ETLValues* static_etlVals_;
 
   MTDTopology(const int& topologyMode, const BTLValues& btl, const ETLValues& etl);
 
@@ -57,8 +56,6 @@ public:
 
   uint32_t phishiftBTL(const uint32_t detid, const int phiShift) const;
   uint32_t etashiftBTL(const uint32_t detid, const int etaShift) const;
-
-
 
   // navigation methods in ETL topology, provide the index of the det next to DetId for
   // horizontal and vertical shifts in both directions, assuming the predefined order in a sector

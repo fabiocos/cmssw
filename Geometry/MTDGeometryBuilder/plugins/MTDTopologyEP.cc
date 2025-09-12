@@ -90,14 +90,15 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
   mtdTopologyMode = ptp.topologyMode_;
 
 #ifdef EDM_ML_DEBUG
-   edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters vitems_ size: " << ptp.vitems_.size();
-   edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters topologyMode: " << ptp.topologyMode_;
-   edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters vpars_ size: " << ptp.vpars_.size();
+  edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters vitems_ size: " << ptp.vitems_.size();
+  edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters topologyMode: " << ptp.topologyMode_;
+  edm::LogVerbatim("MTDTopologyEP") << "DEBUG: PMTDParameters vpars_ size: " << ptp.vpars_.size();
 
-   edm::LogVerbatim("MTDTopologyEP") << "DEBUG: MTDTopologyMode::EtlLayout::v8 integer value: " << static_cast<int>(MTDTopologyMode::EtlLayout::v8);
-   edm::LogVerbatim("MTDTopologyEP") << "DEBUG: MTDTopologyMode::EtlLayout::v10 integer value: " << static_cast<int>(MTDTopologyMode::EtlLayout::v10);
+  edm::LogVerbatim("MTDTopologyEP") << "DEBUG: MTDTopologyMode::EtlLayout::v8 integer value: "
+                                    << static_cast<int>(MTDTopologyMode::EtlLayout::v8);
+  edm::LogVerbatim("MTDTopologyEP") << "DEBUG: MTDTopologyMode::EtlLayout::v10 integer value: "
+                                    << static_cast<int>(MTDTopologyMode::EtlLayout::v10);
 #endif
-
 
   // Check on the internal consistency of thr ETL layout information provided by parameters; there is still no check on the service hybrid dispostion vectors
 
@@ -114,10 +115,11 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
   }
 
   MTDTopology::ETLfaceLayout tmpFace;
+  std::vector<int> dummy{{0}};
 
   //will be modified with the correct versioning
   //first will have to be <=v8
-  if (static_cast<int>(MTDTopologyMode::etlLayoutFromTopoMode(mtdTopologyMode)) <
+  if (static_cast<int>(MTDTopologyMode::etlLayoutFromTopoMode(mtdTopologyMode)) <=
       static_cast<int>(MTDTopologyMode::EtlLayout::v8)) {
     // Disc1 Front Face (0), starting with type Right (2)
 
@@ -128,6 +130,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[2].vpars_;  // start_copy_FL
     tmpFace.offset_[0] = ptp.vitems_[7].vpars_;      // offset_FR
     tmpFace.offset_[1] = ptp.vitems_[6].vpars_;      // offset_FL
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -140,6 +144,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[5].vpars_;  // start_copy_BR
     tmpFace.offset_[0] = ptp.vitems_[8].vpars_;      // offset_BL
     tmpFace.offset_[1] = ptp.vitems_[9].vpars_;      // offset_BR
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -152,6 +158,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[2].vpars_;  // start_copy_FL
     tmpFace.offset_[0] = ptp.vitems_[7].vpars_;      // offset_FR
     tmpFace.offset_[1] = ptp.vitems_[6].vpars_;      // offset_FL
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -164,12 +172,16 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[5].vpars_;  // start_copy_BR
     tmpFace.offset_[0] = ptp.vitems_[8].vpars_;      // offset_BL
     tmpFace.offset_[1] = ptp.vitems_[9].vpars_;      // offset_BR
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
-  //second will have to be <=v10
+    //second will have to be <=v10
   } else if (static_cast<int>(MTDTopologyMode::etlLayoutFromTopoMode(mtdTopologyMode)) ==
-             static_cast<int>(MTDTopologyMode::EtlLayout::v8)) {
+                 static_cast<int>(MTDTopologyMode::EtlLayout::v9) ||
+             static_cast<int>(MTDTopologyMode::etlLayoutFromTopoMode(mtdTopologyMode)) ==
+                 static_cast<int>(MTDTopologyMode::EtlLayout::v10)) {
     // Disc1 Front Face (0), starting with type Right (2)
 
     tmpFace.idDiscSide_ = 0;  // ETL front side, Disc1
@@ -179,6 +191,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[2].vpars_;  // start_copy_FL
     tmpFace.offset_[0] = ptp.vitems_[6].vpars_;      // offset_FR
     tmpFace.offset_[1] = ptp.vitems_[6].vpars_;      // offset_FL
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -191,6 +205,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[3].vpars_;  // start_copy_BR
     tmpFace.offset_[0] = ptp.vitems_[7].vpars_;      // offset_BL
     tmpFace.offset_[1] = ptp.vitems_[7].vpars_;      // offset_BR
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -203,6 +219,8 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[4].vpars_;  // start_copy_FL
     tmpFace.offset_[0] = ptp.vitems_[8].vpars_;      // offset_FR
     tmpFace.offset_[1] = ptp.vitems_[8].vpars_;      // offset_FL
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
@@ -215,12 +233,14 @@ void MTDTopologyEP::fillETLtopology(const PMTDParameters& ptp, int& mtdTopologyM
     tmpFace.start_copy_[1] = ptp.vitems_[5].vpars_;  // start_copy_BR
     tmpFace.offset_[0] = ptp.vitems_[9].vpars_;      // offset_BL
     tmpFace.offset_[1] = ptp.vitems_[9].vpars_;      // offset_BR
+    tmpFace.services_[0] = dummy;                    // services_FR, dummy
+    tmpFace.services_[1] = dummy;                    // services_FL, dummy
 
     etlVals.emplace_back(tmpFace);
 
-  //third will have to be >v10
+    //third will have to be >v10
   } else if (static_cast<int>(MTDTopologyMode::etlLayoutFromTopoMode(mtdTopologyMode)) >
-             static_cast<int>(MTDTopologyMode::EtlLayout::v8)) {
+             static_cast<int>(MTDTopologyMode::EtlLayout::v10)) {
     // Disc1 Front Face (0), starting with type Right (2)
 
     tmpFace.idDiscSide_ = 0;  // ETL front side, Disc1
