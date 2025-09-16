@@ -204,10 +204,10 @@ public:
   inline int version() const { return (id_ >> kETLVersionOffset) & 0x1; }
 
   /** Returns ETL service hybrid type from v11 onwards. */
-  inline int servType() const { return (id_ >> kETLservicetypOffset) & kETLservicetypMask; }
+  inline int servType() const { return version() == 1 ? (id_ >> kETLservicetypOffset) & kETLservicetypMask : 0; }
 
   /** Returns ETL service hybrid number from v11 onwards. */
-  inline int servCopy() const { return (id_ >> kETLserviceCopyOffset) & kETLserviceCopyMask; }
+  inline int servCopy() const { return version() == 1 ? (id_ >> kETLserviceCopyOffset) & kETLserviceCopyMask : 0; }
 
   /** Returns ETL module number. Uses version bit to decide between pre-v11 and v11+. */
   inline int module() const {
