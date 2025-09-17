@@ -265,4 +265,6 @@ public:
 
 std::ostream& operator<<(std::ostream&, const ETLDetId&);
 
+std::stringstream printETLDetId(uint32_t detId);
+
 #endif  // DataFormats_ETLDetId_ETLDetId_h

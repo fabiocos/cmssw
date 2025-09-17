@@ -37,8 +37,6 @@ public:
 
   using ETLValues = std::vector<ETLfaceLayout>;
 
-  // static const ETLValues* static_etlVals_;
-
   MTDTopology(const int& topologyMode, const BTLValues& btl, const ETLValues& etl);
 
   int getMTDTopologyMode() const { return mtdTopologyMode_; }
@@ -67,6 +65,7 @@ public:
   // ETL topology navigation is based on a predefined order of dets in sector
 
   static bool orderETLSector(const GeomDet*& gd1, const GeomDet*& gd2);
+  static bool neworderETLSector(const GeomDet*& gd1, const GeomDet*& gd2);
 
 private:
   const int mtdTopologyMode_;

@@ -15,3 +15,19 @@ std::ostream& operator<<(std::ostream& os, const ETLDetId& id) {
      << " Sensor                : " << id.sensor() << std::endl;
   return os;
 }
+
+std::stringstream printETLDetId(uint32_t detId) {
+  std::stringstream ss;
+  ETLDetId thisId(detId);
+  if (thisId.det() != DetId::Forward || thisId.subdetId() != MTDDetId::FastTime ||
+      thisId.mtdSubDetector() != MTDDetId::ETL) {
+    ss << "DetId " << detId << " not an ETLDetId!";
+  }
+
+  ss << " ETLDetId " << thisId.rawId() << " side = " << std::setw(2) << thisId.mtdSide()
+     << " disc/face/sec = " << std::setw(4) << thisId.nDisc() << " " << std::setw(4) << thisId.discSide() << " "
+     << std::setw(4) << thisId.sector() << " shtyp/sh = " << std::setw(4) << thisId.servType() << " " << std::setw(4)
+     << thisId.servCopy() << " mod/typ/sens = " << std::setw(4) << thisId.module() << " " << std::setw(4)
+     << thisId.modType() << " " << std::setw(4) << thisId.sensor();
+  return ss;
+}
