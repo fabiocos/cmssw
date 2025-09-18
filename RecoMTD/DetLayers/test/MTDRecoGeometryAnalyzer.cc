@@ -49,7 +49,7 @@ public:
   void analyze(edm::StreamID, edm::Event const&, edm::EventSetup const&) const override;
 
   void testBTLLayers(const MTDDetLayerGeometry*, const MagneticField* field) const;
-  void testETLLayersNew(const MTDDetLayerGeometry*, const MagneticField* field) const;
+  void testETLLayers(const MTDDetLayerGeometry*, const MTDTopology*, const MagneticField* field) const;
 
   string dumpLayer(const DetLayer* layer) const;
 
@@ -141,7 +141,7 @@ void MTDRecoGeometryAnalyzer::analyze(edm::StreamID, edm::Event const&, edm::Eve
   }
 
   testBTLLayers(geo.product(), magfield.product());
-  testETLLayersNew(geo.product(), magfield.product());
+  testETLLayers(geo.product(), mtdtopo.product(), magfield.product());
 }
 
 void MTDRecoGeometryAnalyzer::testBTLLayers(const MTDDetLayerGeometry* geo, const MagneticField* field) const {
@@ -277,7 +277,9 @@ void MTDRecoGeometryAnalyzer::testBTLLayers(const MTDDetLayerGeometry* geo, cons
   }
 }
 
-void MTDRecoGeometryAnalyzer::testETLLayersNew(const MTDDetLayerGeometry* geo, const MagneticField* field) const {
+void MTDRecoGeometryAnalyzer::testETLLayers(const MTDDetLayerGeometry* geo,
+                                            const MTDTopology* mtdtopo,
+                                            const MagneticField* field) const {
   const vector<const DetLayer*>& layers = geo->allETLLayers();
 
   // dump of ETL layers structure
@@ -307,8 +309,10 @@ void MTDRecoGeometryAnalyzer::testETLLayersNew(const MTDDetLayerGeometry* geo, c
       for (const auto& imod : isector->basicComponents()) {
         ETLDetId modId(imod->geographicalId().rawId());
         LogVerbatim("MTDLayerDumpFull") << std::fixed << printETLDetId(modId.rawId()).str()
+                                        << " glmod= " << std::setw(4) << mtdtopo->servtomoduleETL(modId.rawId())
                                         << " pos = " << fvecround(imod->position(), 4);
-        LogVerbatim("MTDLayerDump") << std::fixed << printETLDetId(modId.rawId()).str()
+        LogVerbatim("MTDLayerDump") << std::fixed << printETLDetId(modId.rawId()).str() << " glmod= " << std::setw(4)
+                                    << mtdtopo->servtomoduleETL(modId.rawId())
                                     << " pos = " << fvecround(imod->position(), 2);
       }
     }

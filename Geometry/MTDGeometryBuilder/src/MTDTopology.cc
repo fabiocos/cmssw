@@ -132,21 +132,6 @@ bool MTDTopology::orderETLSector(const GeomDet*& gd1, const GeomDet*& gd2) {
   ETLDetId det1(gd1->geographicalId().rawId());
   ETLDetId det2(gd2->geographicalId().rawId());
 
-  if (det1.mtdRR() != det2.mtdRR()) {
-    return det1.mtdRR() < det2.mtdRR();
-  } else if (det1.modType() != det2.modType()) {
-    return det1.modType() < det2.modType();
-  } else if (det1.module() != det2.module()) {
-    return det1.module() < det2.module();
-  } else {
-    return det1.sensor() < det2.sensor();
-  }
-}
-
-bool MTDTopology::neworderETLSector(const GeomDet*& gd1, const GeomDet*& gd2) {
-  ETLDetId det1(gd1->geographicalId().rawId());
-  ETLDetId det2(gd2->geographicalId().rawId());
-
   const Local2DPoint cen(0., 0.);
   auto gpos = gd1->toGlobal(cen);
   double x1 = gpos.x();
@@ -161,14 +146,25 @@ bool MTDTopology::neworderETLSector(const GeomDet*& gd1, const GeomDet*& gd2) {
 
   if (det1.mtdRR() != det2.mtdRR()) {
     return det1.mtdRR() < det2.mtdRR();
-  } else if (std::abs(y1 - y2) > tol) {
-    if (det1.discSide() + 1 == det1.sector()) {
-      return y1 < y2;
-    } else {
-      return y1 > y2;
-    }
-  } else if (std::abs(x1 - x2) > tol) {
+  } else if (det1.modType() != det2.modType()) {
+    return det1.modType() < det2.modType();
+  } else if (std::abs(x1 - x2) > tol && std::abs(y1 - y2) < tol) {
     return std::abs(x1) < std::abs(x2);
+  } else if (std::abs(y1 - y2) > tol) {
+    // order has changed for back face from version 0 to version 1
+    if (det1.version() == 0 || (det1.version() == 1 && det1.discSide() == 0)) {
+      if (det1.discSide() + 1 == det1.sector()) {
+        return y1 < y2;
+      } else {
+        return y1 > y2;
+      }
+    } else {
+      if (det1.discSide() + 1 == det1.sector()) {
+        return y1 > y2;
+      } else {
+        return y1 < y2;
+      }
+    }
   } else {
     return det1.sensor() < det2.sensor();
   }

@@ -65,7 +65,6 @@ public:
   // ETL topology navigation is based on a predefined order of dets in sector
 
   static bool orderETLSector(const GeomDet*& gd1, const GeomDet*& gd2);
-  static bool neworderETLSector(const GeomDet*& gd1, const GeomDet*& gd2);
 
 private:
   const int mtdTopologyMode_;
