@@ -30,9 +30,14 @@ pair<vector<DetLayer*>, vector<DetLayer*> > ETLDetLayerGeometryBuilder::buildLay
     throw cms::Exception("MTDDetLayers") << "Not implemented scenario " << mtdTopologyMode;
   }
 
+  unsigned int nLayer(ETLDetId::kETLv4nDisc);
+  if (static_cast<int>(etlL) == static_cast<int>(MTDTopologyMode::EtlLayout::v101)) {
+    nLayer = 1;
+  }
+
   for (unsigned endcap = 0; endcap < 2; ++endcap) {
     // number of layers is two, identical for post TDR scenarios, pick v4
-    for (unsigned layer = 1; layer <= ETLDetId::kETLv4nDisc; ++layer) {
+    for (unsigned layer = 1; layer <= nLayer; ++layer) {
       vector<unsigned> sectors;
       sectors.reserve(nSector + 1);
       for (unsigned sector = 1; sector <= nSector; ++sector) {

@@ -162,6 +162,7 @@ Fast Timing system:
 * I19: BTL I18/v4, ETL v9 with 2024 full layout
 * I20: BTL I18/v4, ETL v10 with 2024 1.7 layout
 * I21: BTL I18/v4, ETL v11 with 2024 full layout, same as v9 with additional level and id for service hybrids
+* I101: BTL I18/v4, ETL v101, equivalent to v11 for one disc only
 
 The script also handles the common and forward elements of the geometry:
 *  O4: detailed cavern description, changes for modified CALO region for endcap part, no overlaps inside the Muon System 
@@ -211,3 +212,4 @@ Several detector combinations have been generated:
 * D122 = T35+C27+M16+I18+O10+F9 
 * D123 = T35+C28+M16+I18+O10+F9 
 * D200 = T35+C25+M16+I21+O10+F9
+* D300 = T35+C25+M16+I101+O10+F9

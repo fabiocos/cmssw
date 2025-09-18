@@ -2,7 +2,8 @@ import Configuration.Geometry.defaultPhase2ConditionsEra_cff as _centralgeo
 
 # MTD_DEFAULT_VERSION = "Run4D121"
 # MTD_DEFAULT_VERSION = "Run4D118"
-MTD_DEFAULT_VERSION = "Run4D200"
+# MTD_DEFAULT_VERSION = "Run4D200"
+MTD_DEFAULT_VERSION = "Run4D300"
 
 def check_mtdgeo():
     if MTD_DEFAULT_VERSION != _centralgeo.DEFAULT_VERSION:
