@@ -61,6 +61,23 @@ namespace reco {
 
     virtual const Track& track() const = 0;
 
+    virtual int trackAsocMTD() const = 0;
+    virtual float MTDtime() const = 0;
+    virtual float MTDtimeErr() const = 0;
+    virtual float MVAquality() const = 0;
+    virtual float pathLength() const = 0;
+    virtual float btlMatch_chi2() const = 0;
+    virtual float btlMatchTime_chi2() const = 0;
+    virtual float etlMatch_chi2() const = 0;
+    virtual float etlMatchTime_chi2() const = 0;
+    virtual float trackTime_pi() const = 0;
+    virtual float trackTime_k() const = 0;
+    virtual float trackTime_p() const = 0;
+    virtual float sigma_time_pi() const = 0;
+    virtual float sigma_time_k() const= 0;
+    virtual float sigma_time_p() const = 0;
+    virtual int nPixBarrel() const = 0;
+    virtual int nPixEndcap() const = 0;
     virtual TrajectoryStateClosestToBeamLine stateAtBeamLine() const = 0;
   };
 

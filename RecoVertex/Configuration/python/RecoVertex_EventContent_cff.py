@@ -15,9 +15,13 @@ from Configuration.Eras.Modifier_phase2_timing_layer_cff import phase2_timing_la
 
 _phase2_tktiming_RecoVertexEventContent = [ 'keep *_offlinePrimaryVertices4D__*',
                                             'keep *_offlinePrimaryVertices4DWithBS__*',
+                                            'keep *_offlinePrimaryVerticesGNN__*',
                                             'keep *_trackTimeValueMapProducer_*_*' ]
 
-_phase2_tktiming_layer_RecoVertexEventContent = [ 'keep *_tofPID_*_*']
+_phase2_tktiming_layer_RecoVertexEventContent = [ 'keep *_tofPID_*_*', 
+                                                  'keep *_tofPID3D_*_*',
+                                                  'keep *_tofPIDGNN_*_*',
+                                                  'keep *_unsortedOfflinePrimaryVerticesGNN_*_*']
 phase2_timing.toModify( RecoVertexAOD,
      outputCommands = RecoVertexAOD.outputCommands + _phase2_tktiming_RecoVertexEventContent)
 phase2_timing_layer.toModify( RecoVertexAOD,

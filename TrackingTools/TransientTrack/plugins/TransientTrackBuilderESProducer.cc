@@ -1,31 +1,12 @@
-// system includes
-#include <memory>
-#include <string>
-
-// user includes
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/ESProducer.h"
-#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
-#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
+#include "TransientTrackBuilderESProducer.h"
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
-#include "TrackingTools/Records/interface/TransientTrackRecord.h"
-#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 
-class TransientTrackBuilderESProducer : public edm::ESProducer {
-public:
-  TransientTrackBuilderESProducer(const edm::ParameterSet& p);
+#include "FWCore/Framework/interface/ESHandle.h"
 
-  std::unique_ptr<TransientTrackBuilder> produce(const TransientTrackRecord&);
-
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
-private:
-  edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magToken_;
-  edm::ESGetToken<GlobalTrackingGeometry, GlobalTrackingGeometryRecord> geomToken_;
-};
+#include <string>
+#include <memory>
 
 using namespace edm;
 
@@ -44,8 +25,5 @@ void TransientTrackBuilderESProducer::fillDescriptions(edm::ConfigurationDescrip
   desc.add<std::string>("ComponentName", "TransientTrackBuilder")
       ->setComment("data label to use when getting the data product");
 
-  descriptions.addWithDefaultLabel(desc);
+  descriptions.addDefault(desc);
 }
-
-#include "FWCore/Framework/interface/ModuleFactory.h"
-DEFINE_FWK_EVENTSETUP_MODULE(TransientTrackBuilderESProducer);

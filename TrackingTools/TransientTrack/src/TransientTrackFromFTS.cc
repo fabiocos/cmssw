@@ -4,7 +4,7 @@
 #include "TrackingTools/PatternTools/interface/TransverseImpactPointExtrapolator.h"
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "TrackingTools/PatternTools/interface/TSCBLBuilderNoMaterial.h"
-// #include <iostream>
+
 #include "FWCore/Utilities/interface/Likely.h"
 
 using namespace reco;
@@ -17,7 +17,9 @@ TransientTrackFromFTS::TransientTrackFromFTS()
       initialTSOSAvailable(false),
       initialTSCPAvailable(false),
       trackAvailable(false),
-      blStateAvailable(false) {}
+      blStateAvailable(false),
+      trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){}
 
 TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts)
     : initialFTS(fts),
@@ -28,7 +30,9 @@ TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts)
       initialTSOSAvailable(false),
       initialTSCPAvailable(false),
       trackAvailable(false),
-      blStateAvailable(false) {}
+      blStateAvailable(false),
+       trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){}
 
 TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts, const double time, const double dtime)
     : initialFTS(fts),
@@ -39,7 +43,9 @@ TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts, con
       initialTSOSAvailable(false),
       initialTSCPAvailable(false),
       trackAvailable(false),
-      blStateAvailable(false) {}
+      blStateAvailable(false), 
+       trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){}
 
 TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts,
                                              const edm::ESHandle<GlobalTrackingGeometry>& tg)
@@ -52,7 +58,9 @@ TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts,
       initialTSCPAvailable(false),
       trackAvailable(false),
       blStateAvailable(false),
-      theTrackingGeometry(tg) {}
+      theTrackingGeometry(tg), 
+       trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){}
 
 TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts,
                                              const double time,
@@ -67,7 +75,9 @@ TransientTrackFromFTS::TransientTrackFromFTS(const FreeTrajectoryState& fts,
       initialTSCPAvailable(false),
       trackAvailable(false),
       blStateAvailable(false),
-      theTrackingGeometry(tg) {}
+      theTrackingGeometry(tg),
+       trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){}
 
 TransientTrackFromFTS::TransientTrackFromFTS(const TransientTrackFromFTS& tt)
     : initialFTS(tt.initialFreeState()),
@@ -77,8 +87,10 @@ TransientTrackFromFTS::TransientTrackFromFTS(const TransientTrackFromFTS& tt)
       theField(tt.field()),
       initialTSOSAvailable(false),
       initialTSCPAvailable(false),
-      trackAvailable(false) {
-  if (tt.initialTSOSAvailable) {
+      trackAvailable(false),
+      trkAssoc_(0),
+      mtdtime_(0.), mtdtimeErr_(0.), mva_(0.), pathlength_(0.), btlchi2_(0.), btltimechi2_(0.), etlchi2_(0.), etltimechi2_(0.), time_pi_(0.), time_k_(0.), time_p_(0.), sigma_time_pi_(0.), sigma_time_k_(0.), sigma_time_p_(0.){
+      if (tt.initialTSOSAvailable) {
     initialTSOS = tt.impactPointState();
     initialTSOSAvailable = true;
   }
@@ -152,4 +164,4 @@ TrajectoryStateClosestToBeamLine TransientTrackFromFTS::stateAtBeamLine() const 
     blStateAvailable = true;
   }
   return trajectoryStateClosestToBeamLine;
-}
+} 

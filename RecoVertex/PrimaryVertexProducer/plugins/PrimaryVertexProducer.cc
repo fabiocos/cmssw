@@ -10,17 +10,53 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/VertexTools/interface/VertexDistanceXY.h"
-
+#include "DataFormats/Common/interface/ValueMap.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 #include "RecoVertex/VertexTools/interface/GeometricAnnealing.h"
 
-PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf)
+#define cputime
+#ifdef cputime
+#include <chrono>
+typedef std::chrono::duration<int, std::micro> microseconds_type;
+#endif
+
+#define checkrss
+#ifdef checkrss
+int parseLine(char* line) {
+  // This assumes that a digit will be found and the line ends in " Kb".
+  int i = strlen(line);
+  const char* p = line;
+  while (*p < '0' || *p > '9')
+    p++;
+  line[i - 3] = '\0';
+  i = atoi(p);
+  return i;
+}
+
+int getValue() {  //Note: this value is in KB!
+  FILE* file = fopen("/proc/self/status", "r");
+  int result = -1;
+  char line[128];
+
+  while (fgets(line, 128, file) != NULL) {
+    if (strncmp(line, "VmRSS:", 6) == 0) {
+      result = parseLine(line);
+      break;
+    }
+  }
+  fclose(file);
+  return result;
+}
+#endif
+
+
+
+PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, const ONNXRuntime* cache)
     : theTTBToken(esConsumes(edm::ESInputTag("", "TransientTrackBuilder"))), theConfig(conf) {
   fVerbose = conf.getUntrackedParameter<bool>("verbose", false);
   useMVASelection_ = conf.getParameter<bool>("useMVACut");
-
   trkToken = consumes<reco::TrackCollection>(conf.getParameter<edm::InputTag>("TrackLabel"));
   bsToken = consumes<reco::BeamSpot>(conf.getParameter<edm::InputTag>("beamSpotLabel"));
   useTransientTrackTime_ = false;
@@ -49,6 +85,12 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf)
     theTrackClusterizer = new DAClusterizerInZT_vect(
         conf.getParameter<edm::ParameterSet>("TkClusParameters").getParameter<edm::ParameterSet>("TkDAClusParameters"));
     useTransientTrackTime_ = true;
+  } else if (clusteringAlgorithm == "GNN2D_vect") {
+    const ONNXRuntime* onnxRuntime = cache;
+    theTrackClusterizer = new GNNClusterizer(
+        conf.getParameter<edm::ParameterSet>("TkClusParameters").getParameter<edm::ParameterSet>("TkDAClusParameters"),
+        onnxRuntime);
+    useTransientTrackTime_ = true;
   } else {
     throw VertexException("PrimaryVertexProducer: unknown clustering algorithm: " + clusteringAlgorithm);
   }
@@ -59,7 +101,34 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf)
     trackMTDTimeQualityToken =
         consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("trackMTDTimeQualityVMapTag"));
     minTrackTimeQuality_ = conf.getParameter<double>("minTrackTimeQuality");
+    trkMTDAssocToken = consumes<edm::ValueMap<int> >(conf.getParameter<edm::InputTag>("trackAssocSrc"));
+    MTDtimeToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("tmtdSrc"));
+    sigmaMTDtimeToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("sigmatmtdSrc"));
+    pathLengthToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("pathmtd"));
+    btlMatchChi2Token = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("btlMatchChi2Src"));
+    btlMatchTime_Chi2Token = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("btlMatchTimeChi2Src"));
+    etlMatchChi2Token = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("etlMatchChi2Src"));
+    etlMatchTime_Chi2Token = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("etlMatchTimeChi2Src"));
+    trkTimePiToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("tofPi"));
+    trkTimeKToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("tofK"));
+    trkTimePToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("tofP"));
+    sigmaTrkTimePiToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("sigmatofpiSrc"));
+    sigmaTrkTimeKToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("sigmatofkSrc"));
+    sigmaTrkTimePToken = consumes<edm::ValueMap<float> >(conf.getParameter<edm::InputTag>("sigmatofpSrc"));
+    npixBarrelToken = consumes<edm::ValueMap<int> >(conf.getParameter<edm::InputTag>("npixBarrelSrc"));
+    npixEndcapToken = consumes<edm::ValueMap<int> >(conf.getParameter<edm::InputTag>("npixEndcapSrc"));
   }
+    produces<edm::ValueMap<float>>("gnnBeta");
+    produces<edm::ValueMap<float>>("gnnPhi");
+    produces<edm::ValueMap<float>>("gnnPidLogitPi");
+    produces<edm::ValueMap<float>>("gnnPidLogitK");
+    produces<edm::ValueMap<float>>("gnnPidLogitP");
+    produces<edm::ValueMap<float>>("gnnEmb0");
+    produces<edm::ValueMap<float>>("gnnEmb1");
+    produces<edm::ValueMap<float>>("gnnEmb2");
+    produces<edm::ValueMap<float>>("gnnPCA0");
+    produces<edm::ValueMap<float>>("gnnPCA1");
+    produces<edm::ValueMap<float>>("gnnPCA2");
 
   // select and configure the vertex fitters
   std::vector<edm::ParameterSet> vertexCollections =
@@ -153,6 +222,10 @@ PrimaryVertexProducer::~PrimaryVertexProducer() {
       delete algorithm->vertexSelector;
   }
 }
+std::unique_ptr<ONNXRuntime> PrimaryVertexProducer::initializeGlobalCache(const edm::ParameterSet& conf) {
+  return std::make_unique<ONNXRuntime>(conf.getParameter<edm::FileInPath>("onnxModelPath").fullPath());
+}
+void PrimaryVertexProducer::globalEndJob(const ONNXRuntime* cache) {}
 
 void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // get the BeamSpot, it will always be needed, even when not used as a constraint
@@ -238,9 +311,26 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   if (useTransientTrackTime_) {
     auto const& trackTimeResos_ = iEvent.get(trkTimeResosToken);
     auto trackTimes_ = iEvent.get(trkTimesToken);
+    auto const& trackMTDAssoc_ = iEvent.get(trkMTDAssocToken);
+    auto trackMTDTimes_ = iEvent.get(MTDtimeToken);
+    auto trackMTDTimesRes_ = iEvent.get(sigmaMTDtimeToken);
+    auto pathlength_ = iEvent.get(pathLengthToken);
+    auto btlMatch_ = iEvent.get(btlMatchChi2Token);
+    auto btlMatchTime_ = iEvent.get(btlMatchTime_Chi2Token);
+    auto etlMatch_ = iEvent.get(etlMatchChi2Token);
+    auto etlMatchTime_ = iEvent.get(etlMatchTime_Chi2Token);
+    auto trkPiTime_ = iEvent.get(trkTimePiToken);
+    auto trkKTime_ = iEvent.get(trkTimeKToken);
+    auto trkPTime_ = iEvent.get(trkTimePToken);
+    auto sigmatrkPiTime_ = iEvent.get(sigmaTrkTimePiToken);
+    auto sigmatrkKTime_ = iEvent.get(sigmaTrkTimeKToken);
+    auto sigmatrkPTime_ = iEvent.get(sigmaTrkTimePToken);
+    auto npixbarrel_ = iEvent.get(npixBarrelToken);
+    auto npixendcap_ = iEvent.get(npixEndcapToken);
+    auto trackMTDTimeQualities_ = iEvent.get(trackMTDTimeQualityToken);
 
     if (useMVASelection_) {
-      trackMTDTimeQualities_ = iEvent.get(trackMTDTimeQualityToken);
+      //   trackMTDTimeQualities_ = iEvent.get(trackMTDTimeQualityToken);
 
       for (unsigned int i = 0; i < (*tks).size(); i++) {
         const reco::TrackRef ref(tks, i);
@@ -249,9 +339,50 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
           trackTimes_[ref] = std::numeric_limits<double>::max();
         }
       }
-      t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_);
+      //  t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_);
+      t_tks = (*theB).build(tks,
+                            beamSpot,
+                            trackTimes_,
+                            trackTimeResos_,
+                            trackMTDAssoc_,
+                            trackMTDTimes_,
+                            trackMTDTimesRes_,
+                            trackMTDTimeQualities_,
+                            pathlength_,
+                            btlMatch_,
+                            btlMatchTime_,
+                            etlMatch_,
+                            etlMatchTime_,
+                            trkPiTime_,
+                            trkKTime_,
+                            trkPTime_,
+                            sigmatrkPiTime_,
+                            sigmatrkKTime_,
+                            sigmatrkPTime_,
+                            npixbarrel_,
+                            npixendcap_);
     } else {
-      t_tks = (*theB).build(tks, beamSpot, trackTimes_, trackTimeResos_);
+      t_tks = (*theB).build(tks,
+                            beamSpot,
+                            trackTimes_,
+                            trackTimeResos_,
+                            trackMTDAssoc_,
+                            trackMTDTimes_,
+                            trackMTDTimesRes_,
+                            trackMTDTimeQualities_,
+                            pathlength_,
+                            btlMatch_,
+                            btlMatchTime_,
+                            etlMatch_,
+                            etlMatchTime_,
+                            trkPiTime_,
+                            trkKTime_,
+                            trkPTime_,
+                            sigmatrkPiTime_,
+                            sigmatrkKTime_,
+                            sigmatrkPTime_,
+                            npixbarrel_,
+                            npixendcap_);
     }
   } else {
     t_tks = (*theB).build(tks, beamSpot);
@@ -260,12 +391,99 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   // select tracks
   std::vector<reco::TransientTrack>&& seltks = theTrackFilter->select(t_tks);
 
+#ifdef checkrss
+  edm::LogInfo("PrimaryVertexProducer") << "###RSS before clusterizer (kB) " << getValue();
+#endif
+
+#ifdef cputime
+  std::chrono::duration<int, std::micro> tcpu_clustering(0), tcpu_vtxfit(0), tcpu_vtxtime(0);
+  auto start_clustering = std::chrono::high_resolution_clock::now();
+#endif
+
   // clusterize tracks in Z
   std::vector<TransientVertex>&& clusters = theTrackClusterizer->vertices(seltks);
+  // per-track GNN outputs as ValueMaps for the full input TrackCollection
+if (auto gnn = dynamic_cast<GNNClusterizer*>(theTrackClusterizer)) {
+    if (gnn->hasLastOutputs()) {
+      const auto& trkHandle = iEvent.getHandle(trkToken);
+      const size_t Nall = trkHandle->size();
 
+      const auto& beta   = gnn->lastBeta();      
+      const auto& phi    = gnn->lastPhi();        
+      const auto& logits = gnn->lastPidLogits(); 
+      const auto& emb    = gnn->lastEmbeddings(); 
+      const auto& pca    = gnn->lastPCA();       
+      const int  Nsel    = gnn->lastTrackCount();
+      const int  D       = gnn->lastEmbeddingDim();
+
+      const float NaN = std::numeric_limits<float>::quiet_NaN();
+
+      // fill with NaN, then backfill for selected tracks
+      std::vector<float> vmBeta(Nall, NaN), vmPhi(Nall, NaN);
+      std::vector<float> vmL0(Nall, NaN), vmL1(Nall, NaN), vmL2(Nall, NaN);
+      std::vector<float> vmEmb0(Nall, NaN), vmEmb1(Nall, NaN), vmEmb2(Nall, NaN);
+      std::vector<float> vmPCA0(Nall, NaN), vmPCA1(Nall, NaN), vmPCA2(Nall, NaN);
+
+      for (size_t i = 0; i < seltks.size(); ++i) {
+        if (static_cast<int>(i) >= Nsel) break; 
+        const auto& tt = seltks[i];
+        reco::TrackRef tref = tt.trackBaseRef().castTo<reco::TrackRef>();
+        if (tref.isNull()) continue;
+        const size_t idx = tref.key();
+        if (idx >= Nall) continue;
+        if (i < beta.size()) vmBeta[idx] = beta[i];
+        if (i < phi.size())  vmPhi[idx]  = phi[i];
+        if (3 * i + 2 < logits.size()) {
+          vmL0[idx] = logits[3 * i + 0];
+          vmL1[idx] = logits[3 * i + 1];
+          vmL2[idx] = logits[3 * i + 2];
+        }
+        if (D >= 1 && i * D + 0 < emb.size()) vmEmb0[idx] = emb[i * D + 0];
+        if (D >= 2 && i * D + 1 < emb.size()) vmEmb1[idx] = emb[i * D + 1];
+        if (D >= 3 && i * D + 2 < emb.size()) vmEmb2[idx] = emb[i * D + 2];
+        if (3 * i + 2 < pca.size()) {
+          vmPCA0[idx] = pca[3 * i + 0];
+          vmPCA1[idx] = pca[3 * i + 1];
+          vmPCA2[idx] = pca[3 * i + 2];
+        }
+      }
+
+    #ifdef cputime
+      auto stop_clustering = std::chrono::high_resolution_clock::now();
+      tcpu_clustering = std::chrono::duration_cast<std::chrono::microseconds>(stop_clustering - start_clustering);
+      edm::LogInfo("PrimaryVertexProducer") << "###TIME clustering " << tcpu_clustering;
+    #endif
+    
+    #ifdef checkrss
+      edm::LogInfo("PrimaryVertexProducer") << "###RSS after clusterizer (kB) " << getValue();
+    #endif
+    
+    
+      auto putVM = [&](const std::vector<float>& vals, const std::string& label){
+        auto out = std::make_unique<edm::ValueMap<float>>();
+        edm::ValueMap<float>::Filler filler(*out);
+        filler.insert(trkHandle, vals.begin(), vals.end());
+        filler.fill();
+        iEvent.put(std::move(out), label);
+      };
+
+      putVM(vmBeta, "gnnBeta");
+      putVM(vmPhi,  "gnnPhi");
+      putVM(vmL0,   "gnnPidLogitPi");
+      putVM(vmL1,   "gnnPidLogitK");
+      putVM(vmL2,   "gnnPidLogitP");
+      putVM(vmEmb0, "gnnEmb0");
+      putVM(vmEmb1, "gnnEmb1");
+      putVM(vmEmb2, "gnnEmb2");
+      putVM(vmPCA0, "gnnPCA0");
+      putVM(vmPCA1, "gnnPCA1");
+      putVM(vmPCA2, "gnnPCA2");
+    }
+  }
   if (fVerbose) {
     edm::LogPrint("PrimaryVertexProducer")
-        << "Clustering returned " << clusters.size() << " clusters from " << seltks.size() << " selected tracks";
+        << " bool useTransientTrackTime_ " << useTransientTrackTime_ << " Clustering returned " << clusters.size()
+        << " clusters from " << seltks.size() << " selected tracks";
   }
 
   // vertex fits
@@ -274,15 +492,32 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
     reco::VertexCollection& vColl = (*result);
     std::vector<TransientVertex> pvs;
 
+    #ifdef cputime
+    auto start_fit = std::chrono::high_resolution_clock::now();
+    #endif
+
     if (algorithm->pv_fitter == nullptr) {
       pvs = clusters;
     } else {
       pvs = algorithm->pv_fitter->fit(seltks, clusters, beamSpot, algorithm->useBeamConstraint);
     }
+    
+    #ifdef cputime
+    auto stop_fit = std::chrono::high_resolution_clock::now();
+    tcpu_vtxfit = std::chrono::duration_cast<std::chrono::microseconds>(stop_fit - start_fit);
+    edm::LogInfo("PrimaryVertexProducer") << "###TIME fit " << tcpu_vtxfit;
+    auto start_vtxtime = std::chrono::high_resolution_clock::now();
+    #endif
 
     if (algorithm->pv_time_estimator != nullptr) {
       algorithm->pv_time_estimator->fill_vertex_times(pvs);
     }
+    
+    #ifdef cputime
+    auto stop_vtxtime = std::chrono::high_resolution_clock::now();
+    tcpu_vtxtime = std::chrono::duration_cast<std::chrono::microseconds>(stop_vtxtime - start_vtxtime);
+    edm::LogInfo("PrimaryVertexProducer") << "###TIME vtxtime " << tcpu_vtxtime;
+    #endif
 
     // sort vertices by pt**2  vertex
     if (pvs.size() > 1) {
@@ -333,7 +568,6 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
         }
       }
     }
-
     if (fVerbose) {
       int ivtx = 0;
       for (reco::VertexCollection::const_iterator v = vColl.begin(); v != vColl.end(); ++v) {
@@ -351,7 +585,6 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
         }
       }
     }
-
     iEvent.put(std::move(result), algorithm->label);
   }
 }
@@ -429,7 +662,23 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("TrackTimeResosLabel", edm::InputTag("dummy_default"));                         // 4D only
   desc.add<edm::InputTag>("TrackTimesLabel", edm::InputTag("dummy_default"));                             // 4D only
   desc.add<edm::InputTag>("trackMTDTimeQualityVMapTag", edm::InputTag("mtdTrackQualityMVA:mtdQualMVA"));  // 4D only
-
+  desc.add<edm::InputTag>("timingSoA", edm::InputTag("mtdSoA"));
+  desc.add<edm::InputTag>("trackAssocSrc", edm::InputTag("trackExtenderWithMTD:generalTrackassoc"));
+  desc.add<edm::InputTag>("tmtdSrc", edm::InputTag("trackExtenderWithMTD:generalTracktmtd"));
+  desc.add<edm::InputTag>("sigmatmtdSrc", edm::InputTag("trackExtenderWithMTD:generalTracksigmatmtd"));
+  desc.add<edm::InputTag>("pathmtd", edm::InputTag("trackExtenderWithMTD:generalTrackPathLength"));
+  desc.add<edm::InputTag>("btlMatchChi2Src", edm::InputTag("trackExtenderWithMTD", "btlMatchChi2"));
+  desc.add<edm::InputTag>("btlMatchTimeChi2Src", edm::InputTag("trackExtenderWithMTD", "btlMatchTimeChi2"));
+  desc.add<edm::InputTag>("etlMatchChi2Src", edm::InputTag("trackExtenderWithMTD", "etlMatchChi2"));
+  desc.add<edm::InputTag>("etlMatchTimeChi2Src", edm::InputTag("trackExtenderWithMTD", "etlMatchTimeChi2"));
+  desc.add<edm::InputTag>("tofPi", edm::InputTag("trackExtenderWithMTD:generalTrackTofPi"));
+  desc.add<edm::InputTag>("tofK", edm::InputTag("trackExtenderWithMTD:generalTrackTofK"));
+  desc.add<edm::InputTag>("tofP", edm::InputTag("trackExtenderWithMTD:generalTrackTofP"));
+  desc.add<edm::InputTag>("sigmatofpiSrc", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofPi"));
+  desc.add<edm::InputTag>("sigmatofkSrc", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofK"));
+  desc.add<edm::InputTag>("sigmatofpSrc", edm::InputTag("trackExtenderWithMTD:generalTrackSigmaTofP"));
+  desc.add<edm::InputTag>("npixBarrelSrc", edm::InputTag("trackExtenderWithMTD", "npixBarrel"));
+  desc.add<edm::InputTag>("npixEndcapSrc", edm::InputTag("trackExtenderWithMTD", "npixEndcap"));
   {
     edm::ParameterSetDescription psd0;
     {
@@ -442,11 +691,16 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
       edm::ParameterSetDescription psd3;
       GapClusterizerInZ::fillPSetDescription(psd3);
 
+      edm::ParameterSetDescription psd4;
+      GNNClusterizer::fillPSetDescription(psd4);
+
       psd0.ifValue(
           edm::ParameterDescription<std::string>("algorithm", "DA_vect", true),
           "DA_vect" >> edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd1, true) or
               "DA2D_vect" >>
                   edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd2, true) or
+              "GNN2D_vect" >>
+                  edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd4, true) or
               "gap" >> edm::ParameterDescription<edm::ParameterSetDescription>("TkGapClusParameters", psd3, true));
     }
     desc.add<edm::ParameterSetDescription>("TkClusParameters", psd0);
@@ -456,7 +710,8 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("recoveryVtxCollection", {""});
   desc.add<bool>("useMVACut", false);
   desc.add<double>("minTrackTimeQuality", 0.8);
-
+  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoVertex/PrimaryVertexProducer/data/gravnet_da.onnx"))
+      ->setComment("Path to GNN (as ONNX model)");
   descriptions.addWithDefaultLabel(desc);
 }
 
