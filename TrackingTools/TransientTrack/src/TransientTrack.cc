@@ -54,6 +54,16 @@ TransientTrack::TransientTrack(const CandidatePtr& tk,
                                const edm::ESHandle<GlobalTrackingGeometry>& tg)
     : Base(new CTT(tk, time, dtime, field, tg)) {}
 
+TransientTrack::TransientTrack(const TrackRef& tk,
+                               const double time,
+                               const double dtime,
+                               const MagneticField* field,
+                               const edm::ESHandle<GlobalTrackingGeometry>& tg,
+                               const int trkAssoc,
+                               const float mtdtime, const float mtdtimeErr,
+                               const float mva, const float pathlength, const float btlchi2, const float btltimechi2, const float etlchi2, const float etltimechi2, const float time_pi, const float time_k, const float time_p, const float sigma_time_pi, const float sigma_time_k, const float sigma_time_p, const int npixBar, const int npixEnd)
+    : Base(new TTT(tk, time, dtime, field, tg, trkAssoc, mtdtime, mtdtimeErr, mva, pathlength, btlchi2, btltimechi2, etlchi2, etltimechi2, time_pi, time_k, time_p, sigma_time_pi, sigma_time_k, sigma_time_p, npixBar, npixEnd)) {}
+
 // TransientTrack::TransientTrack( const TransientTrack & tt ) :
 //   Base( new TTT(tt)) {}
 
