@@ -75,14 +75,28 @@ namespace reco {
                    const MagneticField* field,
                    const edm::ESHandle<GlobalTrackingGeometry>& trackingGeometry);
 
-   TransientTrack(const TrackRef& tk,
-		  const double time,
-                  const double dtime,
-                  const MagneticField* field,
-		  const edm::ESHandle<GlobalTrackingGeometry>& trackingGeometry, 
-                  const int trkAssoc,
-                  const float mtdtime, const float mtdtimeErr,
-                  const float mva, const float pathlength, const float btlchi2, const float btltimechi2, const float etlchi2, const float etltimechi2, const float time_pi, const float time_k, const float time_p, const float sigma_time_pi, const float sigma_time_k, const float sigma_time_p, const int npixBar, const int npixEnd);
+    TransientTrack(const TrackRef& tk,
+                   const double time,
+                   const double dtime,
+                   const MagneticField* field,
+                   const edm::ESHandle<GlobalTrackingGeometry>& trackingGeometry,
+                   const int trkAssoc,
+                   const float mtdtime,
+                   const float mtdtimeErr,
+                   const float mva,
+                   const float pathlength,
+                   const float btlchi2,
+                   const float btltimechi2,
+                   const float etlchi2,
+                   const float etltimechi2,
+                   const float time_pi,
+                   const float time_k,
+                   const float time_p,
+                   const float sigma_time_pi,
+                   const float sigma_time_k,
+                   const float sigma_time_p,
+                   const int npixBar,
+                   const int npixEnd);
 
     void setTrackingGeometry(const edm::ESHandle<GlobalTrackingGeometry>& tg) { sharedData().setTrackingGeometry(tg); }
 
@@ -127,7 +141,7 @@ namespace reco {
 
     int trackAsocMTD() const { return data().trackAsocMTD(); }
     float MTDtime() const { return data().MTDtime(); }
-    float MTDtimeErr() const { return data().MTDtimeErr(); } 	    
+    float MTDtimeErr() const { return data().MTDtimeErr(); }
     float MVAquality() const { return data().MVAquality(); }
     float pathLength() const { return data().pathLength(); }
     float btlMatch_chi2() const { return data().btlMatch_chi2(); }
@@ -137,11 +151,11 @@ namespace reco {
     float trackTime_pi() const { return data().trackTime_pi(); }
     float trackTime_k() const { return data().trackTime_k(); }
     float trackTime_p() const { return data().trackTime_p(); }
-    float sigma_time_pi() const {return data().sigma_time_pi(); }
-    float sigma_time_k() const {return data().sigma_time_k(); }
-    float sigma_time_p() const {return data().sigma_time_p(); }
-    int nPixBarrel() const {return data().nPixBarrel(); }
-    int nPixEndcap() const {return data().nPixEndcap(); }
+    float sigma_time_pi() const { return data().sigma_time_pi(); }
+    float sigma_time_k() const { return data().sigma_time_k(); }
+    float sigma_time_p() const { return data().sigma_time_p(); }
+    int nPixBarrel() const { return data().nPixBarrel(); }
+    int nPixEndcap() const { return data().nPixEndcap(); }
 
     TrajectoryStateClosestToBeamLine stateAtBeamLine() const { return data().stateAtBeamLine(); }
 

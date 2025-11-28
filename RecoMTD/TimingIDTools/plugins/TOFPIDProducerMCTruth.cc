@@ -74,12 +74,14 @@ TOFPIDProducerMCTruth::TOFPIDProducerMCTruth(const ParameterSet& iConfig)
       sigmatofpiToken_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatofpiSrc"))),
       sigmatofkToken_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatofkSrc"))),
       sigmatofpToken_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("sigmatofpSrc"))),
-      trackingParticleCollectionToken_(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"))),
-      recoToSimAssociationToken_(consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"))),
-      fixedT0Error_(iConfig.getParameter<double>("fixedT0Error")),	
+      trackingParticleCollectionToken_(
+          consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"))),
+      recoToSimAssociationToken_(
+          consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"))),
+      fixedT0Error_(iConfig.getParameter<double>("fixedT0Error")),
       probPion_(iConfig.getParameter<double>("probPion")),
       probKaon_(iConfig.getParameter<double>("probKaon")),
-      probProton_(iConfig.getParameter<double>("probProton")){
+      probProton_(iConfig.getParameter<double>("probProton")) {
   produces<edm::ValueMap<float>>(t0Name);
   produces<edm::ValueMap<float>>(sigmat0Name);
   produces<edm::ValueMap<float>>(t0safeName);
@@ -123,9 +125,9 @@ void TOFPIDProducerMCTruth::fillDescriptions(edm::ConfigurationDescriptions& des
 
 template <class H, class T>
 void TOFPIDProducerMCTruth::fillValueMap(edm::Event& iEvent,
-                                  const edm::Handle<H>& handle,
-                                  const std::vector<T>& vec,
-                                  const std::string& name) const {
+                                         const edm::Handle<H>& handle,
+                                         const std::vector<T>& vec,
+                                         const std::string& name) const {
   auto out = std::make_unique<edm::ValueMap<T>>();
   typename edm::ValueMap<T>::Filler filler(*out);
   filler.insert(handle, vec.begin(), vec.end());
@@ -133,7 +135,8 @@ void TOFPIDProducerMCTruth::fillValueMap(edm::Event& iEvent,
   iEvent.put(std::move(out), name);
 }
 
-const edm::Ref<std::vector<TrackingParticle>>* TOFPIDProducerMCTruth::getAnyMatchedTP(const reco::TrackBaseRef& recoTrack) {
+const edm::Ref<std::vector<TrackingParticle>>* TOFPIDProducerMCTruth::getAnyMatchedTP(
+    const reco::TrackBaseRef& recoTrack) {
   auto found = r2s_->find(recoTrack);
 
   // reco track not matched to any TP
@@ -205,52 +208,52 @@ void TOFPIDProducerMCTruth::produce(edm::Event& ev, const edm::EventSetup& es) {
     float prob_k = -1.;
     float prob_p = -1.;
     //If track has time measurement
-    if (sigmat0 > 0.){
-       //recompute t0 for alternate mass hypotheses
-       double tmtd = tmtdIn[trackref];
-       double t0_k = tmtd - tofkIn[trackref];
-       double t0_p = tmtd - tofpIn[trackref];
+    if (sigmat0 > 0.) {
+      //recompute t0 for alternate mass hypotheses
+      double tmtd = tmtdIn[trackref];
+      double t0_k = tmtd - tofkIn[trackref];
+      double t0_p = tmtd - tofpIn[trackref];
 
-       //match and define t0, t0safe, sigmat0, sigmat0safe, corresponding prob 
-       auto anytp_info = getAnyMatchedTP(trackBaseRef);
-       if (anytp_info != nullptr) {
-         int tp_pdgId = std::abs((*anytp_info)->pdgId());
-         if(tp_pdgId == 211 || tp_pdgId == 11 || tp_pdgId == 13){
-           t0safe = t0;
-           sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi);
-           sigmat0safe = sigmat0;
-           prob_pi = 1.;
-           prob_k = 0.;
-           prob_p = 0.;	  
-         }else if (tp_pdgId == 321){
-           t0 = t0_k;
-           t0safe = t0;
-           sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk);
-           sigmat0safe = sigmat0;
-           prob_pi = 0.;
-           prob_k = 1.;
-           prob_p = 0.;
-         }else if (tp_pdgId == 2212 || tp_pdgId == 3112 || tp_pdgId == 3222 || tp_pdgId == 3312){
-           t0 = t0_p;
-           t0safe = t0;
-           sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp);
-           sigmat0safe = sigmat0;
-           prob_pi = 0.;
-           prob_k = 0.;
-           prob_p = 1.;	
-         }else{
-           t0 = 0.;
-           t0safe = 0.;
-           sigmat0 = 0.2; 
-           sigmat0safe = 0.2;
-         }
-       }else{
-         t0 = 0.;
-         t0safe = 0.;
-         sigmat0 = 0.2;
-         sigmat0safe = 0.2;
-       }
-    }else{
+      //match and define t0, t0safe, sigmat0, sigmat0safe, corresponding prob
+      auto anytp_info = getAnyMatchedTP(trackBaseRef);
+      if (anytp_info != nullptr) {
+        int tp_pdgId = std::abs((*anytp_info)->pdgId());
+        if (tp_pdgId == 211 || tp_pdgId == 11 || tp_pdgId == 13) {
+          t0safe = t0;
+          sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofpi * sigmatofpi);
+          sigmat0safe = sigmat0;
+          prob_pi = 1.;
+          prob_k = 0.;
+          prob_p = 0.;
+        } else if (tp_pdgId == 321) {
+          t0 = t0_k;
+          t0safe = t0;
+          sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofk * sigmatofk);
+          sigmat0safe = sigmat0;
+          prob_pi = 0.;
+          prob_k = 1.;
+          prob_p = 0.;
+        } else if (tp_pdgId == 2212 || tp_pdgId == 3112 || tp_pdgId == 3222 || tp_pdgId == 3312) {
+          t0 = t0_p;
+          t0safe = t0;
+          sigmat0 = std::sqrt(sigmatmtd * sigmatmtd + sigmatofp * sigmatofp);
+          sigmat0safe = sigmat0;
+          prob_pi = 0.;
+          prob_k = 0.;
+          prob_p = 1.;
+        } else {
+          t0 = 0.;
+          t0safe = 0.;
+          sigmat0 = 0.2;
+          sigmat0safe = 0.2;
+        }
+      } else {
+        t0 = 0.;
+        t0safe = 0.;
+        sigmat0 = 0.2;
+        sigmat0safe = 0.2;
+      }
+    } else {
       t0 = 0.;
       t0safe = 0.;
       sigmat0 = 0.2;

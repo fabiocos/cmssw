@@ -31,14 +31,14 @@ public:
   static void globalEndJob(const ONNXRuntime* cache);
 
   // cached outputs from last vertices(...) call
-  const std::vector<float>& lastBeta()        const { return last_beta_; }        // size N
-  const std::vector<float>& lastPhi()         const { return last_phi_; }         // size N
-  const std::vector<float>& lastPidLogits()   const { return last_pid_logits_; }  // flattened N*3
-  const std::vector<float>& lastEmbeddings()  const { return last_embeddings_; }  // flattened N*D
-  const std::vector<float>& lastPCA()         const { return last_pca_flat_; }    // flattened N*3
-  int  lastEmbeddingDim()                     const { return last_embedding_dim_; }
-  int  lastTrackCount()                       const { return last_n_tracks_; }
-  bool hasLastOutputs()                       const { return last_valid_; }  
+  const std::vector<float>& lastBeta() const { return last_beta_; }              // size N
+  const std::vector<float>& lastPhi() const { return last_phi_; }                // size N
+  const std::vector<float>& lastPidLogits() const { return last_pid_logits_; }   // flattened N*3
+  const std::vector<float>& lastEmbeddings() const { return last_embeddings_; }  // flattened N*D
+  const std::vector<float>& lastPCA() const { return last_pca_flat_; }           // flattened N*3
+  int lastEmbeddingDim() const { return last_embedding_dim_; }
+  int lastTrackCount() const { return last_n_tracks_; }
+  bool hasLastOutputs() const { return last_valid_; }
 
 private:
   const ONNXRuntime* onnxRuntime_;
@@ -61,9 +61,9 @@ private:
   mutable std::vector<float> last_pid_logits_;  // N*3
   mutable std::vector<float> last_embeddings_;  // N*D
   mutable std::vector<float> last_pca_flat_;    // N*3
-  mutable int  last_embedding_dim_ = 0;
-  mutable int  last_n_tracks_      = 0;
-  mutable bool last_valid_         = false;  
+  mutable int last_embedding_dim_ = 0;
+  mutable int last_n_tracks_ = 0;
+  mutable bool last_valid_ = false;
 };
 
 class UnionFind {

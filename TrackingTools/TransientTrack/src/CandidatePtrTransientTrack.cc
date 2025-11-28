@@ -31,7 +31,20 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack()
       m_TSCP(kUnset),
       m_SCTBL(kUnset),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){}
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {}
 
 CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtr& ptr, const MagneticField* field)
     : Track(*ptr->bestTrack()),
@@ -44,7 +57,20 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtr& ptr, 
       m_TSCP(kUnset),
       m_SCTBL(kUnset),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {
   initialFTS = trajectoryStateTransform::initialFreeState(*ptr->bestTrack(), field);
 }
 
@@ -62,7 +88,20 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtr& ptr,
       m_TSCP(kUnset),
       m_SCTBL(kUnset),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {
   initialFTS = trajectoryStateTransform::initialFreeState(*ptr->bestTrack(), field);
 }
 
@@ -80,7 +119,20 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtr& ptr,
       m_SCTBL(kUnset),
       theTrackingGeometry(tg),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {
   initialFTS = trajectoryStateTransform::initialFreeState(*ptr->bestTrack(), field);
 }
 
@@ -100,7 +152,20 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtr& ptr,
       m_SCTBL(kUnset),
       theTrackingGeometry(tg),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {
   initialFTS = trajectoryStateTransform::initialFreeState(*ptr->bestTrack(), field);
 }
 
@@ -115,8 +180,21 @@ CandidatePtrTransientTrack::CandidatePtrTransientTrack(const CandidatePtrTransie
       m_TSOS(kUnset),
       m_TSCP(kUnset),
       trkAssoc_(0),
-      mtdtime_(0), mtdtimeErr_(0), mva_(0), pathlength_(0), btlchi2_(0), btltimechi2_(0), etlchi2_(0), etltimechi2_(0), time_pi_(0), time_k_(0), time_p_(0), sigma_time_pi_(0), sigma_time_k_(0), sigma_time_p_(0){ 
-      if (kSet == tt.m_TSOS.load()) {
+      mtdtime_(0),
+      mtdtimeErr_(0),
+      mva_(0),
+      pathlength_(0),
+      btlchi2_(0),
+      btltimechi2_(0),
+      etlchi2_(0),
+      etltimechi2_(0),
+      time_pi_(0),
+      time_k_(0),
+      time_p_(0),
+      sigma_time_pi_(0),
+      sigma_time_k_(0),
+      sigma_time_p_(0) {
+  if (kSet == tt.m_TSOS.load()) {
     initialTSOS = tt.impactPointState();
     m_TSOS.store(kSet);
   }
@@ -137,8 +215,8 @@ void CandidatePtrTransientTrack::setBeamSpot(const BeamSpot& beamSpot) {
 }
 
 TrajectoryStateOnSurface CandidatePtrTransientTrack::impactPointState() const {
-   // see ThreadSafe statement above about the order of operator= and store
-   if (kSet == m_TSOS.load())
+  // see ThreadSafe statement above about the order of operator= and store
+  if (kSet == m_TSOS.load())
     return initialTSOS;
   TransverseImpactPointExtrapolator tipe(theField);
   auto tmp = tipe.extrapolate(initialFTS, initialFTS.position());
@@ -192,4 +270,3 @@ TrajectoryStateClosestToBeamLine CandidatePtrTransientTrack::stateAtBeamLine() c
   }
   return tmp;
 }
-
