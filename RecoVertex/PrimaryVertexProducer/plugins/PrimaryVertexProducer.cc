@@ -408,11 +408,11 @@ if (auto gnn = dynamic_cast<GNNClusterizer*>(theTrackClusterizer)) {
       const auto& trkHandle = iEvent.getHandle(trkToken);
       const size_t Nall = trkHandle->size();
 
-      const auto& beta   = gnn->lastBeta();      
-      const auto& phi    = gnn->lastPhi();        
-      const auto& logits = gnn->lastPidLogits(); 
-      const auto& emb    = gnn->lastEmbeddings(); 
-      const auto& pca    = gnn->lastPCA();       
+      const auto& beta   = gnn->lastBeta();
+      const auto& phi    = gnn->lastPhi();
+      const auto& logits = gnn->lastPidLogits();
+      const auto& emb    = gnn->lastEmbeddings();
+      const auto& pca    = gnn->lastPCA();
       const int  Nsel    = gnn->lastTrackCount();
       const int  D       = gnn->lastEmbeddingDim();
 
@@ -425,7 +425,7 @@ if (auto gnn = dynamic_cast<GNNClusterizer*>(theTrackClusterizer)) {
       std::vector<float> vmPCA0(Nall, NaN), vmPCA1(Nall, NaN), vmPCA2(Nall, NaN);
 
       for (size_t i = 0; i < seltks.size(); ++i) {
-        if (static_cast<int>(i) >= Nsel) break; 
+        if (static_cast<int>(i) >= Nsel) break;
         const auto& tt = seltks[i];
         reco::TrackRef tref = tt.trackBaseRef().castTo<reco::TrackRef>();
         if (tref.isNull()) continue;
