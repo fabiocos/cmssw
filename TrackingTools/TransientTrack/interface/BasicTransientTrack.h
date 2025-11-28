@@ -74,7 +74,7 @@ namespace reco {
     virtual float trackTime_k() const = 0;
     virtual float trackTime_p() const = 0;
     virtual float sigma_time_pi() const = 0;
-    virtual float sigma_time_k() const= 0;
+    virtual float sigma_time_k() const = 0;
     virtual float sigma_time_p() const = 0;
     virtual int nPixBarrel() const = 0;
     virtual int nPixEndcap() const = 0;

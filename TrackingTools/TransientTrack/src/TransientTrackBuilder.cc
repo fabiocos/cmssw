@@ -233,9 +233,8 @@ TransientTrack TransientTrackBuilder::build(const FreeTrajectoryState& fts) cons
   return TransientTrack(new TransientTrackFromFTS(fts));
 }
 
-
 vector<TransientTrack> TransientTrackBuilder::build(const edm::Handle<reco::TrackCollection>& trkColl,
-						    const reco::BeamSpot& beamSpot,
+                                                    const reco::BeamSpot& beamSpot,
                                                     const edm::ValueMap<float>& trackTimes,
                                                     const edm::ValueMap<float>& trackTimeResos,
                                                     const edm::ValueMap<int>& trackMTDAssoc,
@@ -254,7 +253,7 @@ vector<TransientTrack> TransientTrackBuilder::build(const edm::Handle<reco::Trac
                                                     const edm::ValueMap<float>& sigmatrackTime_k,
                                                     const edm::ValueMap<float>& sigmatrackTime_p,
                                                     const edm::ValueMap<int>& tracknpixBarrel,
-                                                    const edm::ValueMap<int>& tracknpixEndcap ) const {
+                                                    const edm::ValueMap<int>& tracknpixEndcap) const {
   vector<TransientTrack> ttVect;
   ttVect.reserve((*trkColl).size());
   for (unsigned int i = 0; i < (*trkColl).size(); i++) {
@@ -279,14 +278,34 @@ vector<TransientTrack> TransientTrackBuilder::build(const edm::Handle<reco::Trac
     int npixBarrel = tracknpixBarrel[ref];
     int npixEndcap = tracknpixEndcap[ref];
 
-
     timeReso = (timeReso > 1e-6 ? timeReso
                                 : defaultInvalidTrackTimeReso);  // make the error much larger than the BS time width
     if (edm::isNotFinite(time)) {
       time = 0.0;
       timeReso = defaultInvalidTrackTimeReso;
     }
-    ttVect.push_back(TransientTrack(ref, time, timeReso, theField,  theTrackingGeometry, trackAsoc_mtd, MTDtime_mtd, MTDtimeErr_mtd, MVAquality_mtd, pathLength_mtd, btlMatch_chi2_mtd, btlMatchTime_chi2_mtd, etlMatch_chi2_mtd, etlMatchTime_chi2_mtd, trackTime_pi_mtd, trackTime_k_mtd, trackTime_p_mtd, track_sigmaTime_pi_mtd, track_sigmaTime_k_mtd, track_sigmaTime_p_mtd,npixBarrel, npixEndcap));
+    ttVect.push_back(TransientTrack(ref,
+                                    time,
+                                    timeReso,
+                                    theField,
+                                    theTrackingGeometry,
+                                    trackAsoc_mtd,
+                                    MTDtime_mtd,
+                                    MTDtimeErr_mtd,
+                                    MVAquality_mtd,
+                                    pathLength_mtd,
+                                    btlMatch_chi2_mtd,
+                                    btlMatchTime_chi2_mtd,
+                                    etlMatch_chi2_mtd,
+                                    etlMatchTime_chi2_mtd,
+                                    trackTime_pi_mtd,
+                                    trackTime_k_mtd,
+                                    trackTime_p_mtd,
+                                    track_sigmaTime_pi_mtd,
+                                    track_sigmaTime_k_mtd,
+                                    track_sigmaTime_p_mtd,
+                                    npixBarrel,
+                                    npixEndcap));
   }
   for (unsigned int i = 0; i < ttVect.size(); i++) {
     ttVect[i].setBeamSpot(beamSpot);

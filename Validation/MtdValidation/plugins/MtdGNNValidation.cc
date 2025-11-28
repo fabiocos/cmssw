@@ -13,8 +13,6 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "DataFormats/Math/interface/angle_units.h"
-#include "DataFormats/ForwardDetId/interface/ETLDetId.h"
-#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 
 #include "DataFormats/Common/interface/Ptr.h"
 #include "DataFormats/Common/interface/PtrVector.h"
@@ -34,11 +32,6 @@
 #include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
 #include "SimDataFormats/CrossingFrame/interface/MixCollection.h"
-#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
-#include "SimDataFormats/Associations/interface/MtdSimLayerClusterToTPAssociatorBaseImpl.h"
-#include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
-#include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociationMap.h"
-#include "SimDataFormats/Associations/interface/MtdSimLayerClusterToRecoClusterAssociationMap.h"
 
 #include "CLHEP/Units/PhysicalConstants.h"
 #include "MTDHit.h"
@@ -84,16 +77,9 @@ private:
   edm::EDGetTokenT<reco::TrackCollection> RecTrackToken_;
 
   edm::EDGetTokenT<TrackingParticleCollection> trackingParticleCollectionToken_;
+  edm::EDGetTokenT<TrackingVertexCollection> trackingVertexCollectionToken_;
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoAssociationToken_;
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimAssociationToken_;
-  edm::EDGetTokenT<reco::TPToSimCollectionMtd> tp2SimAssociationMapToken_;
-  edm::EDGetTokenT<reco::SimToTPCollectionMtd> Sim2tpAssociationMapToken_;
-  edm::EDGetTokenT<TrackingVertexCollection> trackingVertexCollectionToken_;
-
-  edm::EDGetTokenT<FTLRecHitCollection> btlRecHitsToken_;
-  edm::EDGetTokenT<FTLRecHitCollection> etlRecHitsToken_;
-  edm::EDGetTokenT<FTLClusterCollection> btlRecCluToken_;
-  edm::EDGetTokenT<FTLClusterCollection> etlRecCluToken_;
 
   edm::EDGetTokenT<edm::ValueMap<int>> trackAssocToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> pathLengthToken_;
@@ -116,17 +102,17 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> trackMVAQualToken_;
   edm::EDGetTokenT<edm::ValueMap<float>> outermostHitPositionToken_;
 
-  edm::EDGetTokenT<edm::ValueMap<float>>  betaTok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  phiTok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  logitPiTok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  logitKTok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  logitPTok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  emb0Tok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  emb1Tok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  emb2Tok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  pca0Tok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  pca1Tok_;
-  edm::EDGetTokenT<edm::ValueMap<float>>  pca2Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> betaTok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> phiTok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> logitPiTok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> logitKTok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> logitPTok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> emb0Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> emb1Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> emb2Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> pca0Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> pca1Tok_;
+  edm::EDGetTokenT<edm::ValueMap<float>> pca2Tok_;
 
   // histogram declaration
   //
@@ -147,24 +133,13 @@ MtdGNNValidation::MtdGNNValidation(const edm::ParameterSet& iConfig)
   GenRecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagG"));
   RecTrackToken_ = consumes<reco::TrackCollection>(iConfig.getParameter<edm::InputTag>("inputTagT"));
 
-  trackingVertexCollectionToken_ =
-      consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
   trackingParticleCollectionToken_ =
-      consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTag"));
+      consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("SimTagTP"));
+  trackingVertexCollectionToken_ = consumes<TrackingVertexCollection>(iConfig.getParameter<edm::InputTag>("SimTagTV"));
   simToRecoAssociationToken_ =
       consumes<reco::SimToRecoCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
   recoToSimAssociationToken_ =
       consumes<reco::RecoToSimCollection>(iConfig.getParameter<edm::InputTag>("TPtoRecoTrackAssoc"));
-  tp2SimAssociationMapToken_ =
-      consumes<reco::TPToSimCollectionMtd>(iConfig.getParameter<edm::InputTag>("tp2SimAssociationMapTag"));
-  Sim2tpAssociationMapToken_ =
-      consumes<reco::SimToTPCollectionMtd>(iConfig.getParameter<edm::InputTag>("Sim2tpAssociationMapTag"));
-  r2sAssociationMapToken_ = consumes<MtdRecoClusterToSimLayerClusterAssociationMap>(
-      iConfig.getParameter<edm::InputTag>("r2sAssociationMapTag"));
-  btlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("btlRecHits"));
-  etlRecHitsToken_ = consumes<FTLRecHitCollection>(iConfig.getParameter<edm::InputTag>("etlRecHits"));
-  btlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTagBTL"));
-  etlRecCluToken_ = consumes<FTLClusterCollection>(iConfig.getParameter<edm::InputTag>("recCluTagETL"));
   trackAssocToken_ = consumes<edm::ValueMap<int>>(iConfig.getParameter<edm::InputTag>("trackAssocSrc"));
   pathLengthToken_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("pathLengthSrc"));
   btlMatchTimeChi2Token_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("btlMatchTimeChi2"));
@@ -185,21 +160,17 @@ MtdGNNValidation::MtdGNNValidation(const edm::ParameterSet& iConfig)
   outermostHitPositionToken_ =
       consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("outermostHitPositionSrc"));
 
-  auto mkTag = [&](const std::string& instance)->edm::InputTag{
-    return edm::InputTag(pvModule_.label(), instance, pvModule_.process());
-  };
-
-  betaTok_     = consumes<edm::ValueMap<float>>( mkTag("gnnBeta") );
-  phiTok_      = consumes<edm::ValueMap<float>>( mkTag("gnnPhi") );
-  logitPiTok_  = consumes<edm::ValueMap<float>>( mkTag("gnnPidLogitPi") );
-  logitKTok_   = consumes<edm::ValueMap<float>>( mkTag("gnnPidLogitK") );
-  logitPTok_   = consumes<edm::ValueMap<float>>( mkTag("gnnPidLogitP") );
-  emb0Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnEmb0") );
-  emb1Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnEmb1") );
-  emb2Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnEmb2") );
-  pca0Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnPCA0") );
-  pca1Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnPCA1") );
-  pca2Tok_     = consumes<edm::ValueMap<float>>( mkTag("gnnPCA2") );
+  betaTok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnBeta"));
+  phiTok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPhi"));
+  logitPiTok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPidLogitPi"));
+  logitKTok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPidLogitK"));
+  logitPTok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPidLogitP"));
+  emb0Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnEmb0"));
+  emb1Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnEmb1"));
+  emb2Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnEmb2"));
+  pca0Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA0"));
+  pca1Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA1"));
+  pca2Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA2"));
 }
 
 MtdGNNValidation::~MtdGNNValidation() {}
@@ -211,10 +182,6 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   using namespace std;
 
   auto GenRecTrackHandle = makeValid(iEvent.getHandle(GenRecTrackToken_));
-
-  const auto& tp2SimAssociationMap = iEvent.get(tp2SimAssociationMapToken_);
-  const auto& Sim2tpAssociationMap = iEvent.get(Sim2tpAssociationMapToken_);
-  const auto& r2sAssociationMap = iEvent.get(r2sAssociationMapToken_);
 
   const auto& tMtd = iEvent.get(tmtdToken_);
   const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
@@ -235,24 +202,24 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   const auto& btlMatchChi2 = iEvent.get(btlMatchChi2Token_);
   const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
 
-    const auto& betaVM  = iEvent.get(betaTok_);
-    const auto& phiVM   = iEvent.get(phiTok_);
-    const auto& logPiVM = iEvent.get(logitPiTok_);
-    const auto& logKVM  = iEvent.get(logitKTok_);
-    const auto& logPVM  = iEvent.get(logitPTok_);
-    const auto& emb0VM  = iEvent.get(emb0Tok_);
-    const auto& emb1VM  = iEvent.get(emb1Tok_);
-    const auto& emb2VM  = iEvent.get(emb2Tok_);
-    const auto& pca0VM  = iEvent.get(pca0Tok_);
-    const auto& pca1VM  = iEvent.get(pca1Tok_);
-    const auto& pca2VM  = iEvent.get(pca2Tok_);
+  const auto& betaVM = iEvent.get(betaTok_);
+  const auto& phiVM = iEvent.get(phiTok_);
+  const auto& logPiVM = iEvent.get(logitPiTok_);
+  const auto& logKVM = iEvent.get(logitKTok_);
+  const auto& logPVM = iEvent.get(logitPTok_);
+  const auto& emb0VM = iEvent.get(emb0Tok_);
+  const auto& emb1VM = iEvent.get(emb1Tok_);
+  const auto& emb2VM = iEvent.get(emb2Tok_);
+  const auto& pca0VM = iEvent.get(pca0Tok_);
+  const auto& pca1VM = iEvent.get(pca1Tok_);
+  const auto& pca2VM = iEvent.get(pca2Tok_);
 
   auto recoToSimH = makeValid(iEvent.getHandle(recoToSimAssociationToken_));
   r2s_ = recoToSimH.product();
 
   unsigned int index = 0;
 
-  std::map<reco::TrackRef,TrackingVertexRef> trkToTV;
+  std::map<reco::TrackRef, TrackingVertexRef> trkToTV;
 
   // --- Loop over all RECO tracks ---
   for (const auto& trackGen : *GenRecTrackHandle) {
@@ -266,14 +233,14 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
     const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
     const reco::Track& track = *mtdTrackref;
-      // == TrackingParticle based matching
-      const reco::TrackBaseRef trkrefb(trackref);
-      auto tp_info = getMatchedTP(trkrefb);
-      if (tp_info != nullptr) {
-        if (tp_info->parentVertex() != nullptr) {
-	   trkToTV[trackref] = tp_info->parentVertex();
-	}
-      }  // TP matching
+    // == TrackingParticle based matching
+    const reco::TrackBaseRef trkrefb(trackref);
+    auto tp_info = getMatchedTP(trkrefb);
+    //if (tp_info != nullptr) {
+    //if (tp_info->parentVertex() != nullptr) {
+    //trkToTV[trackref] = tp_info->parentVertex();
+    //}
+    //}  // TP matching
 
   }  // RECO tracks loop
 }
@@ -284,10 +251,10 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 
   // histogram booking
   //
-  meVtxVsZ_= ibook.book1D("VtxVsZ", "True vtx rec center vs z", 300, -15., 15.);
-  meVtxSpreadVsZ_= ibook.Profile("VtxSpreadVsZ", "True vtx rec spread vs z", 300, -15., 15.,100,0., 10.);
-  meVtxVsPC0_= ibook.book1D("VtxVsPC0", "True vtx rec center vs PC0", 300, -15., 15.);
-  meVtxSpreadVsPC0_= ibook.Profile("VtxSpreadVsPC0", "True vtx rec spread vs PC0", 300, -15., 15.,100,0., 10.);
+  meVtxVsZ_ = ibook.book1D("VtxVsZ", "True vtx rec center vs z", 300, -15., 15.);
+  meVtxSpreadVsZ_ = ibook.bookProfile("VtxSpreadVsZ", "True vtx rec spread vs z", 300, -15., 15., 100, 0., 10.);
+  meVtxVsPC0_ = ibook.book1D("VtxVsPC0", "True vtx rec center vs PC0", 300, -15., 15.);
+  meVtxSpreadVsPC0_ = ibook.bookProfile("VtxSpreadVsPC0", "True vtx rec spread vs PC0", 300, -15., 15., 100, 0., 10.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -301,15 +268,12 @@ void MtdGNNValidation::fillDescriptions(edm::ConfigurationDescriptions& descript
   desc.add<edm::InputTag>("inputTagT", edm::InputTag("trackExtenderWithMTD"));
   desc.add<edm::InputTag>("inputTagV", edm::InputTag("offlinePrimaryVertices4D"));
   desc.add<edm::InputTag>("inputTagH", edm::InputTag("generatorSmeared"));
-  desc.add<edm::InputTag>("SimTag", edm::InputTag("mix", "MergedTrackTruth"));
+  desc.add<edm::InputTag>("SimTagTP", edm::InputTag("mix", "MergedTrackTruth"));
+  desc.add<edm::InputTag>("SimTagTV", edm::InputTag("mix", "MergedTrackTruth"));
   desc.add<edm::InputTag>("TPtoRecoTrackAssoc", edm::InputTag("trackingParticleRecoTrackAsssociation"));
   desc.add<edm::InputTag>("tp2SimAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
   desc.add<edm::InputTag>("Sim2tpAssociationMapTag", edm::InputTag("mtdSimLayerClusterToTPAssociation"));
   desc.add<edm::InputTag>("r2sAssociationMapTag", edm::InputTag("mtdRecoClusterToSimLayerClusterAssociation"));
-  desc.add<edm::InputTag>("btlRecHits", edm::InputTag("mtdRecHits", "FTLBarrel"));
-  desc.add<edm::InputTag>("etlRecHits", edm::InputTag("mtdRecHits", "FTLEndcap"));
-  desc.add<edm::InputTag>("recCluTagBTL", edm::InputTag("mtdClusters", "FTLBarrel"));
-  desc.add<edm::InputTag>("recCluTagETL", edm::InputTag("mtdClusters", "FTLEndcap"));
   desc.add<edm::InputTag>("tmtd", edm::InputTag("trackExtenderWithMTD:generalTracktmtd"));
   desc.add<edm::InputTag>("sigmatmtd", edm::InputTag("trackExtenderWithMTD:generalTracksigmatmtd"));
   desc.add<edm::InputTag>("t0Src", edm::InputTag("trackExtenderWithMTD:generalTrackt0"));
@@ -335,7 +299,7 @@ void MtdGNNValidation::fillDescriptions(edm::ConfigurationDescriptions& descript
   desc.add<double>("trackMinimumEtlEta", 1.6);
   desc.add<double>("trackMaximumEtlEta", 3.);
 
-  descriptions.add("mtdTracksValid", desc);
+  descriptions.add("mtdGNNValid", desc);
 }
 
 const edm::Ref<std::vector<TrackingParticle>>* MtdGNNValidation::getMatchedTP(const reco::TrackBaseRef& recoTrack) {
