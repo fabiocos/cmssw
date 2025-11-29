@@ -183,37 +183,38 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   auto GenRecTrackHandle = makeValid(iEvent.getHandle(GenRecTrackToken_));
 
-  const auto& tMtd = iEvent.get(tmtdToken_);
-  const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
-  const auto& t0Src = iEvent.get(t0SrcToken_);
-  const auto& Sigmat0Src = iEvent.get(Sigmat0SrcToken_);
-  const auto& t0Pid = iEvent.get(t0PidToken_);
-  const auto& Sigmat0Pid = iEvent.get(Sigmat0PidToken_);
-  const auto& t0Safe = iEvent.get(t0SafePidToken_);
-  const auto& Sigmat0Safe = iEvent.get(Sigmat0SafePidToken_);
-  const auto& SigmaTofPi = iEvent.get(SigmaTofPiToken_);
-  const auto& SigmaTofK = iEvent.get(SigmaTofKToken_);
-  const auto& SigmaTofP = iEvent.get(SigmaTofPToken_);
-  const auto& mtdQualMVA = iEvent.get(trackMVAQualToken_);
+  //const auto& tMtd = iEvent.get(tmtdToken_);
+  //const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
+  //const auto& t0Src = iEvent.get(t0SrcToken_);
+  //const auto& Sigmat0Src = iEvent.get(Sigmat0SrcToken_);
+  //const auto& t0Pid = iEvent.get(t0PidToken_);
+  //const auto& Sigmat0Pid = iEvent.get(Sigmat0PidToken_);
+  //const auto& t0Safe = iEvent.get(t0SafePidToken_);
+  //const auto& Sigmat0Safe = iEvent.get(Sigmat0SafePidToken_);
+  //const auto& SigmaTofPi = iEvent.get(SigmaTofPiToken_);
+  //const auto& SigmaTofK = iEvent.get(SigmaTofKToken_);
+  //const auto& SigmaTofP = iEvent.get(SigmaTofPToken_);
+  //const auto& mtdQualMVA = iEvent.get(trackMVAQualToken_);
   const auto& trackAssoc = iEvent.get(trackAssocToken_);
-  const auto& pathLength = iEvent.get(pathLengthToken_);
-  const auto& btlMatchTimeChi2 = iEvent.get(btlMatchTimeChi2Token_);
-  const auto& etlMatchTimeChi2 = iEvent.get(etlMatchTimeChi2Token_);
-  const auto& btlMatchChi2 = iEvent.get(btlMatchChi2Token_);
-  const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
+  //const auto& pathLength = iEvent.get(pathLengthToken_);
+  //const auto& btlMatchTimeChi2 = iEvent.get(btlMatchTimeChi2Token_);
+  //const auto& etlMatchTimeChi2 = iEvent.get(etlMatchTimeChi2Token_);
+  //const auto& btlMatchChi2 = iEvent.get(btlMatchChi2Token_);
+  //const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
 
-  const auto& betaVM = iEvent.get(betaTok_);
-  const auto& phiVM = iEvent.get(phiTok_);
-  const auto& logPiVM = iEvent.get(logitPiTok_);
-  const auto& logKVM = iEvent.get(logitKTok_);
-  const auto& logPVM = iEvent.get(logitPTok_);
-  const auto& emb0VM = iEvent.get(emb0Tok_);
-  const auto& emb1VM = iEvent.get(emb1Tok_);
-  const auto& emb2VM = iEvent.get(emb2Tok_);
+  //const auto& betaVM = iEvent.get(betaTok_);
+  //const auto& phiVM = iEvent.get(phiTok_);
+  //const auto& logPiVM = iEvent.get(logitPiTok_);
+  //const auto& logKVM = iEvent.get(logitKTok_);
+  //const auto& logPVM = iEvent.get(logitPTok_);
+  //const auto& emb0VM = iEvent.get(emb0Tok_);
+  //const auto& emb1VM = iEvent.get(emb1Tok_);
+  //const auto& emb2VM = iEvent.get(emb2Tok_);
   const auto& pca0VM = iEvent.get(pca0Tok_);
   const auto& pca1VM = iEvent.get(pca1Tok_);
   const auto& pca2VM = iEvent.get(pca2Tok_);
 
+  auto tVC = edm::makeValid(iEvent.getHandle(trackingVertexCollectionToken_));
   auto recoToSimH = makeValid(iEvent.getHandle(recoToSimAssociationToken_));
   r2s_ = recoToSimH.product();
 
@@ -236,13 +237,56 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     // == TrackingParticle based matching
     const reco::TrackBaseRef trkrefb(trackref);
     auto tp_info = getMatchedTP(trkrefb);
-    //if (tp_info != nullptr) {
-    //if (tp_info->parentVertex() != nullptr) {
-    //trkToTV[trackref] = tp_info->parentVertex();
-    //}
-    //}  // TP matching
+    if (tp_info != nullptr) {
+      trkToTV[trackref] = (*tp_info)->parentVertex();
+    }  // TP matching
 
   }  // RECO tracks loop
+
+  // loop on TrackingVertex collection, retain only leading vertices for each in time event
+  //
+  index = 999999;
+  unsigned int oldIndex(0);
+  bool first(true);
+  std::vector<reco::TrackRef> thisVtx;
+  for (TrackingVertexCollection::const_iterator v = tVC->begin(); v != tVC->end(); ++v) {
+    index = std::distance(tVC->begin(), v);
+    if (first == true) {
+      oldIndex = index;
+      for (const auto& [key, value] : trkToTV) {
+        if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
+          thisVtx.emplace_back(key);
+        }
+      }
+    }
+    const TrackingVertexRef oldRef(iEvent.getHandle(trackingVertexCollectionToken_), oldIndex);
+    if ((*oldRef).eventId() == v->eventId()) {
+      first = false;
+    } else {
+      first = true;
+      thisVtx.clear();
+    }
+    edm::LogPrint("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
+                                      << *v;
+    float zave(-999.), zrms(0.);
+    float pc0ave(-999.), pc0rms(0.);
+    for (const auto& itk : thisVtx) {
+      zave += (*itk).vz();
+      pc0ave += pca0VM[itk];
+    }
+    zave = zave / thisVtx.size();
+    pc0ave = pc0ave / thisVtx.size();
+    meVtxVsZ_->Fill(zave);
+    meVtxVsPC0_->Fill(pc0ave);
+    for (const auto& itk : thisVtx) {
+      zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
+      pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
+    }
+    zrms = std::sqrt(zrms / (thisVtx.size() - 1));
+    pc0rms = std::sqrt(pc0rms / (thisVtx.size() - 1));
+    meVtxSpreadVsZ_->Fill(zave, zrms);
+    meVtxSpreadVsPC0_->Fill(pc0ave, pc0rms);
+  }
 }
 
 // ------------ method for histogram booking ------------
@@ -253,8 +297,8 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   //
   meVtxVsZ_ = ibook.book1D("VtxVsZ", "True vtx rec center vs z", 300, -15., 15.);
   meVtxSpreadVsZ_ = ibook.bookProfile("VtxSpreadVsZ", "True vtx rec spread vs z", 300, -15., 15., 100, 0., 10.);
-  meVtxVsPC0_ = ibook.book1D("VtxVsPC0", "True vtx rec center vs PC0", 300, -15., 15.);
-  meVtxSpreadVsPC0_ = ibook.bookProfile("VtxSpreadVsPC0", "True vtx rec spread vs PC0", 300, -15., 15., 100, 0., 10.);
+  meVtxVsPC0_ = ibook.book1D("VtxVsPC0", "True vtx rec center vs PC0", 300, -6., 6.);
+  meVtxSpreadVsPC0_ = ibook.bookProfile("VtxSpreadVsPC0", "True vtx rec spread vs PC0", 300, -6., 6., 100, 0., 10.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
