@@ -263,10 +263,10 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       oldIndex = index;
       thisVtx.clear();
     }
-    edm::LogInfo("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
-                                     << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event();
+    edm::LogVerbatim("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
+                                         << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event();
     if (first == true && (*v).eventId().bunchCrossing() == 0) {
-      edm::LogInfo("MtdGNNValidation") << " Filling...";
+      edm::LogVerbatim("MtdGNNValidation") << " Filling...";
       for (const auto& [key, value] : trkToTV) {
         if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
           thisVtx.emplace_back(key);
@@ -284,8 +284,8 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         pc0ave += pca0VM[itk];
         pc0wave += pca0VM[itk] * betaVM[itk];
         pc0wsum += betaVM[itk];
-        edm::LogInfo("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError() << " PCA0 / beta "
-                                         << pca0VM[itk] << " " << betaVM[itk];
+        edm::LogVerbatim("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
+                                             << " PCA0 / beta " << pca0VM[itk] << " " << betaVM[itk];
       }
       zave = zave / thisVtx.size();
       zwave = zwave / wsum;

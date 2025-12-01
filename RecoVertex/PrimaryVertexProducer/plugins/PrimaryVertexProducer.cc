@@ -414,6 +414,11 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
       const int Nsel = gnn->lastTrackCount();
       const int D = gnn->lastEmbeddingDim();
 
+      assert(static_cast<size_t>(Nsel) == beta.size());
+      assert(static_cast<size_t>(Nsel) == phi.size());
+      assert(3 * static_cast<size_t>(Nsel) == logits.size());
+      assert(3 * static_cast<size_t>(Nsel) == pca.size());
+
       const float NaN = std::numeric_limits<float>::quiet_NaN();
 
       // fill with NaN, then backfill for selected tracks
@@ -427,11 +432,15 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
           break;
         const auto& tt = seltks[i];
         reco::TrackRef tref = tt.trackBaseRef().castTo<reco::TrackRef>();
-        if (tref.isNull())
+        if (tref.isNull()) {
+          edm::LogError("PrimaryVertexProducer") << "seltks # " << i << " no trackRef";
           continue;
+        }
         const size_t idx = tref.key();
-        if (idx >= Nall)
+        if (idx >= Nall) {
+          edm::LogError("PrimaryVertexProducer") << "seltks trk # " << idx << " outside track collection range";
           continue;
+        }
         if (i < beta.size())
           vmBeta[idx] = beta[i];
         if (i < phi.size())
