@@ -281,11 +281,13 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         zave += (*itk).vz();
         zwave += (*itk).vz() / ((*itk).dzError() * (*itk).dzError());
         wsum += 1. / ((*itk).dzError() * (*itk).dzError());
-        pc0ave += pca0VM[itk];
-        pc0wave += pca0VM[itk] * betaVM[itk];
-        pc0wsum += betaVM[itk];
-        edm::LogVerbatim("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
-                                             << " PCA0 / beta " << pca0VM[itk] << " " << betaVM[itk];
+        if (isfinite(betaVM[itk])) {
+          pc0ave += pca0VM[itk];
+          pc0wave += pca0VM[itk] * betaVM[itk];
+          pc0wsum += betaVM[itk];
+          edm::LogVerbatim("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
+                                               << " PCA0 / beta " << pca0VM[itk] << " " << betaVM[itk];
+        }
       }
       zave = zave / thisVtx.size();
       zwave = zwave / wsum;
@@ -298,8 +300,10 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       for (const auto& itk : thisVtx) {
         zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
         zwrms += (((*itk).vz() - zave) * ((*itk).vz() - zave)) / ((*itk).dzError() * (*itk).dzError());
-        pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
-        pc0wrms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave) * betaVM[itk];
+        if (isfinite(betaVM[itk])) {
+          pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
+          pc0wrms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave) * betaVM[itk];
+        }
       }
       zrms = std::sqrt(zrms / (thisVtx.size() - 1));
       zwrms = std::sqrt(zrms / wsum);
