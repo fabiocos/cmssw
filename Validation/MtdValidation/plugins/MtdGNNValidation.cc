@@ -115,11 +115,15 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float>> pca2Tok_;
 
   // histogram declaration
-  //
+
   MonitorElement* meVtxVsZ_;
   MonitorElement* meVtxSpreadVsZ_;
   MonitorElement* meVtxVsPC0_;
   MonitorElement* meVtxSpreadVsPC0_;
+  MonitorElement* meVtxVsZWeighted_;
+  MonitorElement* meVtxSpreadVsZWeighted_;
+  MonitorElement* meVtxVsPC0Weighted_;
+  MonitorElement* meVtxSpreadVsPC0Weighted_;
 };
 
 // ------------ constructor and destructor --------------
@@ -202,7 +206,7 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   //const auto& btlMatchChi2 = iEvent.get(btlMatchChi2Token_);
   //const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
 
-  //const auto& betaVM = iEvent.get(betaTok_);
+  const auto& betaVM = iEvent.get(betaTok_);
   //const auto& phiVM = iEvent.get(phiTok_);
   //const auto& logPiVM = iEvent.get(logitPiTok_);
   //const auto& logKVM = iEvent.get(logitKTok_);
@@ -245,47 +249,67 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   // loop on TrackingVertex collection, retain only leading vertices for each in time event
   //
-  index = 999999;
-  unsigned int oldIndex(0);
+  index = 0;
+  unsigned int oldIndex(tVC->size() - 1);
   bool first(true);
   std::vector<reco::TrackRef> thisVtx;
   for (TrackingVertexCollection::const_iterator v = tVC->begin(); v != tVC->end(); ++v) {
     index = std::distance(tVC->begin(), v);
-    if (first == true) {
-      oldIndex = index;
-      for (const auto& [key, value] : trkToTV) {
-        if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
-          thisVtx.emplace_back(key);
-        }
-      }
-    }
     const TrackingVertexRef oldRef(iEvent.getHandle(trackingVertexCollectionToken_), oldIndex);
     if ((*oldRef).eventId() == v->eventId()) {
       first = false;
     } else {
       first = true;
+      oldIndex = index;
       thisVtx.clear();
     }
-    edm::LogPrint("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
-                                      << *v;
-    float zave(-999.), zrms(0.);
-    float pc0ave(-999.), pc0rms(0.);
-    for (const auto& itk : thisVtx) {
-      zave += (*itk).vz();
-      pc0ave += pca0VM[itk];
+    edm::LogInfo("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
+                                     << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event();
+    if (first == true && (*v).eventId().bunchCrossing() == 0) {
+      edm::LogInfo("MtdGNNValidation") << " Filling...";
+      for (const auto& [key, value] : trkToTV) {
+        if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
+          thisVtx.emplace_back(key);
+        }
+      }
+
+      // vertex analysis
+
+      float zave(0.), zrms(0.), zwave(0.), zwrms(0.), wsum(0.);
+      float pc0ave(0.), pc0rms(0.), pc0wave(0.), pc0wrms(0), pc0wsum(0);
+      for (const auto& itk : thisVtx) {
+        zave += (*itk).vz();
+        zwave += (*itk).vz() / ((*itk).dzError() * (*itk).dzError());
+        wsum += 1. / ((*itk).dzError() * (*itk).dzError());
+        pc0ave += pca0VM[itk];
+        pc0wave += pca0VM[itk] * betaVM[itk];
+        pc0wsum += betaVM[itk];
+        edm::LogInfo("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError() << " PCA0 / beta "
+                                         << pca0VM[itk] << " " << betaVM[itk];
+      }
+      zave = zave / thisVtx.size();
+      zwave = zwave / wsum;
+      pc0ave = pc0ave / thisVtx.size();
+      pc0wave = pc0wave / pc0wsum;
+      meVtxVsZ_->Fill(zave);
+      meVtxVsPC0_->Fill(pc0ave);
+      meVtxVsZWeighted_->Fill(zwave);
+      meVtxVsPC0Weighted_->Fill(pc0wave);
+      for (const auto& itk : thisVtx) {
+        zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
+        zwrms += (((*itk).vz() - zave) * ((*itk).vz() - zave)) / ((*itk).dzError() * (*itk).dzError());
+        pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
+        pc0wrms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave) * betaVM[itk];
+      }
+      zrms = std::sqrt(zrms / (thisVtx.size() - 1));
+      zwrms = std::sqrt(zrms / wsum);
+      pc0rms = std::sqrt(pc0rms / (thisVtx.size() - 1));
+      pc0wrms = std::sqrt(pc0wrms / pc0wsum);
+      meVtxSpreadVsZ_->Fill(zave, zrms);
+      meVtxSpreadVsPC0_->Fill(pc0ave, pc0rms);
+      meVtxSpreadVsZWeighted_->Fill(zwave, zwrms);
+      meVtxSpreadVsPC0Weighted_->Fill(pc0wave, pc0wrms);
     }
-    zave = zave / thisVtx.size();
-    pc0ave = pc0ave / thisVtx.size();
-    meVtxVsZ_->Fill(zave);
-    meVtxVsPC0_->Fill(pc0ave);
-    for (const auto& itk : thisVtx) {
-      zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
-      pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
-    }
-    zrms = std::sqrt(zrms / (thisVtx.size() - 1));
-    pc0rms = std::sqrt(pc0rms / (thisVtx.size() - 1));
-    meVtxSpreadVsZ_->Fill(zave, zrms);
-    meVtxSpreadVsPC0_->Fill(pc0ave, pc0rms);
   }
 }
 
@@ -299,6 +323,12 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   meVtxSpreadVsZ_ = ibook.bookProfile("VtxSpreadVsZ", "True vtx rec spread vs z", 300, -15., 15., 100, 0., 10.);
   meVtxVsPC0_ = ibook.book1D("VtxVsPC0", "True vtx rec center vs PC0", 300, -6., 6.);
   meVtxSpreadVsPC0_ = ibook.bookProfile("VtxSpreadVsPC0", "True vtx rec spread vs PC0", 300, -6., 6., 100, 0., 10.);
+  meVtxVsZWeighted_ = ibook.book1D("VtxVsZWeighted", "True vtx rec center vs z Weighted", 300, -15., 15.);
+  meVtxSpreadVsZWeighted_ =
+      ibook.bookProfile("VtxSpreadVsZWeighted", "True vtx rec spread vs z Weighted", 300, -15., 15., 100, 0., 10.);
+  meVtxVsPC0Weighted_ = ibook.book1D("VtxVsPC0Weighted", "True vtx rec center vs PC0 Weighted", 300, -6., 6.);
+  meVtxSpreadVsPC0Weighted_ =
+      ibook.bookProfile("VtxSpreadVsPC0Weighted", "True vtx rec spread vs PC0 Weighted", 300, -6., 6., 100, 0., 10.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -306,7 +336,7 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 void MtdGNNValidation::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
 
-  desc.add<std::string>("folder", "MTD/Tracks");
+  desc.add<std::string>("folder", "MTD/GNN");
   desc.add<bool>("optionalPlots", false);
   desc.add<edm::InputTag>("inputTagG", edm::InputTag("generalTracks"));
   desc.add<edm::InputTag>("inputTagT", edm::InputTag("trackExtenderWithMTD"));
@@ -342,6 +372,18 @@ void MtdGNNValidation::fillDescriptions(edm::ConfigurationDescriptions& descript
   desc.add<double>("trackMaximumBtlEta", 1.5);
   desc.add<double>("trackMinimumEtlEta", 1.6);
   desc.add<double>("trackMaximumEtlEta", 3.);
+
+  desc.add<edm::InputTag>("gnnBeta", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnBeta"));
+  desc.add<edm::InputTag>("gnnPhi", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPhi"));
+  desc.add<edm::InputTag>("gnnEmb0", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnEmb0"));
+  desc.add<edm::InputTag>("gnnEmb1", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnEmb1"));
+  desc.add<edm::InputTag>("gnnEmb2", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnEmb2"));
+  desc.add<edm::InputTag>("gnnPCA0", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPCA0"));
+  desc.add<edm::InputTag>("gnnPCA1", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPCA1"));
+  desc.add<edm::InputTag>("gnnPCA2", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPCA2"));
+  desc.add<edm::InputTag>("gnnPidLogitPi", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPidLogitPi"));
+  desc.add<edm::InputTag>("gnnPidLogitK", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPidLogitK"));
+  desc.add<edm::InputTag>("gnnPidLogitP", edm::InputTag("unsortedOfflinePrimaryVerticesGNN:gnnPidLogitP"));
 
   descriptions.add("mtdGNNValid", desc);
 }
