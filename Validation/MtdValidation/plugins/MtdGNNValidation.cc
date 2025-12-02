@@ -1,3 +1,5 @@
+#define EDM_ML_DEBUG
+
 #include <string>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -124,6 +126,11 @@ private:
   MonitorElement* meVtxSpreadVsZWeighted_;
   MonitorElement* meVtxVsPC0Weighted_;
   MonitorElement* meVtxSpreadVsPC0Weighted_;
+  MonitorElement* meVtxVsPC0Weighted2_;
+  MonitorElement* meVtxSpreadVsPC0Weighted2_;
+  MonitorElement* meBeta_;
+  MonitorElement* mePhi_;
+  MonitorElement* mePhiVsBeta_;
 };
 
 // ------------ constructor and destructor --------------
@@ -207,7 +214,7 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   //const auto& outermostHitPosition = iEvent.get(outermostHitPositionToken_);
 
   const auto& betaVM = iEvent.get(betaTok_);
-  //const auto& phiVM = iEvent.get(phiTok_);
+  const auto& phiVM = iEvent.get(phiTok_);
   //const auto& logPiVM = iEvent.get(logitPiTok_);
   //const auto& logKVM = iEvent.get(logitKTok_);
   //const auto& logPVM = iEvent.get(logitPTok_);
@@ -263,10 +270,10 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       oldIndex = index;
       thisVtx.clear();
     }
-    edm::LogVerbatim("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
+    LogTrace("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
                                          << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event();
     if (first == true && (*v).eventId().bunchCrossing() == 0) {
-      edm::LogVerbatim("MtdGNNValidation") << " Filling...";
+      LogTrace("MtdGNNValidation") << " Filling...";
       for (const auto& [key, value] : trkToTV) {
         if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
           thisVtx.emplace_back(key);
@@ -277,6 +284,7 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
       float zave(0.), zrms(0.), zwave(0.), zwrms(0.), wsum(0.);
       float pc0ave(0.), pc0rms(0.), pc0wave(0.), pc0wrms(0), pc0wsum(0);
+      float pc0w2ave(0.), pc0w2rms(0), pc0w2sum(0);
       for (const auto& itk : thisVtx) {
         zave += (*itk).vz();
         zwave += (*itk).vz() / ((*itk).dzError() * (*itk).dzError());
@@ -284,35 +292,45 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         if (isfinite(betaVM[itk])) {
           pc0ave += pca0VM[itk];
           pc0wave += pca0VM[itk] * betaVM[itk];
+          pc0w2ave += pca0VM[itk] * betaVM[itk] / phiVM[itk];
           pc0wsum += betaVM[itk];
-          edm::LogVerbatim("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
-                                               << " PCA0 / beta " << pca0VM[itk] << " " << betaVM[itk];
+          pc0w2sum += betaVM[itk] / phiVM[itk];
+          LogTrace("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
+                                               << " PCA0 / beta / phi " << pca0VM[itk] << " " << betaVM[itk] << " " << phiVM[itk];
+          meBeta_->Fill(betaVM[itk]);
+          mePhi_->Fill(phiVM[itk]);
+          mePhiVsBeta_->Fill(betaVM[itk],phiVM[itk]);
         }
       }
       zave = zave / thisVtx.size();
       zwave = zwave / wsum;
       pc0ave = pc0ave / thisVtx.size();
       pc0wave = pc0wave / pc0wsum;
+      pc0w2ave = pc0w2ave / pc0w2sum;
       meVtxVsZ_->Fill(zave);
       meVtxVsPC0_->Fill(pc0ave);
       meVtxVsZWeighted_->Fill(zwave);
       meVtxVsPC0Weighted_->Fill(pc0wave);
+      meVtxVsPC0Weighted2_->Fill(pc0w2ave);
       for (const auto& itk : thisVtx) {
         zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
         zwrms += (((*itk).vz() - zave) * ((*itk).vz() - zave)) / ((*itk).dzError() * (*itk).dzError());
         if (isfinite(betaVM[itk])) {
           pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
-          pc0wrms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave) * betaVM[itk];
+          pc0wrms += (pca0VM[itk] - pc0wave) * (pca0VM[itk] - pc0wave) * betaVM[itk];
+          pc0w2rms += (pca0VM[itk] - pc0w2ave) * (pca0VM[itk] - pc0w2ave) * betaVM[itk] / phiVM[itk];
         }
       }
       zrms = std::sqrt(zrms / (thisVtx.size() - 1));
-      zwrms = std::sqrt(zrms / wsum);
+      zwrms = std::sqrt(zrms / (wsum - 1));
       pc0rms = std::sqrt(pc0rms / (thisVtx.size() - 1));
-      pc0wrms = std::sqrt(pc0wrms / pc0wsum);
+      pc0wrms = std::sqrt(pc0wrms / (pc0wsum - 1));
+      pc0w2rms = std::sqrt(pc0w2rms / (pc0w2sum - 1));
       meVtxSpreadVsZ_->Fill(zave, zrms);
       meVtxSpreadVsPC0_->Fill(pc0ave, pc0rms);
       meVtxSpreadVsZWeighted_->Fill(zwave, zwrms);
       meVtxSpreadVsPC0Weighted_->Fill(pc0wave, pc0wrms);
+      meVtxSpreadVsPC0Weighted2_->Fill(pc0w2ave, pc0w2rms);
     }
   }
 }
@@ -333,6 +351,13 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   meVtxVsPC0Weighted_ = ibook.book1D("VtxVsPC0Weighted", "True vtx rec center vs PC0 Weighted", 300, -6., 6.);
   meVtxSpreadVsPC0Weighted_ =
       ibook.bookProfile("VtxSpreadVsPC0Weighted", "True vtx rec spread vs PC0 Weighted", 300, -6., 6., 100, 0., 10.);
+  meVtxVsPC0Weighted2_ =
+      ibook.book1D("VtxVsPC0Weighted2", "True vtx rec center vs PC0 Weighted beta/phi", 300, -6., 6.);
+  meVtxSpreadVsPC0Weighted2_ = ibook.bookProfile(
+      "VtxSpreadVsPC0Weighted2", "True vtx rec spread vs PC0 Weighted beta/phi", 300, -6., 6., 100, 0., 10.);
+  meBeta_ = ibook.book1D("Beta", "True vtx rec beta", 20, 0., 1.);
+  mePhi_ = ibook.book1D("Phi", "True vtx rec phi", 20, 0., 1.);
+  mePhiVsBeta_ = ibook.book2D("PHIVSBETA", "True vtx rec phi vs beta", 20, 0., 1., 20, 0., 1.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
