@@ -73,6 +73,8 @@ private:
   static constexpr double etaMatchCut_ = 0.05;
   static constexpr double cluDRradius_ = 0.05;  // to cluster rechits around extrapolated track
 
+  static constexpr float c_cm_ns = geant_units::operators::convertMmToCm(CLHEP::c_light);  // [mm/ns] -> [cm/ns]
+
   const reco::RecoToSimCollection* r2s_;
 
   edm::EDGetTokenT<reco::TrackCollection> GenRecTrackToken_;
@@ -137,6 +139,7 @@ private:
   MonitorElement* mePC0res_;
   MonitorElement* mePC0resOVphi_;
   MonitorElement* mePC0resOVsigmaz_;
+  MonitorElement* mePC0resOVsigmaglobal_;
 };
 
 // ------------ constructor and destructor --------------
@@ -188,6 +191,8 @@ MtdGNNValidation::MtdGNNValidation(const edm::ParameterSet& iConfig)
   pca0Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA0"));
   pca1Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA1"));
   pca2Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA2"));
+
+  std::cout << "c_cm_ns = " << c_cm_ns << std::endl;
 }
 
 MtdGNNValidation::~MtdGNNValidation() {}
@@ -201,16 +206,16 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   auto GenRecTrackHandle = makeValid(iEvent.getHandle(GenRecTrackToken_));
 
   //const auto& tMtd = iEvent.get(tmtdToken_);
-  //const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
+  const auto& SigmatMtd = iEvent.get(SigmatmtdToken_);
   //const auto& t0Src = iEvent.get(t0SrcToken_);
   //const auto& Sigmat0Src = iEvent.get(Sigmat0SrcToken_);
   //const auto& t0Pid = iEvent.get(t0PidToken_);
   //const auto& Sigmat0Pid = iEvent.get(Sigmat0PidToken_);
   //const auto& t0Safe = iEvent.get(t0SafePidToken_);
   //const auto& Sigmat0Safe = iEvent.get(Sigmat0SafePidToken_);
-  //const auto& SigmaTofPi = iEvent.get(SigmaTofPiToken_);
-  //const auto& SigmaTofK = iEvent.get(SigmaTofKToken_);
-  //const auto& SigmaTofP = iEvent.get(SigmaTofPToken_);
+  const auto& SigmaTofPi = iEvent.get(SigmaTofPiToken_);
+  const auto& SigmaTofK = iEvent.get(SigmaTofKToken_);
+  const auto& SigmaTofP = iEvent.get(SigmaTofPToken_);
   //const auto& mtdQualMVA = iEvent.get(trackMVAQualToken_);
   const auto& trackAssoc = iEvent.get(trackAssocToken_);
   //const auto& pathLength = iEvent.get(pathLengthToken_);
@@ -221,15 +226,15 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   const auto& betaVM = iEvent.get(betaTok_);
   const auto& phiVM = iEvent.get(phiTok_);
-  //const auto& logPiVM = iEvent.get(logitPiTok_);
-  //const auto& logKVM = iEvent.get(logitKTok_);
-  //const auto& logPVM = iEvent.get(logitPTok_);
+  const auto& logPiVM = iEvent.get(logitPiTok_);
+  const auto& logKVM = iEvent.get(logitKTok_);
+  const auto& logPVM = iEvent.get(logitPTok_);
   //const auto& emb0VM = iEvent.get(emb0Tok_);
   //const auto& emb1VM = iEvent.get(emb1Tok_);
   //const auto& emb2VM = iEvent.get(emb2Tok_);
   const auto& pca0VM = iEvent.get(pca0Tok_);
-  const auto& pca1VM = iEvent.get(pca1Tok_);
-  const auto& pca2VM = iEvent.get(pca2Tok_);
+  //const auto& pca1VM = iEvent.get(pca1Tok_);
+  //const auto& pca2VM = iEvent.get(pca2Tok_);
 
   auto tVC = edm::makeValid(iEvent.getHandle(trackingVertexCollectionToken_));
   auto recoToSimH = makeValid(iEvent.getHandle(recoToSimAssociationToken_));
@@ -249,8 +254,8 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       continue;
     }
 
-    const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
-    const reco::Track& track = *mtdTrackref;
+    //const reco::TrackRef mtdTrackref = reco::TrackRef(iEvent.getHandle(RecTrackToken_), trackAssoc[trackref]);
+    //const reco::Track& track = *mtdTrackref;
     // == TrackingParticle based matching
     const reco::TrackBaseRef trkrefb(trackref);
     auto tp_info = getMatchedTP(trkrefb);
@@ -325,6 +330,17 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         zrms += ((*itk).vz() - zave) * ((*itk).vz() - zave);
         zwrms += (((*itk).vz() - zwave) * ((*itk).vz() - zwave)) / ((*itk).dzError() * (*itk).dzError());
         meVtxVsZWeightedZresOVsigmaz_->Fill(((*itk).vz() - zwave) / (*itk).dzError());
+
+        double sigmat = SigmatMtd[itk] * SigmatMtd[itk];
+        if (logPiVM[itk] > logKVM[itk] && logPiVM[itk] > logPVM[itk]) {
+          sigmat += SigmaTofPi[itk] * SigmaTofPi[itk];
+        } else if (logKVM[itk] > logPiVM[itk] && logKVM[itk] > logPVM[itk]) {
+          sigmat += SigmaTofK[itk] * SigmaTofK[itk];
+        } else if (logPVM[itk] > logPiVM[itk] && logPVM[itk] > logKVM[itk]) {
+          sigmat += SigmaTofP[itk] * SigmaTofP[itk];
+        }
+        sigmat = c_cm_ns*std::sqrt(sigmat);
+        double sigmaglobal = ((*itk).dzError()) * sigmat * M_PI;
         if (isfinite(betaVM[itk])) {
           pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
           pc0wrms += (pca0VM[itk] - pc0wave) * (pca0VM[itk] - pc0wave) * betaVM[itk];
@@ -333,6 +349,7 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
           mePC0res_->Fill(pca0VM[itk] - pc0wave);
           mePC0resOVphi_->Fill((pca0VM[itk] - pc0wave) / phiVM[itk]);
           mePC0resOVsigmaz_->Fill((pca0VM[itk] - pc0wave) / (*itk).dzError());
+          mePC0resOVsigmaglobal_->Fill((pca0VM[itk] - pc0wave) / sigmaglobal);
         }
       }
       zrms = std::sqrt(zrms / (thisVtx.size() - 1));
@@ -379,6 +396,8 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   mePC0res_ = ibook.book1D("PC0res", "PC0 residual wrt Weighted1", 200, -10., 10.);
   mePC0resOVphi_ = ibook.book1D("PC0resOVphi", "PC0 residual wrt Weighted1 / phi", 200, -10., 10.);
   mePC0resOVsigmaz_ = ibook.book1D("PC0resOVsigmaz", "PC0 residual wrt Weighted1 / sigmaz", 200, -10., 10.);
+  mePC0resOVsigmaglobal_ =
+      ibook.book1D("PC0resOVsigmaglobal", "PC0 residual wrt Weighted1 / sigmaglobal", 200, -10., 10.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
