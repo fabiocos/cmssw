@@ -140,6 +140,10 @@ private:
   MonitorElement* mePC0resOVphi_;
   MonitorElement* mePC0resOVsigmaz_;
   MonitorElement* mePC0resOVsigmaglobal_;
+
+  MonitorElement* meIntraVtxDeltaZ_;
+  MonitorElement* meIntraVtxDeltaZnorma_;
+  MonitorElement* meIntraVtxDeltaPC0_;
 };
 
 // ------------ constructor and destructor --------------
@@ -191,8 +195,6 @@ MtdGNNValidation::MtdGNNValidation(const edm::ParameterSet& iConfig)
   pca0Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA0"));
   pca1Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA1"));
   pca2Tok_ = consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("gnnPCA2"));
-
-  std::cout << "c_cm_ns = " << c_cm_ns << std::endl;
 }
 
 MtdGNNValidation::~MtdGNNValidation() {}
@@ -259,8 +261,10 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     // == TrackingParticle based matching
     const reco::TrackBaseRef trkrefb(trackref);
     auto tp_info = getMatchedTP(trkrefb);
-    if (tp_info != nullptr) {
+    if (tp_info != nullptr && isfinite(betaVM[trackref])) {
       trkToTV[trackref] = (*tp_info)->parentVertex();
+      //LogTrace("MtdGNNValidation") << "trk " << trackref.key() << " " << (*trackref).vz() << " "
+      //<< (*((*tp_info)->parentVertex())).position().z();
     }  // TP matching
 
   }  // RECO tracks loop
@@ -280,19 +284,44 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       first = true;
       oldIndex = index;
       thisVtx.clear();
+      LogTrace("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
+                                   << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event() << " z "
+                                   << (*v).position().z();
     }
-    LogTrace("MtdGNNValidation") << " SimVertex # " << index << " old " << oldIndex << " is PV " << first << " "
-                                 << (*v).eventId().bunchCrossing() << "." << (*v).eventId().event();
     if (first == true && (*v).eventId().bunchCrossing() == 0) {
       LogTrace("MtdGNNValidation") << " Filling...";
       for (const auto& [key, value] : trkToTV) {
         if (value == TrackingVertexRef(iEvent.getHandle(trackingVertexCollectionToken_), index)) {
           thisVtx.emplace_back(key);
+          LogTrace("MtdGNNValidation") << "trk " << key.key() << " z/dz " << (*key).vz() << " " << (*key).dzError()
+                                       << " PC0 " << pca0VM[key];
         }
       }
       double trueZ = (*v).position().z();
 
       // vertex analysis
+
+      size_t ii, jj;
+      double dist(0.);
+      for (ii = 0; ii < thisVtx.size(); ii++) {
+        for (jj = ii + 1; jj < thisVtx.size(); jj++) {
+          dist = std::abs((*thisVtx[ii]).vz() - (*thisVtx[jj]).vz());
+          meIntraVtxDeltaZ_->Fill(dist);
+          if (dist > 10.) {
+            LogTrace("MtdGNNValidation") << "dist  z " << dist << " " << (*thisVtx[ii]).vz() << " "
+                                         << (*thisVtx[jj]).vz();
+          }
+          dist = dist / std::sqrt((*thisVtx[ii]).dzError() * (*thisVtx[ii]).dzError() +
+                                  (*thisVtx[jj]).dzError() * (*thisVtx[jj]).dzError());
+          meIntraVtxDeltaZnorma_->Fill(dist);
+          dist = std::abs(pca0VM[thisVtx[ii]] - pca0VM[thisVtx[jj]]);
+          meIntraVtxDeltaPC0_->Fill(dist);
+          if (dist > 10.) {
+            LogTrace("MtdGNNValidation") << "dist PC0 " << dist << " " << pca0VM[thisVtx[ii]] << " "
+                                         << pca0VM[thisVtx[jj]];
+          }
+        }
+      }
 
       float zave(0.), zrms(0.), zwave(0.), zwrms(0.), wsum(0.);
       float pc0ave(0.), pc0rms(0.), pc0wave(0.), pc0wrms(0), pc0wsum(0);
@@ -307,9 +336,9 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
           pc0w2ave += pca0VM[itk] * betaVM[itk] / phiVM[itk];
           pc0wsum += betaVM[itk];
           pc0w2sum += betaVM[itk] / phiVM[itk];
-          LogTrace("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
-                                       << " PCA0 / beta / phi " << pca0VM[itk] << " " << betaVM[itk] << " "
-                                       << phiVM[itk];
+          //LogTrace("MtdGNNValidation") << "Trk z / dz " << (*itk).vz() << " " << (*itk).dzError()
+          //<< " PCA0 / beta / phi " << pca0VM[itk] << " " << betaVM[itk] << " "
+          //<< phiVM[itk];
           meBeta_->Fill(betaVM[itk]);
           mePhi_->Fill(phiVM[itk]);
           mePhiVsBeta_->Fill(betaVM[itk], phiVM[itk]);
@@ -339,7 +368,7 @@ void MtdGNNValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& 
         } else if (logPVM[itk] > logPiVM[itk] && logPVM[itk] > logKVM[itk]) {
           sigmat += SigmaTofP[itk] * SigmaTofP[itk];
         }
-        sigmat = c_cm_ns*std::sqrt(sigmat);
+        sigmat = c_cm_ns * std::sqrt(sigmat);
         double sigmaglobal = ((*itk).dzError()) * sigmat * M_PI;
         if (isfinite(betaVM[itk])) {
           pc0rms += (pca0VM[itk] - pc0ave) * (pca0VM[itk] - pc0ave);
@@ -398,6 +427,11 @@ void MtdGNNValidation::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   mePC0resOVsigmaz_ = ibook.book1D("PC0resOVsigmaz", "PC0 residual wrt Weighted1 / sigmaz", 200, -10., 10.);
   mePC0resOVsigmaglobal_ =
       ibook.book1D("PC0resOVsigmaglobal", "PC0 residual wrt Weighted1 / sigmaglobal", 200, -10., 10.);
+
+  meIntraVtxDeltaZ_ = ibook.book1D("IntraVtxDeltaZ", "z Distance between tracks in vtx", 100, 0., 10.);
+  meIntraVtxDeltaZnorma_ =
+      ibook.book1D("IntraVtxDeltaZnorma", "z Distance between tracks in vtx, normalized to sigmas", 100, 0., 10.);
+  meIntraVtxDeltaPC0_ = ibook.book1D("IntraVtxDeltaPC0", "PC0 Distance between tracks in vtx", 100, 0., 10.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
