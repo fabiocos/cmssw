@@ -21,8 +21,12 @@
   <use name="alpaka"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda" for="alpaka/cuda"/>
+  <use name="DataFormats/BeamSpot"/>
+  <use name="DataFormats/Common"/>
   <use name="DataFormats/Portable"/>
   <use name="DataFormats/SoATemplate"/>
+  <use name="DataFormats/TrackReco"/>
+  <use name="FWCore/Framework"/>
   <use name="FWCore/MessageLogger"/>
   <use name="FWCore/ParameterSet"/>
   <use name="FWCore/Utilities"/>
@@ -30,6 +34,8 @@
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="PhysicsTools/PyTorchAlpaka"/>
   <use name="RecoVertex/PrimaryVertexProducer"/>
+  <use name="TrackingTools/Records"/>
+  <use name="TrackingTools/TransientTrack"/>
   <flags ALPAKA_BACKENDS="1"/>
   <flags EDM_PLUGIN="1"/>
 </library>
