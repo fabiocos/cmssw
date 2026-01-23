@@ -1,0 +1,8 @@
+<use name="catch2"/>
+<use name="FWCore/Utilities"/>
+<use name="PhysicsTools/ONNXRuntime"/>
+<use name="PhysicsTools/PyTorch"/>
+
+<bin file="testGNNBackends.cc" name="testGNNBackends">
+  <flags CATCH2_MAIN="1"/>
+</bin>
