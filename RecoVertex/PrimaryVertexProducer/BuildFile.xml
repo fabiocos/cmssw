@@ -1,5 +1,7 @@
 <use name="ofast-flag"/>
 <use name="DataFormats/BeamSpot"/>
+<use name="DataFormats/Portable"/>
+<use name="DataFormats/SoATemplate"/>
 <use name="DataFormats/VertexReco"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
