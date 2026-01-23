@@ -89,6 +89,20 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, cons
         conf.getParameter<edm::ParameterSet>("TkClusParameters").getParameter<edm::ParameterSet>("TkDAClusParameters"),
         onnxRuntime);
     useTransientTrackTime_ = true;
+  } else if (clusteringAlgorithm == "GNN2D_alpaka") {
+    // Alpaka backend: consume pre-computed SoA from upstream Alpaka producers
+    // Inference happens in GNNVertexProducerAlpaka, we only build vertices here
+    useAlpakaGNN_ = true;
+    useTransientTrackTime_ = true;
+    theTrackClusterizer = nullptr;  // Not used for Alpaka path
+    
+    const auto& clusParams = conf.getParameter<edm::ParameterSet>("TkClusParameters")
+                                .getParameter<edm::ParameterSet>("TkDAClusParameters");
+    slotPredictionsToken_ = consumes<vertexgnn::SlotPredictionsHostCollection>(
+        clusParams.getParameter<edm::InputTag>("slotPredictions"));
+    assignmentsToken_ = consumes<vertexgnn::AssignmentHostCollection>(
+        clusParams.getParameter<edm::InputTag>("assignments"));
+    alpakaClusterizer_ = std::make_unique<vertexgnn::GNNClusterizerFromAlpaka>(clusParams);
   } else {
     throw VertexException("PrimaryVertexProducer: unknown clustering algorithm: " + clusteringAlgorithm);
   }
@@ -405,8 +419,116 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 #endif
 
   // clusterize tracks in Z
-  std::vector<TransientVertex>&& clusters = theTrackClusterizer->vertices(seltks);
+  std::vector<TransientVertex> clusters;
+  
+  // Variables for ValueMap production (used by both paths)
+  std::vector<float> gnn_A_flat;  // N*K assignment probs
+  std::vector<float> gnn_pi_0, gnn_pi_1, gnn_pi_2, gnn_pi_3;  // K PID weights
+  int gnn_N = 0, gnn_K = 0;
+  bool hasGNNOutputs = false;
+  
+  if (useAlpakaGNN_) {
+    // Alpaka path: consume pre-computed SoA from upstream GNNVertexProducerAlpaka
+    const auto& slotPredictions = iEvent.get(slotPredictionsToken_);
+    const auto& assignments = iEvent.get(assignmentsToken_);
+    
+    gnn_N = seltks.size();
+    gnn_K = slotPredictions.const_view().metadata().size();
+    
+    auto slotView = slotPredictions.const_view();
+    auto assignView = assignments.const_view();
+    
+    // Extract data from SoA to arrays for clusterizer
+    gnn_A_flat.resize(gnn_N * gnn_K);
+    std::vector<float> z_hat(gnn_K), t_hat(gnn_K), p(gnn_K);
+    gnn_pi_0.resize(gnn_K); gnn_pi_1.resize(gnn_K); gnn_pi_2.resize(gnn_K); gnn_pi_3.resize(gnn_K);
+    
+    for (int k = 0; k < gnn_K; ++k) {
+      z_hat[k] = slotView[k].z_hat();
+      t_hat[k] = slotView[k].t_hat();
+      p[k] = slotView[k].p();
+      gnn_pi_0[k] = slotView[k].pi_0();
+      gnn_pi_1[k] = slotView[k].pi_1();
+      gnn_pi_2[k] = slotView[k].pi_2();
+      gnn_pi_3[k] = slotView[k].pi_3();
+    }
+    
+    for (int i = 0; i < gnn_N; ++i) {
+      for (int k = 0; k < gnn_K; ++k) {
+        gnn_A_flat[i * gnn_K + k] = assignView[i * gnn_K + k].prob();
+      }
+    }
+    
+    // Build vertices using Alpaka clusterizer
+    clusters = alpakaClusterizer_->vertices(
+        seltks, gnn_A_flat.data(), z_hat.data(), t_hat.data(), p.data(),
+        gnn_pi_0.data(), gnn_pi_1.data(), gnn_pi_2.data(), gnn_pi_3.data(), gnn_N, gnn_K);
+    
+    hasGNNOutputs = true;
+        
+    if (fVerbose) {
+      edm::LogInfo("PrimaryVertexProducer") << "Alpaka GNN: built " << clusters.size() << " vertices from SoA";
+    }
+  } else {
+    // ONNX path: use theTrackClusterizer (GNNClusterizer or DA)
+    clusters = theTrackClusterizer->vertices(seltks);
+  }
+  
   // per-track GNN outputs as ValueMaps for the full input TrackCollection
+  // Alpaka path: produce ValueMaps from the SoA data we extracted
+  if (hasGNNOutputs && useAlpakaGNN_) {
+    const auto& trkHandle = iEvent.getHandle(trkToken);
+    const size_t Nall = trkHandle->size();
+    const float NaN = std::numeric_limits<float>::quiet_NaN();
+    
+    std::vector<float> vmSlotAssign(Nall, NaN);
+    std::vector<float> vmMaxProb(Nall, NaN);
+    std::vector<float> vmPi0(Nall, NaN), vmPi1(Nall, NaN), vmPi2(Nall, NaN);
+    
+    for (size_t i = 0; i < seltks.size() && static_cast<int>(i) < gnn_N; ++i) {
+      const auto& tt = seltks[i];
+      reco::TrackRef tref = tt.trackBaseRef().castTo<reco::TrackRef>();
+      if (tref.isNull()) continue;
+      const size_t idx = tref.key();
+      if (idx >= Nall) continue;
+      
+      // Find best slot assignment and max probability
+      if (gnn_K > 0) {
+        float maxProb = -1.0f;
+        int bestSlot = -1;
+        for (int k = 0; k < gnn_K; ++k) {
+          float prob = gnn_A_flat[i * gnn_K + k];
+          if (prob > maxProb) {
+            maxProb = prob;
+            bestSlot = k;
+          }
+        }
+        vmSlotAssign[idx] = static_cast<float>(bestSlot);
+        vmMaxProb[idx] = maxProb;
+        
+        // PID weights - average over slots (simplified)
+        vmPi0[idx] = gnn_pi_0[bestSlot];
+        vmPi1[idx] = gnn_pi_1[bestSlot];
+        vmPi2[idx] = gnn_pi_2[bestSlot];
+      }
+    }
+    
+    auto putVM = [&](const std::vector<float>& vals, const std::string& label) {
+      auto out = std::make_unique<edm::ValueMap<float>>();
+      edm::ValueMap<float>::Filler filler(*out);
+      filler.insert(trkHandle, vals.begin(), vals.end());
+      filler.fill();
+      iEvent.put(std::move(out), label);
+    };
+    
+    putVM(vmSlotAssign, "gnnSlotAssignment");
+    putVM(vmMaxProb, "gnnMaxProb");
+    putVM(vmPi0, "gnnPiWeight0");
+    putVM(vmPi1, "gnnPiWeight1");
+    putVM(vmPi2, "gnnPiWeight2");
+  }
+  
+  // ONNX path ValueMaps
   if (auto gnn = dynamic_cast<GNNClusterizer*>(theTrackClusterizer)) {
     if (gnn->hasLastOutputs()) {
       const auto& trkHandle = iEvent.getHandle(trkToken);
@@ -703,6 +825,14 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
       edm::ParameterSetDescription psd4;
       GNNClusterizer::fillPSetDescription(psd4);
 
+      // Alpaka GNN backend - consumes SoA from upstream Alpaka producers
+      edm::ParameterSetDescription psd5;
+      vertexgnn::GNNClusterizerFromAlpaka::fillPSetDescription(psd5);
+      psd5.add<edm::InputTag>("slotPredictions", edm::InputTag("gnnVertexProducer"))
+          ->setComment("Input tag for SlotPredictionsHostCollection from GNNVertexProducerAlpaka");
+      psd5.add<edm::InputTag>("assignments", edm::InputTag("gnnVertexProducer"))
+          ->setComment("Input tag for AssignmentHostCollection from GNNVertexProducerAlpaka");
+
       psd0.ifValue(
           edm::ParameterDescription<std::string>("algorithm", "DA_vect", true),
           "DA_vect" >> edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd1, true) or
@@ -710,6 +840,8 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
                   edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd2, true) or
               "GNN2D_vect" >>
                   edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd4, true) or
+              "GNN2D_alpaka" >>
+                  edm::ParameterDescription<edm::ParameterSetDescription>("TkDAClusParameters", psd5, true) or
               "gap" >> edm::ParameterDescription<edm::ParameterSetDescription>("TkGapClusParameters", psd3, true));
     }
     desc.add<edm::ParameterSetDescription>("TkClusParameters", psd0);

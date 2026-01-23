@@ -1,0 +1,16 @@
+<lcgdict>
+  <!-- Track Features: Input to GNN -->
+  <class name="vertexgnn::TrackFeaturesLayout<128,false>"/>
+  <class name="PortableHostCollection<vertexgnn::TrackFeaturesLayout<128,false> >"/>
+  <class name="edm::Wrapper<PortableHostCollection<vertexgnn::TrackFeaturesLayout<128,false> > >" splitLevel="0"/>
+
+  <!-- Slot Predictions: Output from GNN -->
+  <class name="vertexgnn::SlotPredictionsLayout<128,false>"/>
+  <class name="PortableHostCollection<vertexgnn::SlotPredictionsLayout<128,false> >"/>
+  <class name="edm::Wrapper<PortableHostCollection<vertexgnn::SlotPredictionsLayout<128,false> > >" splitLevel="0"/>
+
+  <!-- Assignment: Output from GNN -->
+  <class name="vertexgnn::AssignmentLayout<128,false>"/>
+  <class name="PortableHostCollection<vertexgnn::AssignmentLayout<128,false> >"/>
+  <class name="edm::Wrapper<PortableHostCollection<vertexgnn::AssignmentLayout<128,false> > >" splitLevel="0"/>
+</lcgdict>

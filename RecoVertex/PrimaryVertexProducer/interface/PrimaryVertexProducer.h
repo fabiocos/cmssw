@@ -36,6 +36,8 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZT_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GNNClusterizer.h"
+#include "RecoVertex/PrimaryVertexProducer/interface/GNNClusterizerFromAlpaka.h"
+#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/HITrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GapClusterizerInZ.h"
@@ -128,4 +130,10 @@ private:
   edm::ValueMap<float> trackMTDTimeQualities_;
   edm::ValueMap<float> trackTimes_;
   double minTrackTimeQuality_;
+  
+  // Alpaka GNN backend support
+  bool useAlpakaGNN_ = false;
+  std::unique_ptr<vertexgnn::GNNClusterizerFromAlpaka> alpakaClusterizer_;
+  edm::EDGetTokenT<vertexgnn::SlotPredictionsHostCollection> slotPredictionsToken_;
+  edm::EDGetTokenT<vertexgnn::AssignmentHostCollection> assignmentsToken_;
 };
