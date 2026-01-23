@@ -1,7 +1,14 @@
 
-
 #ifndef GNNClusterizer_h
 #define GNNClusterizer_h
+
+/**
+ * GNNClusterizer - End-to-end Vertex Slot Model based track clustering
+ * 
+ * This implementation uses a VertexSlotModel ONNX export that directly outputs
+ * track-to-vertex assignments and vertex positions, eliminating the need for
+ * external clustering algorithms.
+ */
 
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackClusterizerInZ.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -18,6 +25,7 @@
 #include <vector>
 
 using namespace cms::Ort;
+
 class GNNClusterizer final : public TrackClusterizerInZ {
 public:
   GNNClusterizer(const edm::ParameterSet& conf, const ONNXRuntime* onnxRuntime);
@@ -30,50 +38,37 @@ public:
   static std::unique_ptr<ONNXRuntime> initializeGlobalCache(const edm::ParameterSet& conf);
   static void globalEndJob(const ONNXRuntime* cache);
 
-  // cached outputs from last vertices(...) call
-  const std::vector<float>& lastBeta() const { return last_beta_; }              // size N
-  const std::vector<float>& lastPhi() const { return last_phi_; }                // size N
-  const std::vector<float>& lastPidLogits() const { return last_pid_logits_; }   // flattened N*3
-  const std::vector<float>& lastEmbeddings() const { return last_embeddings_; }  // flattened N*D
-  const std::vector<float>& lastPCA() const { return last_pca_flat_; }           // flattened N*3
-  int lastEmbeddingDim() const { return last_embedding_dim_; }
+  // Cached outputs from last vertices() call - VertexSlotModel outputs
+  const std::vector<float>& lastAssignments() const { return last_assignments_; }  // N*K
+  const std::vector<float>& lastZHat() const { return last_z_hat_; }               // K
+  const std::vector<float>& lastTHat() const { return last_t_hat_; }               // K
+  const std::vector<float>& lastP() const { return last_p_; }                      // K (existence prob)
+  const std::vector<float>& lastPi() const { return last_pi_; }                    // N*3 (PID weights)
+  int lastNumSlots() const { return last_num_slots_; }
   int lastTrackCount() const { return last_n_tracks_; }
   bool hasLastOutputs() const { return last_valid_; }
 
 private:
   const ONNXRuntime* onnxRuntime_;
   std::string nnVersion_;
-  double nnWorkingPoint_;
-  std::string AlgoVersion_;
   bool verbose_;
-  double zSep;
   double d0CutOff_;
-  double t_beta_;
-  double t_d_;
-  double eps_;
-  int min_cluster_size_;
-  std::vector<int> pca_dim_num_;
-  std::vector<double> t_d_per_dim_;
-  double min_score_thresh_;
   double vertexSize_;
-  mutable std::vector<float> last_beta_;        // N
-  mutable std::vector<float> last_phi_;         // N
-  mutable std::vector<float> last_pid_logits_;  // N*3
-  mutable std::vector<float> last_embeddings_;  // N*D
-  mutable std::vector<float> last_pca_flat_;    // N*3
-  mutable int last_embedding_dim_ = 0;
+  
+  // VertexSlotModel-specific parameters
+  double existenceThreshold_;
+  double trackAssignmentThreshold_;  // Minimum track assignment probability
+  int numSlots_;
+
+  // Cached outputs from last inference
+  mutable std::vector<float> last_assignments_;  // N*K
+  mutable std::vector<float> last_z_hat_;        // K
+  mutable std::vector<float> last_t_hat_;        // K
+  mutable std::vector<float> last_p_;            // K
+  mutable std::vector<float> last_pi_;           // N*3
+  mutable int last_num_slots_ = 0;
   mutable int last_n_tracks_ = 0;
   mutable bool last_valid_ = false;
-};
-
-class UnionFind {
-public:
-  UnionFind(int n);
-  int find(int x);
-  void unite(int x, int y);
-
-private:
-  std::vector<int> parent;
 };
 
 #endif

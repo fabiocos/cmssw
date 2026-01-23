@@ -62,12 +62,24 @@ offlinePrimaryVertices4DwithPIDWithBS = offlinePrimaryVertices4DwithPID.clone(
 unsortedOfflinePrimaryVerticesGNN = unsortedOfflinePrimaryVertices4D.clone(
     TkClusParameters = cms.PSet(algorithm = cms.string("GNN2D_vect"),
         TkDAClusParameters = cms.PSet(
-            nnWorkingPoint = cms.double(0.0),
+            # VertexSlotModel parameters
+            existenceThreshold = cms.double(0.5),
+            trackAssignmentThreshold = cms.double(0.0),
+            numSlots = cms.int32(200),
+            nnVersion = cms.string("vertex_slot_v8p9"),
+            onnxBackend = cms.string("CPU"),  # or "CUDA" for GPU
+            onnxModelPath = cms.FileInPath('RecoVertex/PrimaryVertexProducer/data/vertex_slot_model.onnx'),
+            # Inherited parameters
+            Tmin = cms.double(4.0),
+            Tpurge = cms.double(4.0),
+            Tstop = cms.double(2.0),
+            vertexSize = cms.double(0.01),
+            d0CutOff = cms.double(3.0),
+            verbose = cms.untracked.bool(False),
         )
     ),
     TrackTimesLabel = "tofPID4DnoPID:t0safe",
     TrackTimeResosLabel = "tofPID4DnoPID:sigmat0safe",
-    onnxModelPath = cms.FileInPath('RecoVertex/PrimaryVertexProducer/data/model_v2_5_test.onnx'),
 )
 trackWithVertexRefSelectorBeforeSortingGNN = trackWithVertexRefSelector.clone(
     vertexTag = "unsortedOfflinePrimaryVerticesGNN",

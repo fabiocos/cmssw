@@ -43,6 +43,11 @@ public:
       }  // else: no fit ==> v.isValid()=False
 
       if (v.isValid()) {
+        // Preserve weight map from input cluster (e.g., GNN assignment probabilities)
+        // instead of using fitter's geometric weights
+        if (cluster.hasTrackWeight()) {
+          v.weightMap(cluster.weightMap());
+        }
         pvs.push_back(v);
       }
     }

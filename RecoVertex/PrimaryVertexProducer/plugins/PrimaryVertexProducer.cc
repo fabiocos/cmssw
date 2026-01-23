@@ -116,17 +116,12 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, cons
     npixBarrelToken = consumes<edm::ValueMap<int>>(conf.getParameter<edm::InputTag>("npixBarrelSrc"));
     npixEndcapToken = consumes<edm::ValueMap<int>>(conf.getParameter<edm::InputTag>("npixEndcapSrc"));
   }
-  produces<edm::ValueMap<float>>("gnnBeta");
-  produces<edm::ValueMap<float>>("gnnPhi");
-  produces<edm::ValueMap<float>>("gnnPidLogitPi");
-  produces<edm::ValueMap<float>>("gnnPidLogitK");
-  produces<edm::ValueMap<float>>("gnnPidLogitP");
-  produces<edm::ValueMap<float>>("gnnEmb0");
-  produces<edm::ValueMap<float>>("gnnEmb1");
-  produces<edm::ValueMap<float>>("gnnEmb2");
-  produces<edm::ValueMap<float>>("gnnPCA0");
-  produces<edm::ValueMap<float>>("gnnPCA1");
-  produces<edm::ValueMap<float>>("gnnPCA2");
+  // VertexSlotModel outputs
+  produces<edm::ValueMap<float>>("gnnSlotAssignment");
+  produces<edm::ValueMap<float>>("gnnMaxProb");
+  produces<edm::ValueMap<float>>("gnnPiWeight0");
+  produces<edm::ValueMap<float>>("gnnPiWeight1");
+  produces<edm::ValueMap<float>>("gnnPiWeight2");
 
   // select and configure the vertex fitters
   std::vector<edm::ParameterSet> vertexCollections =
@@ -221,6 +216,17 @@ PrimaryVertexProducer::~PrimaryVertexProducer() {
   }
 }
 std::unique_ptr<ONNXRuntime> PrimaryVertexProducer::initializeGlobalCache(const edm::ParameterSet& conf) {
+  // Only initialize ONNX runtime for GNN clustering algorithm
+  const auto& clusParams = conf.getParameter<edm::ParameterSet>("TkClusParameters");
+  std::string algorithm = clusParams.getParameter<std::string>("algorithm");
+  
+  if (algorithm == "GNN2D_vect") {
+    // Delegate to GNNClusterizer for GPU backend support
+    return GNNClusterizer::initializeGlobalCache(
+        clusParams.getParameter<edm::ParameterSet>("TkDAClusParameters"));
+  }
+  
+  // For non-GNN algorithms, use default
   return std::make_unique<ONNXRuntime>(conf.getParameter<edm::FileInPath>("onnxModelPath").fullPath());
 }
 void PrimaryVertexProducer::globalEndJob(const ONNXRuntime* cache) {}
@@ -406,26 +412,18 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
       const auto& trkHandle = iEvent.getHandle(trkToken);
       const size_t Nall = trkHandle->size();
 
-      const auto& beta = gnn->lastBeta();
-      const auto& phi = gnn->lastPhi();
-      const auto& logits = gnn->lastPidLogits();
-      const auto& emb = gnn->lastEmbeddings();
-      const auto& pca = gnn->lastPCA();
+      // VertexSlotModel outputs
+      const auto& A = gnn->lastAssignments();  // N*K
+      const auto& pi = gnn->lastPi();          // N*3
       const int Nsel = gnn->lastTrackCount();
-      const int D = gnn->lastEmbeddingDim();
-
-      assert(static_cast<size_t>(Nsel) == beta.size());
-      assert(static_cast<size_t>(Nsel) == phi.size());
-      assert(3 * static_cast<size_t>(Nsel) == logits.size());
-      assert(3 * static_cast<size_t>(Nsel) == pca.size());
+      const int K = gnn->lastNumSlots();
 
       const float NaN = std::numeric_limits<float>::quiet_NaN();
 
-      // fill with NaN, then backfill for selected tracks
-      std::vector<float> vmBeta(Nall, NaN), vmPhi(Nall, NaN);
-      std::vector<float> vmL0(Nall, NaN), vmL1(Nall, NaN), vmL2(Nall, NaN);
-      std::vector<float> vmEmb0(Nall, NaN), vmEmb1(Nall, NaN), vmEmb2(Nall, NaN);
-      std::vector<float> vmPCA0(Nall, NaN), vmPCA1(Nall, NaN), vmPCA2(Nall, NaN);
+      // Initialize with NaN, then backfill for selected tracks
+      std::vector<float> vmSlotAssign(Nall, NaN);
+      std::vector<float> vmMaxProb(Nall, NaN);
+      std::vector<float> vmPi0(Nall, NaN), vmPi1(Nall, NaN), vmPi2(Nall, NaN);
 
       for (size_t i = 0; i < seltks.size(); ++i) {
         if (static_cast<int>(i) >= Nsel)
@@ -441,25 +439,27 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
           edm::LogError("PrimaryVertexProducer") << "seltks trk # " << idx << " outside track collection range";
           continue;
         }
-        if (i < beta.size())
-          vmBeta[idx] = beta[i];
-        if (i < phi.size())
-          vmPhi[idx] = phi[i];
-        if (3 * i + 2 < logits.size()) {
-          vmL0[idx] = logits[3 * i + 0];
-          vmL1[idx] = logits[3 * i + 1];
-          vmL2[idx] = logits[3 * i + 2];
+
+        // Find best slot assignment and max probability for this track
+        if (K > 0 && i * K + K - 1 < A.size()) {
+          float maxProb = -1.0f;
+          int bestSlot = -1;
+          for (int k = 0; k < K; ++k) {
+            float prob = A[i * K + k];
+            if (prob > maxProb) {
+              maxProb = prob;
+              bestSlot = k;
+            }
+          }
+          vmSlotAssign[idx] = static_cast<float>(bestSlot);
+          vmMaxProb[idx] = maxProb;
         }
-        if (D >= 1 && i * D + 0 < emb.size())
-          vmEmb0[idx] = emb[i * D + 0];
-        if (D >= 2 && i * D + 1 < emb.size())
-          vmEmb1[idx] = emb[i * D + 1];
-        if (D >= 3 && i * D + 2 < emb.size())
-          vmEmb2[idx] = emb[i * D + 2];
-        if (3 * i + 2 < pca.size()) {
-          vmPCA0[idx] = pca[3 * i + 0];
-          vmPCA1[idx] = pca[3 * i + 1];
-          vmPCA2[idx] = pca[3 * i + 2];
+
+        // PID weights (already softmax normalized in GNNClusterizer)
+        if (3 * i + 2 < pi.size()) {
+          vmPi0[idx] = pi[3 * i + 0];
+          vmPi1[idx] = pi[3 * i + 1];
+          vmPi2[idx] = pi[3 * i + 2];
         }
       }
 
@@ -473,6 +473,7 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
       edm::LogInfo("PrimaryVertexProducer") << "###RSS after clusterizer (kB) " << getValue();
 #endif
 
+      // Put float ValueMaps
       auto putVM = [&](const std::vector<float>& vals, const std::string& label) {
         auto out = std::make_unique<edm::ValueMap<float>>();
         edm::ValueMap<float>::Filler filler(*out);
@@ -481,17 +482,11 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
         iEvent.put(std::move(out), label);
       };
 
-      putVM(vmBeta, "gnnBeta");
-      putVM(vmPhi, "gnnPhi");
-      putVM(vmL0, "gnnPidLogitPi");
-      putVM(vmL1, "gnnPidLogitK");
-      putVM(vmL2, "gnnPidLogitP");
-      putVM(vmEmb0, "gnnEmb0");
-      putVM(vmEmb1, "gnnEmb1");
-      putVM(vmEmb2, "gnnEmb2");
-      putVM(vmPCA0, "gnnPCA0");
-      putVM(vmPCA1, "gnnPCA1");
-      putVM(vmPCA2, "gnnPCA2");
+      putVM(vmSlotAssign, "gnnSlotAssignment");
+      putVM(vmMaxProb, "gnnMaxProb");
+      putVM(vmPi0, "gnnPiWeight0");
+      putVM(vmPi1, "gnnPiWeight1");
+      putVM(vmPi2, "gnnPiWeight2");
     }
   }
   if (fVerbose) {
@@ -724,8 +719,8 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
   desc.add<edm::InputTag>("recoveryVtxCollection", {""});
   desc.add<bool>("useMVACut", false);
   desc.add<double>("minTrackTimeQuality", 0.8);
-  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoVertex/PrimaryVertexProducer/data/gravnet_da.onnx"))
-      ->setComment("Path to GNN (as ONNX model)");
+  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoVertex/PrimaryVertexProducer/data/vertex_slot_model.onnx"))
+      ->setComment("Path to VertexSlotModel ONNX export");
   descriptions.addWithDefaultLabel(desc);
 }
 
