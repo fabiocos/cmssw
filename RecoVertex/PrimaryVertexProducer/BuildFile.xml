@@ -5,6 +5,7 @@
 <use name="DataFormats/Portable"/>
 <use name="DataFormats/SoATemplate"/>
 <use name="DataFormats/VertexReco"/>
+<use name="eigen"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/ParameterSet"/>

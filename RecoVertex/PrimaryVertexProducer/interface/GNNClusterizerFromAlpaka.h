@@ -6,8 +6,9 @@
  *
  * This clusterizer does NOT run inference - it CONSUMES the already-computed
  * outputs from GNNVertexProducerAlpaka:
- *   - SlotPredictionsDeviceCollection: z_hat, t_hat, p, pi per slot
- *   - AssignmentDeviceCollection: A[N,K] track-to-slot probabilities
+ *   - Slot predictions: z_hat, t_hat, p per slot [K]
+ *   - PID weights: pi_0, pi_1, pi_2 per track [N]
+ *   - Assignment probabilities: A[N,K] track-to-slot
  *
  * Pipeline:
  *   GNNVertexProducerAlpaka (runs PyTorchAlpaka inference)
@@ -39,7 +40,7 @@ namespace vertexgnn {
      * @param z_hat            Predicted z positions [K]
      * @param t_hat            Predicted t positions [K]
      * @param p                Slot existence probabilities [K]
-     * @param pi_0..pi_3       PID weights per slot [K]
+     * @param pi_0..pi_2       PID weights per track [N] (pion, kaon, proton)
      * @param N                Number of tracks
      * @param K                Number of slots
      */
@@ -52,7 +53,6 @@ namespace vertexgnn {
         const float* pi_0,
         const float* pi_1,
         const float* pi_2,
-        const float* pi_3,
         int N,
         int K
     ) const;

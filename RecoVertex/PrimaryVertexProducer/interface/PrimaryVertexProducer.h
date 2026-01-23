@@ -134,6 +134,5 @@ private:
   // Alpaka GNN backend support
   bool useAlpakaGNN_ = false;
   std::unique_ptr<vertexgnn::GNNClusterizerFromAlpaka> alpakaClusterizer_;
-  edm::EDGetTokenT<vertexgnn::SlotPredictionsHostCollection> slotPredictionsToken_;
-  edm::EDGetTokenT<vertexgnn::AssignmentHostCollection> assignmentsToken_;
+  edm::EDGetTokenT<vertexgnn::GNNOutputHostCollection> gnnOutputToken_;
 };

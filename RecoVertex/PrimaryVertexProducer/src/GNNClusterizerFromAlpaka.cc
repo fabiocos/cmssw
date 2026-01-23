@@ -28,7 +28,6 @@ namespace vertexgnn {
       const float* pi_0,
       const float* pi_1,
       const float* pi_2,
-      const float* pi_3,
       int N,
       int K) const {
     
@@ -95,7 +94,9 @@ namespace vertexgnn {
       std::vector<float> cluster_weights;
       
       for (int i = 0; i < N; ++i) {
-        if (track_to_slot[i] == k && track_max_prob[i] > trackAssignmentThreshold_) {
+        // Match ONNX GNNClusterizer logic: include track if assigned to this slot
+        // (threshold already applied at slot level via existenceThreshold_)
+        if (track_to_slot[i] == k) {
           cluster_tracks.push_back(tracks[i]);
           cluster_weights.push_back(track_max_prob[i]);
         }

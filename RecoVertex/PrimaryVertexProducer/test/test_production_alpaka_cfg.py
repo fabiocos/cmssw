@@ -66,6 +66,7 @@ process.tofPID4DnoPID = tofPID4DnoPID.clone()
 # =============================================================================
 # STEP 1: TrackFeatureProducer (Standard EDProducer)
 # Consumes generalTracks + MTD timing → TrackFeaturesHostCollection
+# IMPORTANT: Uses same TkFilterParameters as PrimaryVertexProducer for track alignment
 # =============================================================================
 process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
     tracks = cms.InputTag("generalTracks"),
@@ -91,7 +92,21 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
     npixEndcapSrc = cms.InputTag("trackExtenderWithMTD", "npixEndcap"),
     minTrackTimeQuality = cms.double(0.8),
     useMVACut = cms.bool(False),
-    verbose = cms.untracked.bool(True)
+    useTrackFilter = cms.bool(True),  # Apply same track filter as PrimaryVertexProducer
+    verbose = cms.untracked.bool(True),
+    # Same TkFilterParameters as PrimaryVertexProducer
+    TkFilterParameters = cms.PSet(
+        algorithm = cms.string('filter'),
+        maxNormalizedChi2 = cms.double(10.0),
+        minPixelLayersWithHits = cms.int32(2),
+        minSiliconLayersWithHits = cms.int32(5),
+        maxD0Significance = cms.double(4.0),
+        maxD0Error = cms.double(1.0),
+        maxDzError = cms.double(1.0),
+        minPt = cms.double(0.9),
+        maxEta = cms.double(2.4),
+        trackQuality = cms.string('any')
+    )
 )
 
 # =============================================================================
@@ -103,7 +118,6 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
 process.gnnVertexProducer = cms.EDProducer("alpaka_serial_sync::vertexgnn::GNNVertexProducerAlpaka",
     model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/data/dummy_vertex_slot.pt"),
     trackFeatures = cms.InputTag("trackFeatureProducer"),
-    numSlots = cms.int32(200),
     verbose = cms.untracked.bool(True),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string("")
@@ -112,13 +126,11 @@ process.gnnVertexProducer = cms.EDProducer("alpaka_serial_sync::vertexgnn::GNNVe
 
 # =============================================================================
 # STEP 3: GNNVertexBuilderFromAlpaka (Standard EDProducer)
-# Consumes SlotPredictions + Assignments → reco::VertexCollection
+# Consumes unified GNNOutputHostCollection → reco::VertexCollection
 # =============================================================================
 process.gnnVertexBuilderAlpaka = cms.EDProducer("GNNVertexBuilderFromAlpaka",
     tracks = cms.InputTag("generalTracks"),
-    slotPredictions = cms.InputTag("gnnVertexProducer"),
-    assignments = cms.InputTag("gnnVertexProducer"),
-    numSlots = cms.int32(200),
+    gnnOutput = cms.InputTag("gnnVertexProducer"),
     existenceThreshold = cms.double(0.5),
     trackAssignmentThreshold = cms.double(0.0),
     verbose = cms.untracked.bool(True)

@@ -3,20 +3,20 @@
  *
  * This is a STANDARD EDProducer that:
  *   1. Consumes TrackCollection (standard EDM)
- *   2. Consumes SlotPredictionsDeviceCollection from GNNVertexProducerAlpaka (Alpaka SoA)
- *   3. Consumes AssignmentDeviceCollection from GNNVertexProducerAlpaka (Alpaka SoA)
- *   4. Builds reco::VertexCollection using GNNClusterizerFromAlpaka
+ *   2. Consumes GNNOutputHostCollection from GNNVertexProducerAlpaka (unified Alpaka SoA)
+ *   3. Builds reco::VertexCollection using GNNClusterizerFromAlpaka
  *
- * The INFERENCE happens in GNNVertexProducerAlpaka (Alpaka producer) upstream.
- * This module only CONSUMES the SoA results and builds vertices.
+ * The GNNOutputHostCollection contains all outputs with batch=N:
+ *   - A[N, K]: Assignment probabilities (Eigen::Vector per track)
+ *   - z_hat[N, K], t_hat[N, K], p[N, K]: Slot predictions (replicated per track)
+ *   - pi[N, 3]: PID weights per track (Eigen::Vector)
  *
- * Pipeline:
- *   TrackFeatureProducerAlpaka (Alpaka) → TrackFeaturesDeviceCollection
- *         ↓
- *   GNNVertexProducerAlpaka (Alpaka) → SlotPredictions + Assignments
- *         ↓
- *   GNNVertexBuilderFromAlpaka (this, standard) → reco::VertexCollection
+ * Since slot predictions are replicated across all tracks, we only need
+ * to read from the first track to get the slot values.
  */
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -48,26 +48,21 @@ public:
 private:
   // Input tokens
   const edm::EDGetTokenT<reco::TrackCollection> trackToken_;
-  const edm::EDGetTokenT<vertexgnn::SlotPredictionsHostCollection> slotPredictionsToken_;
-  const edm::EDGetTokenT<vertexgnn::AssignmentHostCollection> assignmentsToken_;
+  const edm::EDGetTokenT<vertexgnn::GNNOutputHostCollection> gnnOutputToken_;
   const edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> ttbToken_;
   
   // Clusterizer
   std::unique_ptr<vertexgnn::GNNClusterizerFromAlpaka> clusterizer_;
   
   // Configuration
-  const int numSlots_;
   const bool verbose_;
 };
 
 GNNVertexBuilderFromAlpaka::GNNVertexBuilderFromAlpaka(const edm::ParameterSet& params)
     : trackToken_(consumes<reco::TrackCollection>(params.getParameter<edm::InputTag>("tracks"))),
-      slotPredictionsToken_(consumes<vertexgnn::SlotPredictionsHostCollection>(
-          params.getParameter<edm::InputTag>("slotPredictions"))),
-      assignmentsToken_(consumes<vertexgnn::AssignmentHostCollection>(
-          params.getParameter<edm::InputTag>("assignments"))),
+      gnnOutputToken_(consumes<vertexgnn::GNNOutputHostCollection>(
+          params.getParameter<edm::InputTag>("gnnOutput"))),
       ttbToken_(esConsumes(edm::ESInputTag("", "TransientTrackBuilder"))),
-      numSlots_(params.getParameter<int>("numSlots")),
       verbose_(params.getUntrackedParameter<bool>("verbose", false)) {
   
   produces<reco::VertexCollection>();
@@ -75,16 +70,14 @@ GNNVertexBuilderFromAlpaka::GNNVertexBuilderFromAlpaka(const edm::ParameterSet& 
   // Create clusterizer
   clusterizer_ = std::make_unique<vertexgnn::GNNClusterizerFromAlpaka>(params);
   
-  edm::LogInfo("GNNVertexBuilderFromAlpaka") << "Initialized - consumes Alpaka SoA outputs";
+  edm::LogInfo("GNNVertexBuilderFromAlpaka") << "Initialized - consumes unified GNNOutputHostCollection";
 }
 
 void GNNVertexBuilderFromAlpaka::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   
   desc.add<edm::InputTag>("tracks", edm::InputTag("generalTracks"));
-  desc.add<edm::InputTag>("slotPredictions", edm::InputTag("gnnVertexProducer"));
-  desc.add<edm::InputTag>("assignments", edm::InputTag("gnnVertexProducer"));
-  desc.add<int>("numSlots", 200);
+  desc.add<edm::InputTag>("gnnOutput", edm::InputTag("gnnVertexProducer"));
   desc.add<double>("existenceThreshold", 0.5);
   desc.add<double>("trackAssignmentThreshold", 0.0);
   desc.addUntracked<bool>("verbose", false);
@@ -95,14 +88,12 @@ void GNNVertexBuilderFromAlpaka::fillDescriptions(edm::ConfigurationDescriptions
 void GNNVertexBuilderFromAlpaka::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
   // Get inputs
   auto tracks = event.getHandle(trackToken_);
-  auto slotPredictions = event.getHandle(slotPredictionsToken_);
-  auto assignments = event.getHandle(assignmentsToken_);
+  auto gnnOutput = event.getHandle(gnnOutputToken_);
   auto ttBuilder = eventSetup.getHandle(ttbToken_);
   
   auto output = std::make_unique<reco::VertexCollection>();
   
-  if (!tracks.isValid() || tracks->empty() || 
-      !slotPredictions.isValid() || !assignments.isValid()) {
+  if (!tracks.isValid() || tracks->empty() || !gnnOutput.isValid()) {
     event.put(std::move(output));
     return;
   }
@@ -114,51 +105,53 @@ void GNNVertexBuilderFromAlpaka::produce(edm::Event& event, const edm::EventSetu
     ttracks.push_back(ttBuilder->build(track));
   }
   
-  const int K = slotPredictions->const_view().metadata().size();
-  // N must come from assignment collection, not tracks - to match upstream producer
-  const int assignmentSize = assignments->const_view().metadata().size();
-  const int N = (K > 0) ? (assignmentSize / K) : 0;
-  
-  // Warn if track count doesn't match - this indicates TrackFeatureSource isn't consuming real tracks
-  if (N != static_cast<int>(ttracks.size())) {
-    edm::LogWarning("GNNVertexBuilderFromAlpaka") 
-        << "Track count mismatch! GNN processed " << N << " tracks but generalTracks has " 
-        << ttracks.size() << ". Using N=" << N << " from assignment matrix.";
-  }
+  // Get SoA view
+  auto gnnView = gnnOutput->const_view();
+  const int N = gnnView.metadata().size();
+  constexpr int K = vertexgnn::kNumSlots;  // 200
   
   if (verbose_) {
     edm::LogInfo("GNNVertexBuilderFromAlpaka") 
-        << "Consuming Alpaka outputs: N=" << N << " (GNN), K=" << K << " slots";
+        << "Consuming unified GNN output: N=" << N << " tracks, K=" << K << " slots";
   }
   
-  // Get SoA views - these are the ALREADY COMPUTED Alpaka outputs
-  auto slotView = slotPredictions->const_view();
-  auto assignView = assignments->const_view();
-  
-  // Extract pointers to data from SoA
-  // Need to build flat arrays for the clusterizer interface
+  // Extract data from Eigen columns
+  // Slot predictions are replicated per track, so read from track 0
   std::vector<float> A_flat(N * K);
   std::vector<float> z_hat(K), t_hat(K), p(K);
-  std::vector<float> pi_0(K), pi_1(K), pi_2(K), pi_3(K);
+  std::vector<float> pi_0(N), pi_1(N), pi_2(N);  // Per track, not per slot!
   
-  for (int k = 0; k < K; ++k) {
-    z_hat[k] = slotView[k].z_hat();
-    t_hat[k] = slotView[k].t_hat();
-    p[k] = slotView[k].p();
-    pi_0[k] = slotView[k].pi_0();
-    pi_1[k] = slotView[k].pi_1();
-    pi_2[k] = slotView[k].pi_2();
-    pi_3[k] = slotView[k].pi_3();
-  }
-  
-  for (int i = 0; i < N; ++i) {
+  // Read slot predictions from first track (they're replicated)
+  // NOTE: Copy element data immediately to avoid dangling references
+  if (N > 0) {
+    auto elem = gnnView[0];  // Copy the element to avoid temporary issues
     for (int k = 0; k < K; ++k) {
-      A_flat[i * K + k] = assignView[i * K + k].prob();
+      z_hat[k] = elem.z_hat()[k];
+      t_hat[k] = elem.t_hat()[k];
+      p[k] = elem.p()[k];
     }
   }
   
+  // Read assignment matrix A[N, K] and per-track PID weights
+  for (int i = 0; i < N; ++i) {
+    auto elem = gnnView[i];  // Copy element to avoid dangling reference
+    for (int k = 0; k < K; ++k) {
+      A_flat[i * K + k] = elem.A()[k];
+    }
+    // Per-track PID weights from Eigen column [3]
+    pi_0[i] = elem.pi()[0];
+    pi_1[i] = elem.pi()[1];
+    pi_2[i] = elem.pi()[2];
+  }
+  
+  // Warn if track count doesn't match
+  if (N != static_cast<int>(ttracks.size())) {
+    edm::LogWarning("GNNVertexBuilderFromAlpaka") 
+        << "Track count mismatch! GNN processed " << N << " tracks but generalTracks has " 
+        << ttracks.size() << ". Using N=" << N << " from GNN output.";
+  }
+  
   // Build vertices using clusterizer
-  // If N doesn't match ttracks.size(), we can only use first N tracks
   std::vector<reco::TransientTrack> tracksToUse;
   if (N <= static_cast<int>(ttracks.size())) {
     tracksToUse.assign(ttracks.begin(), ttracks.begin() + N);
@@ -177,15 +170,12 @@ void GNNVertexBuilderFromAlpaka::produce(edm::Event& event, const edm::EventSetu
       pi_0.data(),
       pi_1.data(),
       pi_2.data(),
-      pi_3.data(),
       N, K);
   
   // Convert TransientVertex to reco::Vertex
   for (const auto& tv : transVertices) {
-    // Convert GlobalPoint to reco::Vertex::Point
     reco::Vertex::Point pos(tv.position().x(), tv.position().y(), tv.position().z());
     
-    // Convert GlobalError to reco::Vertex::Error (6-element symmetric matrix)
     reco::Vertex::Error err;
     err(0, 0) = tv.positionError().cxx();
     err(1, 0) = tv.positionError().cyx();
@@ -201,7 +191,7 @@ void GNNVertexBuilderFromAlpaka::produce(edm::Event& event, const edm::EventSetu
   
   if (verbose_) {
     edm::LogInfo("GNNVertexBuilderFromAlpaka") 
-        << "Built " << output->size() << " vertices from Alpaka SoA";
+        << "Built " << output->size() << " vertices from unified GNN output";
   }
   
   event.put(std::move(output));

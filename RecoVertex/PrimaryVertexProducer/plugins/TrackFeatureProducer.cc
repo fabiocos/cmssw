@@ -4,6 +4,10 @@
  * Consumes real generalTracks with MTD timing and produces TrackFeaturesHostCollection
  * with 13 features per track (identical to GNNClusterizer.cc feature extraction).
  *
+ * IMPORTANT: Uses the same TrackFilterForPVFinding as PrimaryVertexProducer
+ * to ensure track selection matches. This is critical for track index alignment
+ * with the Alpaka GNN pipeline.
+ *
  * Features: vz, dz, pt, eta, mva, pl, t_pi, t_k, t_p, s_pi, s_k, s_p, has_time
  *
  * Note: This is a standard EDProducer (not Alpaka) because:
@@ -30,6 +34,7 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/host.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
+#include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 
 #include <cmath>
 
@@ -75,7 +80,15 @@ namespace vertexgnn {
           ttbToken_(esConsumes(edm::ESInputTag("", "TransientTrackBuilder"))),
           minTrackTimeQuality_(params.getParameter<double>("minTrackTimeQuality")),
           useMVASelection_(params.getParameter<bool>("useMVACut")),
+          useTrackFilter_(params.getParameter<bool>("useTrackFilter")),
           verbose_(params.getUntrackedParameter<bool>("verbose", false)) {
+      
+      // Initialize track filter (same as PrimaryVertexProducer) if enabled
+      if (useTrackFilter_) {
+        trackFilter_ = std::make_unique<TrackFilterForPVFinding>(
+            params.getParameter<edm::ParameterSet>("TkFilterParameters"));
+      }
+      
       produces<TrackFeaturesHostCollection>();
     }
 
@@ -104,7 +117,14 @@ namespace vertexgnn {
       desc.add<edm::InputTag>("npixEndcapSrc", edm::InputTag("trackExtenderWithMTD", "npixEndcap"));
       desc.add<double>("minTrackTimeQuality", 0.8);
       desc.add<bool>("useMVACut", false);
+      desc.add<bool>("useTrackFilter", true)->setComment("Apply same track filter as PrimaryVertexProducer");
       desc.addUntracked<bool>("verbose", false);
+      
+      // Track filter parameters (same as PrimaryVertexProducer TkFilterParameters)
+      edm::ParameterSetDescription filterDesc;
+      TrackFilterForPVFinding::fillPSetDescription(filterDesc);
+      desc.add<edm::ParameterSetDescription>("TkFilterParameters", filterDesc);
+      
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -161,7 +181,19 @@ namespace vertexgnn {
           npixBarrel,
           npixEndcap);
 
-      const int N = t_tks.size();
+      // Apply track filter (same as PrimaryVertexProducer) if enabled
+      std::vector<reco::TransientTrack> seltks;
+      if (useTrackFilter_ && trackFilter_) {
+        seltks = trackFilter_->select(t_tks);
+        if (verbose_) {
+          edm::LogInfo("TrackFeatureProducer") 
+              << "Track filter: " << t_tks.size() << " -> " << seltks.size() << " tracks";
+        }
+      } else {
+        seltks = std::move(t_tks);
+      }
+
+      const int N = seltks.size();
 
       if (verbose_) {
         edm::LogInfo("TrackFeatureProducer") << "Processing " << N << " tracks";
@@ -173,7 +205,7 @@ namespace vertexgnn {
 
       // Extract features from each TransientTrack
       for (int i = 0; i < N; ++i) {
-        const reco::TransientTrack& ttrack = t_tks[i];
+        const reco::TransientTrack& ttrack = seltks[i];
 
         // Extract features (same logic as GNNClusterizer.cc)
         float track_vz = ttrack.track().vz();
@@ -274,9 +306,13 @@ namespace vertexgnn {
     const edm::EDGetTokenT<edm::ValueMap<float>> trackMTDTimeQualityToken_;
     const edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> ttbToken_;
     
+    // Track filter (same as PrimaryVertexProducer)
+    std::unique_ptr<TrackFilterForPVFinding> trackFilter_;
+    
     // Configuration
     const double minTrackTimeQuality_;
     const bool useMVASelection_;
+    const bool useTrackFilter_;
     const bool verbose_;
   };
 
