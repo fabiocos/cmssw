@@ -1,25 +1,14 @@
 #ifndef RecoVertex_PrimaryVertexProducer_interface_VertexGNNSoA_h
 #define RecoVertex_PrimaryVertexProducer_interface_VertexGNNSoA_h
 
-/**
- * SoA layouts for GNN vertex producer using PyTorchAlpaka.
- * 
- * Input: TrackFeaturesSoA with 13 features per track
- * Output: SlotPredictionsSoA with per-slot predictions (z_hat, t_hat, p, pi[4])
- *         AssignmentSoA for assignment matrix A[N, K]
- */
-
 #include "DataFormats/SoATemplate/interface/SoACommon.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 
 namespace vertexgnn {
 
-  // =========================================================================
-  // INPUT: Track features (13 per track)
-  // =========================================================================
-  // Features must be contiguous in memory for TensorCollection::add to work
-  // Order: vz, dz, pt, eta, mva, pl, t_pi, t_k, t_p, s_pi, s_k, s_p, has_time
-  
+  // Input SoA: 13 features per track
+  // Layout: [N tracks] x [13 features]
+  // Features: vz, dz, pt, eta, mva, pl, t_pi, t_k, t_p, s_pi, s_k, s_p, has_time
   GENERATE_SOA_LAYOUT(TrackFeaturesLayout,
                       SOA_COLUMN(float, vz),
                       SOA_COLUMN(float, dz),
@@ -37,15 +26,11 @@ namespace vertexgnn {
 
   using TrackFeaturesSoA = TrackFeaturesLayout<>;
 
-  // =========================================================================
-  // OUTPUT: Per-slot predictions (K slots)
-  // =========================================================================
-  // z_hat, t_hat, p: per-slot scalars
-  // pi: 4 PID weights per slot (stored as 4 separate columns to avoid Eigen)
-  
+  // Output SoA for per-slot (vertex) predictions
+  // Layout: [K slots]
   GENERATE_SOA_LAYOUT(SlotPredictionsLayout,
                       SOA_COLUMN(float, z_hat),      // predicted z position
-                      SOA_COLUMN(float, t_hat),      // predicted t position  
+                      SOA_COLUMN(float, t_hat),      // predicted t position
                       SOA_COLUMN(float, p),          // existence probability
                       SOA_COLUMN(float, pi_0),       // PID weight 0
                       SOA_COLUMN(float, pi_1),       // PID weight 1
@@ -54,13 +39,12 @@ namespace vertexgnn {
 
   using SlotPredictionsSoA = SlotPredictionsLayout<>;
 
-  // =========================================================================
-  // OUTPUT: Assignment matrix A[N, K]
-  // =========================================================================
-  // Stored as flat array of size N*K, accessed as A[i*K + k]
-  
+  // Output SoA for assignment matrix
+  // Layout: [N tracks] - each track stores its assignment probabilities to K slots
+  // Note: For dynamic K, we use a flat representation
+  // The assignment matrix A[N,K] is stored as N*K floats
   GENERATE_SOA_LAYOUT(AssignmentLayout,
-                      SOA_COLUMN(float, prob))       // assignment probability
+                      SOA_COLUMN(float, prob))  // Flat assignment probabilities
 
   using AssignmentSoA = AssignmentLayout<>;
 
