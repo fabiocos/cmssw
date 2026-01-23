@@ -1,0 +1,15 @@
+<lcgdict>
+  <!-- Track Features: CUDA device collection
+       Type: alpaka_cuda_async::vertexgnn::TrackFeaturesDeviceCollection
+       Expands to: PortableDeviceCollection<vertexgnn::TrackFeaturesLayout<128,false>, alpaka::DevUniformCudaHipRt<...>> -->
+  <class name="alpaka_cuda_async::vertexgnn::TrackFeaturesDeviceCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_cuda_async::vertexgnn::TrackFeaturesDeviceCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::vertexgnn::TrackFeaturesDeviceCollection>>" persistent="false"/>
+
+  <!-- GNN Output: CUDA device collection
+       Type: alpaka_cuda_async::vertexgnn::GNNOutputDeviceCollection
+       Expands to: PortableDeviceCollection<vertexgnn::GNNOutputLayout<128,false>, alpaka::DevUniformCudaHipRt<...>> -->
+  <class name="alpaka_cuda_async::vertexgnn::GNNOutputDeviceCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_cuda_async::vertexgnn::GNNOutputDeviceCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::vertexgnn::GNNOutputDeviceCollection>>" persistent="false"/>
+</lcgdict>

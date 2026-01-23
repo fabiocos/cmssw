@@ -1,20 +1,12 @@
 """
-Parity Test: ONNX vs Alpaka GNN Paths
-
-This config runs BOTH GNN paths using the SAME dummy model weights:
-1. ONNX path: GNN2D_vect with dummy_vertex_slot.onnx
-2. Alpaka path: GNN2D_alpaka with dummy_vertex_slot.pt
-
-Outputs:
-- revtx_parity_test.root - vertex collections from both paths
-- gnn_parity_test.root   - inspector histograms (subdirs: gnnInspectorONNX, gnnInspectorAlpaka)
+Alpaka-only GPU Test (single thread)
+Extracted from working test_parity_onnx_alpaka_cfg.py
 """
 
 import FWCore.ParameterSet.Config as cms
-
 from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
 
-process = cms.Process('PARITY', Phase2C17I13M9)
+process = cms.Process('ALPAKAGPU', Phase2C17I13M9)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -41,17 +33,17 @@ process.source = cms.Source("PoolSource",
 )
 
 # Logging
-process.MessageLogger.cerr.FwkReport.reportEvery = 1
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 process.MessageLogger.cerr.threshold = cms.untracked.string('INFO')
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(limit = cms.untracked.int32(0))
 process.MessageLogger.cerr.PrimaryVertexProducer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
-process.MessageLogger.cerr.GNNClusterizer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 process.MessageLogger.cerr.GNNClusterizerFromAlpaka = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 process.MessageLogger.cerr.TrackFeatureProducer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 
+# Single thread for isolation
 process.options = cms.untracked.PSet(
-    numberOfThreads = cms.untracked.uint32(4),
-    numberOfStreams = cms.untracked.uint32(4),
+    numberOfThreads = cms.untracked.uint32(1),
+    numberOfStreams = cms.untracked.uint32(1),
     wantSummary = cms.untracked.bool(True)
 )
 
@@ -59,15 +51,11 @@ process.options = cms.untracked.PSet(
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T33', '')
 
-# =============================================================================
 # TOF PID (required for timing products)
-# =============================================================================
 from RecoVertex.Configuration.RecoVertex_phase2_timing_cff import tofPID4DnoPID
 process.tofPID4DnoPID = tofPID4DnoPID.clone()
 
-# =============================================================================
-# TRACK FILTER PARAMETERS (Phase2 production defaults, same for both paths)
-# =============================================================================
+# TRACK FILTER PARAMETERS (exactly as in working parity config)
 TkFilterParams = cms.PSet(
     algorithm = cms.string('filter'),
     maxNormalizedChi2 = cms.double(10.0),
@@ -76,44 +64,15 @@ TkFilterParams = cms.PSet(
     maxD0Significance = cms.double(4.0),
     maxD0Error = cms.double(1.0),
     maxDzError = cms.double(1.0),
-    minPt = cms.double(0.0),   # Phase2 production default
-    maxEta = cms.double(4.0),  # Phase2 production default
+    minPt = cms.double(0.0),
+    maxEta = cms.double(4.0),
     trackQuality = cms.string('any'),
     minValidStripHits = cms.int32(0),
 )
 
-# =============================================================================
-# 1. ONNX PATH: GNN2D_vect with dummy ONNX model
-# =============================================================================
-process.unsortedOfflinePrimaryVerticesONNX = process.unsortedOfflinePrimaryVertices4D.clone(
-    TkClusParameters = cms.PSet(
-        algorithm = cms.string("GNN2D_vect"),
-        TkDAClusParameters = cms.PSet(
-            existenceThreshold = cms.double(0.5),
-            trackAssignmentThreshold = cms.double(0.0),
-            numSlots = cms.int32(200),
-            nnVersion = cms.string("dummy_parity_test"),
-            onnxBackend = cms.string("CUDA"),
-            onnxModelPath = cms.FileInPath('RecoVertex/PrimaryVertexProducer/data/dummy_vertex_slot.onnx'),
-            Tmin = cms.double(4.0),
-            Tpurge = cms.double(4.0),
-            Tstop = cms.double(2.0),
-            vertexSize = cms.double(0.01),
-            d0CutOff = cms.double(3.0),
-            verbose = cms.untracked.bool(True),
-        )
-    ),
-    TkFilterParameters = TkFilterParams,
-    TrackTimesLabel = cms.InputTag("tofPID4DnoPID:t0safe"),
-    TrackTimeResosLabel = cms.InputTag("tofPID4DnoPID:sigmat0safe"),
-    verbose = cms.untracked.bool(True),
-)
+# ALPAKA PATH: TrackFeatureProducer + GNNVertexProducerAlpaka + PVP
 
-# =============================================================================
-# 2. ALPAKA PATH: TrackFeatureProducer + GNNVertexProducerAlpaka + PVP
-# =============================================================================
-
-# Step 2a: TrackFeatureProducer (uses same filter as ONNX path)
+# Step 1: TrackFeatureProducer (exactly as parity config)
 process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
     tracks = cms.InputTag("generalTracks"),
     beamSpot = cms.InputTag("offlineBeamSpot"),
@@ -143,14 +102,14 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
     TkFilterParameters = TkFilterParams,
 )
 
-# Step 2b: GNNVertexProducerAlpaka (runs inference)
+# Step 2: GNNVertexProducerAlpaka (runs inference)
 process.gnnVertexProducer = cms.EDProducer("vertexgnn::GNNVertexProducerAlpaka@alpaka",
     trackFeatures = cms.InputTag("trackFeatureProducer"),
     model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/data/dummy_vertex_slot.pt"),
     verbose = cms.untracked.bool(True),
 )
 
-# Step 2c: PrimaryVertexProducer with GNN2D_alpaka
+# Step 3: PrimaryVertexProducer with GNN2D_alpaka
 process.unsortedOfflinePrimaryVerticesAlpaka = process.unsortedOfflinePrimaryVertices4D.clone(
     TkClusParameters = cms.PSet(
         algorithm = cms.string("GNN2D_alpaka"),
@@ -167,97 +126,44 @@ process.unsortedOfflinePrimaryVerticesAlpaka = process.unsortedOfflinePrimaryVer
     verbose = cms.untracked.bool(True),
 )
 
-# =============================================================================
-# GNN TRACK INSPECTORS (one per path)
-# =============================================================================
-process.gnnInspectorONNX = cms.EDAnalyzer("GNNTrackInspector",
-    pvModule = cms.InputTag("unsortedOfflinePrimaryVerticesONNX", "", "PARITY"),
-    trackSrc = cms.InputTag("generalTracks"),
-    printFirstN = cms.uint32(10),
-    dropNaNs = cms.bool(True),
-)
-
+# Inspector
 process.gnnInspectorAlpaka = cms.EDAnalyzer("GNNTrackInspector",
-    pvModule = cms.InputTag("unsortedOfflinePrimaryVerticesAlpaka", "", "PARITY"),
+    pvModule = cms.InputTag("unsortedOfflinePrimaryVerticesAlpaka", "", "ALPAKAGPU"),
     trackSrc = cms.InputTag("generalTracks"),
     printFirstN = cms.uint32(10),
     dropNaNs = cms.bool(True),
 )
 
-# =============================================================================
-# TFileService - separate for each inspector
-# =============================================================================
-# Note: TFileService can only write one file, so we'll use a combined file
+# TFileService
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("gnn_parity_test.root")
+    fileName = cms.string("gnn_alpaka_gpu_only.root")
 )
 
-# =============================================================================
-# OUTPUT
-# =============================================================================
-process.output = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string('revtx_parity_test.root'),
-    outputCommands = cms.untracked.vstring(
-        'drop *',
-        'keep *_unsortedOfflinePrimaryVerticesONNX_*_*',
-        'keep *_unsortedOfflinePrimaryVerticesAlpaka_*_*',
-        'keep *_gnnVertexProducer_*_*',
-    )
-)
-
-# =============================================================================
-# PATHS - Use vertexreco sequence to provide dependencies
-# =============================================================================
-# vertexreco provides unsortedOfflinePrimaryVertices which tofPID4DnoPID needs
-# BUT it also includes unsortedOfflinePrimaryVerticesGNN which we don't want
-# So we remove it to only test ONNX vs Alpaka
-
-# Remove the default GNN producer from vertexreco to avoid running 3 producers
+# Remove default GNN producer
 process.vertexreco.remove(process.unsortedOfflinePrimaryVerticesGNN)
 
-# Common base path with vertex reconstruction
+# PATHS
 process.common_path = cms.Path(
     process.firstStepPrimaryVerticesUnsorted *
     process.vertexreco *
     process.tofPID4DnoPID
 )
 
-# ONNX path - runs after common
-process.onnx_path = cms.Path(
-    process.unsortedOfflinePrimaryVerticesONNX
-)
-
-# Alpaka path - runs after common
 process.alpaka_path = cms.Path(
     process.trackFeatureProducer *
     process.gnnVertexProducer *
     process.unsortedOfflinePrimaryVerticesAlpaka
 )
 
-# Inspectors
-process.inspect_path = cms.EndPath(
-    process.gnnInspectorONNX *
-    process.gnnInspectorAlpaka
-)
+process.inspect_path = cms.EndPath(process.gnnInspectorAlpaka)
 
-process.output_step = cms.EndPath(process.output)
-
-# =============================================================================
 # SCHEDULE
-# =============================================================================
 process.schedule = cms.Schedule(
     process.common_path,
-    process.onnx_path,
     process.alpaka_path,
-    process.inspect_path,
-    process.output_step
+    process.inspect_path
 )
 
 print("=" * 70)
-print("GNN Parity Test: ONNX vs Alpaka")
-print("=" * 70)
-print("Both paths use IDENTICAL model weights (seed=42)")
-print("Outputs:")
-print("  - revtx_parity_test.root: vertex collections")
-print("  - gnn_parity_test.root:   inspector histograms")
+print("Alpaka GPU-only Test (single thread)")
 print("=" * 70)

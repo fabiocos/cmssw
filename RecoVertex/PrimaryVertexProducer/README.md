@@ -145,7 +145,26 @@ trackFilter_ = std::make_unique<TrackFilterForPVFinding>(
 
 ### Module 2: GNNVertexProducerAlpaka
 
-**Purpose**: Alpaka stream::EDProducer that runs TorchScript inference.
+**Purpose**: Alpaka stream::EDProducer that runs TorchScript inference on GPU.
+
+**GPU Data Flow**:
+```cpp
+// 1. Consume HostCollection from standard EDProducer
+const auto& hostInput = event.get(trackFeaturesToken_);
+
+// 2. Copy to device for GPU inference
+TrackFeaturesDeviceCollection deviceInput(N, event.queue());
+alpaka::memcpy(event.queue(), deviceInput.buffer(), hostInput.buffer());
+
+// 3. Allocate output on device
+GNNOutputDeviceCollection deviceOutput(N, event.queue());
+
+// 4. Run inference on device (GPU)
+model_.forward(event.queue(), inputs, outputs);
+
+// 5. Put DeviceCollection - framework handles automatic D2H for downstream consumers
+event.emplace(gnnOutputToken_, std::move(deviceOutput));
+```
 
 **TensorCollection Input Setup** (13 features → [N, 13]):
 ```cpp
@@ -383,13 +402,71 @@ piWeight2:   ✓ MATCH (mean identical)
 | `src/GNNClusterizer.cc` | ONNX inference + vertex building |
 | `src/GNNClusterizerFromAlpaka.cc` | Vertex building from SoA |
 
+### Alpaka Dictionary Files (CUDA SoA Serialization)
+
+| File | Description |
+|------|-------------|
+| `src/alpaka/classes_cuda.h` | CUDA device dictionary headers |
+| `src/alpaka/classes_cuda_def.xml` | CUDA collection wrappers for EDM |
+| `src/alpaka/BuildFile.xml` | Build rules for CUDA dictionaries |
+
 ### Test Files
 
 | File | Description |
 |------|-------------|
 | `test/create_dummy_model.py` | Generate TorchScript + ONNX models |
 | `test/test_parity_onnx_alpaka_cfg.py` | Parity test configuration |
+| `test/test_onnx_gpu_only_cfg.py` | ONNX GPU-only isolated test |
+| `test/test_alpaka_gpu_only_cfg.py` | Alpaka GPU-only isolated test |
 | `test/compare_gnn_inspectors.py` | Compare histogram outputs |
+
+### Production Configs (src/)
+
+| File | Description |
+|------|-------------|
+| `vertexTask_cfg.py` | Original ONNX-based GNN vertex task |
+| `vertexTask_alpaka_cfg.py` | **Drop-in Alpaka replacement** (GPU)|
+
+---
+
+## Drop-in Replacement: vertexTask_alpaka_cfg.py
+
+The `vertexTask_alpaka_cfg.py` is a **production-ready drop-in replacement** for `vertexTask_cfg.py` that uses GPU inference via the Alpaka backend.
+
+### Key Differences from ONNX vertexTask
+
+| Aspect | vertexTask_cfg.py | vertexTask_alpaka_cfg.py |
+|--------|------------------|--------------------------|
+| Algorithm | `GNN2D_vect` (ONNX) | `GNN2D_alpaka` (TorchScript) |
+| Backend | CPU or CUDA (ONNX Runtime) | CUDA (PyTorchAlpaka) |
+| Config Lines | Single module | 3 modules in sequence |
+| Model Format | `.onnx` | `.pt` (TorchScript) |
+
+### Path Structure
+
+```python
+# Alpaka producers run before vertexreco
+process.alpaka_producers = cms.Sequence(
+    process.trackFeatureProducer *
+    process.gnnVertexProducer
+)
+
+process.exe = cms.Path(
+    process.firstStepPrimaryVerticesUnsorted *
+    process.alpaka_producers *
+    process.vertexreco
+)
+```
+
+### Running
+
+```bash
+# GPU inference with Alpaka
+cmsRun vertexTask_alpaka_cfg.py
+
+# Compare with ONNX version
+cmsRun vertexTask_cfg.py
+```
 
 ---
 

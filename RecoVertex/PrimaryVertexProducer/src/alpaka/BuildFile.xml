@@ -1,0 +1,8 @@
+<use name="alpaka"/>
+<use name="eigen"/>
+<use name="DataFormats/Common"/>
+<use name="DataFormats/Portable"/>
+<use name="DataFormats/SoATemplate"/>
+<use name="HeterogeneousCore/AlpakaInterface"/>
+<use name="RecoVertex/PrimaryVertexProducer"/>
+<flags ALPAKA_BACKENDS="cuda_async"/>
