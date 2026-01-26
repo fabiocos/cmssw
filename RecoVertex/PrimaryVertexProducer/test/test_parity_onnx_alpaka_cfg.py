@@ -50,8 +50,8 @@ process.MessageLogger.cerr.GNNClusterizerFromAlpaka = cms.untracked.PSet(limit =
 process.MessageLogger.cerr.TrackFeatureProducer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 
 process.options = cms.untracked.PSet(
-    numberOfThreads = cms.untracked.uint32(4),
-    numberOfStreams = cms.untracked.uint32(4),
+    numberOfThreads = cms.untracked.uint32(10),
+    numberOfStreams = cms.untracked.uint32(10),
     wantSummary = cms.untracked.bool(True)
 )
 

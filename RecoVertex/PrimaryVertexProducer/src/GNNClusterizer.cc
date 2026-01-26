@@ -285,7 +285,8 @@ std::vector<TransientVertex> GNNClusterizer::vertices(const std::vector<reco::Tr
     std::vector<float> cluster_weights;
     
     for (int i = 0; i < N; ++i) {
-      if (track_to_slot[i] == k) {
+      // Only include track if assigned to this slot AND probability exceeds threshold
+      if (track_to_slot[i] == k && track_max_prob[i] >= trackAssignmentThreshold_) {
         cluster_tracks.push_back(tracks[i]);
         cluster_weights.push_back(track_max_prob[i]);
       }
@@ -346,7 +347,7 @@ void GNNClusterizer::fillPSetDescription(edm::ParameterSetDescription& desc) {
   // VertexSlotModel-specific parameters
   desc.add<double>("existenceThreshold", 0.5)
       ->setComment("Slot existence probability threshold (0-1)");
-  desc.add<double>("trackAssignmentThreshold", 0.0)
+  desc.add<double>("trackAssignmentThreshold", 0.5)
       ->setComment("Minimum track assignment probability");
   desc.add<int>("numSlots", 200)
       ->setComment("Number of slots K in the model");

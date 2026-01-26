@@ -94,9 +94,8 @@ namespace vertexgnn {
       std::vector<float> cluster_weights;
       
       for (int i = 0; i < N; ++i) {
-        // Match ONNX GNNClusterizer logic: include track if assigned to this slot
-        // (threshold already applied at slot level via existenceThreshold_)
-        if (track_to_slot[i] == k) {
+        // Only include track if assigned to this slot AND probability exceeds threshold
+        if (track_to_slot[i] == k && track_max_prob[i] >= trackAssignmentThreshold_) {
           cluster_tracks.push_back(tracks[i]);
           cluster_weights.push_back(track_max_prob[i]);
         }
@@ -138,7 +137,7 @@ namespace vertexgnn {
   void GNNClusterizerFromAlpaka::fillPSetDescription(edm::ParameterSetDescription& desc) {
     desc.add<double>("existenceThreshold", 0.5)
         ->setComment("Slot existence probability threshold (0-1)");
-    desc.add<double>("trackAssignmentThreshold", 0.0)
+    desc.add<double>("trackAssignmentThreshold", 0.5)
         ->setComment("Minimum track assignment probability");
     desc.addUntracked<bool>("verbose", false);
   }
