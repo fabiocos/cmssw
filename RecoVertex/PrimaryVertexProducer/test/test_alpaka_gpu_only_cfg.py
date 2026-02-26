@@ -115,7 +115,7 @@ process.unsortedOfflinePrimaryVerticesAlpaka = process.unsortedOfflinePrimaryVer
         algorithm = cms.string("GNN2D_alpaka"),
         TkDAClusParameters = cms.PSet(
             existenceThreshold = cms.double(0.5),
-            trackAssignmentThreshold = cms.double(0.0),
+            trackAssignmentThreshold = cms.double(0.4),
             gnnOutput = cms.InputTag("gnnVertexProducer"),
             verbose = cms.untracked.bool(True),
         )

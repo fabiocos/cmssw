@@ -132,7 +132,7 @@ process.gnnVertexBuilderAlpaka = cms.EDProducer("GNNVertexBuilderFromAlpaka",
     tracks = cms.InputTag("generalTracks"),
     gnnOutput = cms.InputTag("gnnVertexProducer"),
     existenceThreshold = cms.double(0.5),
-    trackAssignmentThreshold = cms.double(0.0),
+    trackAssignmentThreshold = cms.double(0.4),
     verbose = cms.untracked.bool(True)
 )
 

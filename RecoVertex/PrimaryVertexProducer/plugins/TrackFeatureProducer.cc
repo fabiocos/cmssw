@@ -251,8 +251,9 @@ namespace vertexgnn {
           feat_s_p = combine_sigma(track_s_p, track_s_tmtd);
         }
 
-        // has_time flag
-        float has_time = tmtd_ok ? 1.0f : 0.0f;
+        // has_time flag - MUST match training: has_time = (mva_qual >= 0)
+        // Training uses: has_time = (mva_qual >= 0).astype(np.float32)
+        float has_time = (track_mva >= 0.0f) ? 1.0f : 0.0f;
 
         // Replace NaN/Inf
         auto sanitize = [](float v) { return std::isfinite(v) ? v : 1e9f; };

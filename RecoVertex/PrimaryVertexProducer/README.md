@@ -210,7 +210,7 @@ for (int i = 0; i < gnn_N; ++i) {
 
 ```cpp
 namespace vertexgnn {
-    constexpr int kNumSlots = 200;  // K
+    constexpr int kNumSlots = 180;  // K (matches v17p1 model)
     
     using SlotVector = Eigen::Vector<float, kNumSlots>;  // [K]
     using PIDVector = Eigen::Vector<float, 3>;           // [3]
@@ -281,7 +281,7 @@ process.producer = cms.EDProducer("PrimaryVertexProducer",
         TkDAClusParameters = cms.PSet(
             onnxModelPath = cms.FileInPath('RecoVertex/PrimaryVertexProducer/data/vertex_slot_model.onnx'),
             onnxBackend = cms.string("CPU"),  # or "CUDA"
-            numSlots = cms.int32(200),
+            numSlots = cms.int32(180),  # Must match model
             existenceThreshold = cms.double(0.5),
             ...
         )

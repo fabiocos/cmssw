@@ -148,11 +148,14 @@ PrimaryVertexProducer::PrimaryVertexProducer(const edm::ParameterSet& conf, cons
 
     // configure the fitter and selector
     std::string fitterAlgorithm = algoconf->getParameter<std::string>("algorithm");
+    // Whether to use cluster weights (GNN assignment probabilities) or fitter geometric weights
+    bool useClusterWeights = algoconf->getUntrackedParameter<bool>("useClusterWeights", true);
+    
     if (fitterAlgorithm == "KalmanVertexFitter") {
-      algorithm.pv_fitter = new SequentialPrimaryVertexFitterAdapter(new KalmanVertexFitter());
+      algorithm.pv_fitter = new SequentialPrimaryVertexFitterAdapter(new KalmanVertexFitter(), useClusterWeights);
     } else if (fitterAlgorithm == "AdaptiveVertexFitter") {
       auto fitter = new AdaptiveVertexFitter(GeometricAnnealing(algoconf->getParameter<double>("chi2cutoff")));
-      algorithm.pv_fitter = new SequentialPrimaryVertexFitterAdapter(fitter);
+      algorithm.pv_fitter = new SequentialPrimaryVertexFitterAdapter(fitter, useClusterWeights);
     } else if (fitterAlgorithm.empty()) {
       algorithm.pv_fitter = nullptr;
     } else if (fitterAlgorithm == "AdaptiveChisquareVertexFitter") {
@@ -435,7 +438,7 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
     
     auto gnnView = gnnOutput.const_view();
     const int gnn_output_N = gnnView.metadata().size();
-    gnn_K = vertexgnn::kNumSlots;  // 200
+    gnn_K = vertexgnn::kNumSlots;  // 180 (matches v17p1 model)
     
     // TrackFeatureProducer should use the same TkFilterParameters as PrimaryVertexProducer
     // so gnn_output_N (filtered tracks in SoA) should match seltks.size() (filtered tracks here).
@@ -771,6 +774,7 @@ void PrimaryVertexProducer::fillDescriptions(edm::ConfigurationDescriptions& des
     vpsd1.add<double>("zcutoff", 1.0);
     vpsd1.add<double>("mintrkweight", 0.0);
     vpsd1.add<double>("minNdof", 0.0);
+    vpsd1.addUntracked<bool>("useClusterWeights", true);  // true = use cluster (GNN) weights, false = use fitter geometric weights
     vpsd1.add<edm::ParameterSetDescription>("vertexTimeParameters", psd_pv_time);
 
     // two default values : with- and without beam constraint

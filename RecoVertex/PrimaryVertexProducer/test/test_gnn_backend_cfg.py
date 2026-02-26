@@ -18,7 +18,7 @@ options.register('numTracks', 50,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.int,
                  "Number of dummy tracks to generate")
-options.register('numSlots', 200,
+options.register('numSlots', 180,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.int,
                  "Number of vertex slots (K)")

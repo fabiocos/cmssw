@@ -70,7 +70,7 @@ def main():
     print("=" * 60)
     
     # Configuration matching C++ kNumSlots
-    NUM_SLOTS = 200
+    NUM_SLOTS = 180  # Must match kNumSlots in VertexGNNSoA.h
     INPUT_DIM = 13
     SLOT_DIM = 48
     

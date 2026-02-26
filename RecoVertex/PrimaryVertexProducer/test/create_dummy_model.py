@@ -21,7 +21,7 @@ import torch.nn as nn
 class DummyVertexSlotModel(nn.Module):
     """Dummy model that outputs replicated slot predictions for each track."""
     
-    def __init__(self, num_slots: int = 200, num_features: int = 13):
+    def __init__(self, num_slots: int = 180, num_features: int = 13):
         super().__init__()
         self.num_slots = num_slots
         self.num_features = num_features
@@ -86,7 +86,7 @@ def main():
     # Set seed for reproducibility
     torch.manual_seed(42)
     
-    model = DummyVertexSlotModel(num_slots=200, num_features=13)
+    model = DummyVertexSlotModel(num_slots=180, num_features=13)
     model.eval()
     
     # Test with sample input

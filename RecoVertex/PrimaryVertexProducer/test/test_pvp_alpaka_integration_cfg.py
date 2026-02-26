@@ -94,7 +94,7 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
 process.gnnVertexProducer = cms.EDProducer("alpaka_serial_sync::vertexgnn::GNNVertexProducerAlpaka",
     model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/data/dummy_vertex_slot.pt"),
     trackFeatures = cms.InputTag("trackFeatureProducer"),
-    numSlots = cms.int32(200),
+    numSlots = cms.int32(180),  # Must match model's num_slots
     verbose = cms.untracked.bool(False),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string("")
@@ -114,7 +114,7 @@ process.unsortedOfflinePrimaryVerticesGNNAlpaka = process.unsortedOfflinePrimary
             assignments = cms.InputTag("gnnVertexProducer"),
             # Same parameters as GNN2D_vect
             existenceThreshold = cms.double(0.5),
-            trackAssignmentThreshold = cms.double(0.0),
+            trackAssignmentThreshold = cms.double(0.4),
             verbose = cms.untracked.bool(True),
         )
     ),
@@ -161,5 +161,5 @@ print("Mode: PyTorchAlpaka (upstream inference + PVP vertex building)")
 print("Flow: TrackFeatureProducer -> GNNVertexProducerAlpaka -> PVP(GNN2D_alpaka)")
 print("Parameters:")
 print("  - existenceThreshold: 0.5")
-print("  - numSlots: 200")
+print("  - numSlots: 180")
 print("=" * 70)

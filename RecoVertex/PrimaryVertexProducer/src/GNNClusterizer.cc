@@ -349,7 +349,7 @@ void GNNClusterizer::fillPSetDescription(edm::ParameterSetDescription& desc) {
       ->setComment("Slot existence probability threshold (0-1)");
   desc.add<double>("trackAssignmentThreshold", 0.5)
       ->setComment("Minimum track assignment probability");
-  desc.add<int>("numSlots", 200)
+  desc.add<int>("numSlots", 180)
       ->setComment("Number of slots K in the model");
   desc.add<std::string>("onnxBackend", "CPU")
       ->setComment("ONNX execution backend: CPU, CUDA");

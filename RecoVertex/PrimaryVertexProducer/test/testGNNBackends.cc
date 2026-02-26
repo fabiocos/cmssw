@@ -27,7 +27,7 @@ using cms::Ort::ONNXRuntime;
 // Test input dimensions
 constexpr int NUM_TRACKS = 50;
 constexpr int NUM_FEATURES = 13;
-constexpr int NUM_SLOTS = 200;
+constexpr int NUM_SLOTS = 180;  // Must match v17p1 model's num_slots
 
 // Generate deterministic test input
 std::vector<float> generateInput(int seed = 42) {

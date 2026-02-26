@@ -71,7 +71,7 @@ process.trackFeatureSource = cms.EDProducer("alpaka_serial_sync::vertexgnn::Trac
 process.gnnVertexProducer = cms.EDProducer("alpaka_serial_sync::vertexgnn::GNNVertexProducerAlpaka",
     model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/data/dummy_vertex_slot.pt"),
     trackFeatures = cms.InputTag("trackFeatureSource"),
-    numSlots = cms.int32(200),
+    numSlots = cms.int32(180),  # Must match model's num_slots
     verbose = cms.untracked.bool(True),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string("")
@@ -86,9 +86,9 @@ process.gnnVertexBuilderAlpaka = cms.EDProducer("GNNVertexBuilderFromAlpaka",
     tracks = cms.InputTag("generalTracks"),
     slotPredictions = cms.InputTag("gnnVertexProducer"),
     assignments = cms.InputTag("gnnVertexProducer"),
-    numSlots = cms.int32(200),
+    numSlots = cms.int32(180),  # Must match model's num_slots
     existenceThreshold = cms.double(0.5),
-    trackAssignmentThreshold = cms.double(0.0),
+    trackAssignmentThreshold = cms.double(0.4),
     verbose = cms.untracked.bool(True)
 )
 

@@ -63,7 +63,7 @@ GNNTrackInspector::GNNTrackInspector(const edm::ParameterSet& iConfig)
 
 void GNNTrackInspector::beginJob() {
   edm::Service<TFileService> fs;
-  h_slotAssign_ = fs->make<TH1F>("slotAssign", "GNN Slot Assignment;slot;tracks", 200, 0, 200);
+  h_slotAssign_ = fs->make<TH1F>("slotAssign", "GNN Slot Assignment;slot;tracks", 180, 0, 180);
   h_maxProb_ = fs->make<TH1F>("maxProb", "GNN Max Assignment Prob;prob;tracks", 100, 0.0, 1.0);
   h_piWeight0_ = fs->make<TH1F>("piWeight0", "PID Weight #pi;weight;tracks", 100, 0.0, 1.0);
   h_piWeight1_ = fs->make<TH1F>("piWeight1", "PID Weight K;weight;tracks", 100, 0.0, 1.0);

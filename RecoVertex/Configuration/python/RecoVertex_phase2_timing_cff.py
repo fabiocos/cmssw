@@ -64,8 +64,8 @@ unsortedOfflinePrimaryVerticesGNN = unsortedOfflinePrimaryVertices4D.clone(
         TkDAClusParameters = cms.PSet(
             # VertexSlotModel parameters
             existenceThreshold = cms.double(0.5),
-            trackAssignmentThreshold = cms.double(0.0),
-            numSlots = cms.int32(200),
+            trackAssignmentThreshold = cms.double(0.4),
+            numSlots = cms.int32(180),  # Must match kNumSlots in VertexGNNSoA.h
             nnVersion = cms.string("vertex_slot_v8p9"),
             onnxBackend = cms.string("CPU"),  # or "CUDA" for GPU
             onnxModelPath = cms.FileInPath('RecoVertex/PrimaryVertexProducer/data/vertex_slot_model.onnx'),

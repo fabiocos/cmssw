@@ -59,8 +59,8 @@ process.unsortedOfflinePrimaryVerticesGNN = process.unsortedOfflinePrimaryVertic
             # VertexSlotModel-specific parameters (Hybrid)
             # ===============================================
             existenceThreshold = cms.double(0.5),
-            trackAssignmentThreshold = cms.double(0.0),
-            numSlots = cms.int32(200),
+            trackAssignmentThreshold = cms.double(0.4),
+            numSlots = cms.int32(180),  # Must match model's num_slots
             nnVersion = cms.string("vertex_slot_v8p9"),
             onnxBackend = cms.string("CPU"),  # Use "CUDA" for GPU
             
@@ -139,6 +139,6 @@ print("=" * 70)
 print("Mode: Hybrid (GNN clustering + Fitter geometry + GNN weights)")
 print("Parameters:")
 print("  - existenceThreshold: 0.5")
-print("  - numSlots: 200")
+print("  - numSlots: 180")
 print("  - onnxBackend: CPU")
 print("=" * 70)

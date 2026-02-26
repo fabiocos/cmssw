@@ -123,7 +123,19 @@ namespace vertexgnn {
             << ": z=" << z_cluster
             << ", t=" << t_hat[k]
             << ", p=" << p[k]
-            << ", ntracks=" << cluster_tracks.size();
+            << ", ntracks=" << cluster_tracks.size()
+            << ", hasTrackWeight=" << vertex.hasTrackWeight();
+        
+        // Log track pointers and weights for verification
+        edm::LogInfo("GNNClusterizerFromAlpaka") 
+            << "  [DEBUG] Track pointers in cluster:";
+        for (size_t i = 0; i < cluster_tracks.size() && i < 5; ++i) {
+          const reco::Track* tptr = &(cluster_tracks[i].track());
+          edm::LogInfo("GNNClusterizerFromAlpaka") 
+              << "    Track[" << i << "]: ptr=" << tptr 
+              << ", pt=" << cluster_tracks[i].track().pt()
+              << ", weight=" << cluster_weights[i];
+        }
       }
     }
 
