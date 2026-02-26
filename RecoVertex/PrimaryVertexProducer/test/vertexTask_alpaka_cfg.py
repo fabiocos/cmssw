@@ -24,14 +24,23 @@ process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
 process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100),
+    input = cms.untracked.int32(1000),
     output = cms.optional.untracked.allowed(cms.int32, cms.PSet)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/02098e56-4e94-4d1d-afea-d901f9842456.root'
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/02098e56-4e94-4d1d-afea-d901f9842456.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/0220b466-b1b6-47f6-ad50-1ee4609c6de6.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/06190f6c-a9eb-4ed2-b764-36bcd6ae5147.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/0721da40-e1ea-493d-86fa-e505b1c93b53.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/08d81f57-3c82-442f-877f-28be46da3441.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/09696683-5b79-4cfa-8ab2-64b3ad94ab80.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/0a9ad4a9-9a7a-43f6-86ca-873dec4a26a6.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/1017a25b-dfa2-4888-aa25-617a42e3deea.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/1049f975-3edd-4edb-a472-720cf974bda7.root',
+        'file:/eos/cms/store/relval/CMSSW_16_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-RECO/PU_150X_mcRun4_realistic_v1_STD_Run4D110_PU-v1/2580000/16741a4f-db51-4bb3-ae11-76188d9b8a19.root',
     ),
     secondaryFileNames = cms.untracked.vstring()
 )
@@ -43,12 +52,13 @@ process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(limit = cms.untracked.int3
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(limit = cms.untracked.int32(0))
 process.MessageLogger.cerr.PrimaryVertexProducer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 process.MessageLogger.cerr.GNNClusterizerFromAlpaka = cms.untracked.PSet(limit = cms.untracked.int32(-1))
+process.MessageLogger.cerr.SequentialPrimaryVertexFitterAdapter = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 process.MessageLogger.cerr.TrackFeatureProducer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 process.MessageLogger.cerr.GNNVertexProducerAlpaka = cms.untracked.PSet(limit = cms.untracked.int32(-1))
 
 process.options = cms.untracked.PSet(
-    numberOfThreads = cms.untracked.uint32(10),
-    numberOfStreams = cms.untracked.uint32(10),
+    numberOfThreads = cms.untracked.uint32(1),
+    numberOfStreams = cms.untracked.uint32(1),
     wantSummary = cms.untracked.bool(True)
 )
 
@@ -94,7 +104,7 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
 # Step 2: GNNVertexProducerAlpaka (GPU inference)
 process.gnnVertexProducer = cms.EDProducer("vertexgnn::GNNVertexProducerAlpaka@alpaka",
     trackFeatures = cms.InputTag("trackFeatureProducer"),
-    model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/data/vertex_slot_production.pt"),
+    model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/test/vertex_slot_v17p1_alpaka.pt"),
     verbose = cms.untracked.bool(False),
 )
 
@@ -111,6 +121,12 @@ process.unsortedOfflinePrimaryVerticesGNN = process.unsortedOfflinePrimaryVertic
     ),
 )
 
+# Use fitter geometric weights instead of GNN assignment probabilities for comparison
+# Set to False to use AdaptiveVertexFitter's chi2-based weights
+# Set to True (default) to use GNN assignment probabilities
+for vc in process.unsortedOfflinePrimaryVerticesGNN.vertexCollections:
+    vc.useClusterWeights = cms.untracked.bool(False)
+
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
     annotation = cms.untracked.string('Alpaka GNN Vertex Reconstruction (GPU)'),
@@ -125,20 +141,35 @@ outputCommand.append('drop *_offlinePrimaryVertices4D_*_RECO')
 outputCommand.append('drop *_offlinePrimaryVertices4DWithBS_*_RECO')
 outputCommand.append('drop *_offlinePrimaryVerticesWithBS_*_RECO')
 outputCommand.append('drop *_TriggerResults_*_RECO')
+outputCommand.append('drop *_trackTimeValueMapProducer_generalTracksConfigurableFlatResolutionModel_RECO')
+outputCommand.append('drop *_trackTimeValueMapProducer_generalTracksConfigurableFlatResolutionModelResolution_RECO')
+outputCommand.append('drop *_trackTimeValueMapProducer_generalTracksPerfectResolutionModel_RECO')
+outputCommand.append('drop *_trackTimeValueMapProducer_generalTracksPerfectResolutionModelResolution_RECO')
+outputCommand.append('drop *_tofPID_probK_RECO')
+outputCommand.append('drop *_tofPID_probP_RECO')
+outputCommand.append('drop *_tofPID_probPi_RECO')
+outputCommand.append('drop *_tofPID_sigmat0_RECO')
+outputCommand.append('drop *_tofPID_sigmat0safe_RECO')
+outputCommand.append('drop *_tofPID_t0_RECO')
+outputCommand.append('drop *_tofPID_t0safe_RECO')
+outputCommand.append('drop *_ak4CaloJetsForTrk_*_RECO')
+outputCommand.append('drop *_inclusiveSecondaryVertices_*_RECO')
+outputCommand.append('drop *_generalV0Candidates_Kshort_RECO')
+outputCommand.append('drop *_generalV0Candidates_Lambda_RECO')
 
 process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
     dataset = cms.untracked.PSet(
         dataTier = cms.untracked.string('GEN-SIM-RECO'),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('file:revtx_step3_alpaka.root'),
+    fileName = cms.untracked.string('file:revtx_step3_alpaka_v17p1.root'),
     outputCommands = outputCommand,
     splitLevel = cms.untracked.int32(0)
 )
 
 # TFileService for GNN track inspector output
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("gnn_track_inspector_alpaka.root")
+    fileName = cms.string("gnn_inspector_v17p1.root")
 )
 
 # ============================================================================
@@ -177,7 +208,8 @@ print("vertexTask_alpaka_cfg.py - Alpaka GNN VertexSlotModel (GPU)")
 print("=" * 70)
 print("Mode: GPU Inference via Alpaka/PyTorchAlpaka")
 print("Parameters:")
-print("  - existenceThreshold: 0.5")
-print("  - model: vertex_slot_model.pt")
+print("  - existenceThreshold: 0.01")
+print("  - trackAssignmentThreshold: 0.0")
+print("  - useClusterWeights: True (GNN A as track weights)")
+print("  - model: vertex_slot_v17p1_alpaka.pt (v17p1)")
 print("  - backend: CUDA (GPU)")
-print("=" * 70)
