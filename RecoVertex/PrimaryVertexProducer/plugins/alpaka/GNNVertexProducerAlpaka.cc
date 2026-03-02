@@ -26,9 +26,9 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/host.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/TensorCollection.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/alpaka/AlpakaModel.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/alpaka/VertexGNNDeviceCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNSoA.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNHostCollection.h"
+#include "DataFormats/VertexGNNReco/interface/alpaka/VertexGNNDeviceCollection.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::vertexgnn {
 

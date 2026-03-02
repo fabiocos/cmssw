@@ -33,8 +33,8 @@
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GNNClusterizerFromAlpaka.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNSoA.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNHostCollection.h"
 
 class GNNVertexBuilderFromAlpaka : public edm::stream::EDProducer<> {
 public:

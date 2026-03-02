@@ -4,5 +4,5 @@
 
 #include "DataFormats/Common/interface/DeviceProduct.h"
 #include "DataFormats/Common/interface/Wrapper.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/alpaka/VertexGNNDeviceCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNSoA.h"
+#include "DataFormats/VertexGNNReco/interface/alpaka/VertexGNNDeviceCollection.h"

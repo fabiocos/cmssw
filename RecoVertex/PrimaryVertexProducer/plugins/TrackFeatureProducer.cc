@@ -32,8 +32,8 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/host.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNSoA.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNHostCollection.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 
 #include <cmath>

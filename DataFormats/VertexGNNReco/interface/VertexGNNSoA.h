@@ -1,5 +1,5 @@
-#ifndef RecoVertex_PrimaryVertexProducer_interface_VertexGNNSoA_h
-#define RecoVertex_PrimaryVertexProducer_interface_VertexGNNSoA_h
+#ifndef DataFormats_VertexGNNReco_interface_VertexGNNSoA_h
+#define DataFormats_VertexGNNReco_interface_VertexGNNSoA_h
 
 /**
  * SoA layouts for GNN vertex producer using PyTorchAlpaka.
@@ -76,4 +76,4 @@ namespace vertexgnn {
 
 }  // namespace vertexgnn
 
-#endif  // RecoVertex_PrimaryVertexProducer_interface_VertexGNNSoA_h
+#endif  // DataFormats_VertexGNNReco_interface_VertexGNNSoA_h

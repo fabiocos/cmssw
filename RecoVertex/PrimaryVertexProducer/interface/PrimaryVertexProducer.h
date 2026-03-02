@@ -37,7 +37,7 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZT_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GNNClusterizer.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GNNClusterizerFromAlpaka.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNHostCollection.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/HITrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GapClusterizerInZ.h"

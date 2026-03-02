@@ -1,10 +1,10 @@
-#ifndef RecoVertex_PrimaryVertexProducer_interface_alpaka_VertexGNNDeviceCollection_h
-#define RecoVertex_PrimaryVertexProducer_interface_alpaka_VertexGNNDeviceCollection_h
+#ifndef DataFormats_VertexGNNReco_interface_alpaka_VertexGNNDeviceCollection_h
+#define DataFormats_VertexGNNReco_interface_alpaka_VertexGNNDeviceCollection_h
 
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNSoA.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/VertexGNNHostCollection.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNSoA.h"
+#include "DataFormats/VertexGNNReco/interface/VertexGNNHostCollection.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::vertexgnn {
 
@@ -16,4 +16,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::vertexgnn {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::vertexgnn
 
-#endif  // RecoVertex_PrimaryVertexProducer_interface_alpaka_VertexGNNDeviceCollection_h
+#endif  // DataFormats_VertexGNNReco_interface_alpaka_VertexGNNDeviceCollection_h
