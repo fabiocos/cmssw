@@ -438,7 +438,7 @@ void PrimaryVertexProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
     
     auto gnnView = gnnOutput.const_view();
     const int gnn_output_N = gnnView.metadata().size();
-    gnn_K = vertexgnn::kNumSlots;  // 180 (matches v17p1 model)
+    gnn_K = vertexgnn::kNumSlots;  // 220 (matches v17s29 model)
     
     // TrackFeatureProducer should use the same TkFilterParameters as PrimaryVertexProducer
     // so gnn_output_N (filtered tracks in SoA) should match seltks.size() (filtered tracks here).

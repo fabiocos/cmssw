@@ -26,8 +26,8 @@ namespace vertexgnn {
 
   // Fixed number of vertex slots (compile-time constant for Eigen types)
   // NOTE: Must match the TorchScript model's num_slots parameter!
-  // v17p1 model uses num_slots=180
-  constexpr int kNumSlots = 180;
+  // v17s29 model uses num_slots=220
+  constexpr int kNumSlots = 220;
 
   // Type aliases for Eigen column types
   using SlotVector = Eigen::Vector<float, kNumSlots>;           // [K] values per track

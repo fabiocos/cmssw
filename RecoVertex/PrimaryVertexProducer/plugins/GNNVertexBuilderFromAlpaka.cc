@@ -108,7 +108,7 @@ void GNNVertexBuilderFromAlpaka::produce(edm::Event& event, const edm::EventSetu
   // Get SoA view
   auto gnnView = gnnOutput->const_view();
   const int N = gnnView.metadata().size();
-  constexpr int K = vertexgnn::kNumSlots;  // 180 (matches v17p1 model)
+  constexpr int K = vertexgnn::kNumSlots;  // 220 (matches v17s29 model)
   
   if (verbose_) {
     edm::LogInfo("GNNVertexBuilderFromAlpaka") 

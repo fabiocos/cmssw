@@ -24,7 +24,7 @@ process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
 process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000),
+    input = cms.untracked.int32(-1),
     output = cms.optional.untracked.allowed(cms.int32, cms.PSet)
 )
 
@@ -104,7 +104,7 @@ process.trackFeatureProducer = cms.EDProducer("vertexgnn::TrackFeatureProducer",
 # Step 2: GNNVertexProducerAlpaka (GPU inference)
 process.gnnVertexProducer = cms.EDProducer("vertexgnn::GNNVertexProducerAlpaka@alpaka",
     trackFeatures = cms.InputTag("trackFeatureProducer"),
-    model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/test/vertex_slot_v17p1_alpaka.pt"),
+    model = cms.FileInPath("RecoVertex/PrimaryVertexProducer/test/vertex_slot_v17s7_alpaka.pt"),
     verbose = cms.untracked.bool(False),
 )
 
@@ -114,7 +114,7 @@ process.unsortedOfflinePrimaryVerticesGNN = process.unsortedOfflinePrimaryVertic
         algorithm = cms.string("GNN2D_alpaka"),
         TkDAClusParameters = cms.PSet(
             existenceThreshold = cms.double(0.01),  # Low threshold for untrained model debugging
-            trackAssignmentThreshold = cms.double(0.4),
+            trackAssignmentThreshold = cms.double(0.5),
             gnnOutput = cms.InputTag("gnnVertexProducer"),
             verbose = cms.untracked.bool(False),
         )
@@ -162,14 +162,14 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string('GEN-SIM-RECO'),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('file:revtx_step3_alpaka_v17p1.root'),
+    fileName = cms.untracked.string('file:revtx_step3_alpaka_v17s7.root'),
     outputCommands = outputCommand,
     splitLevel = cms.untracked.int32(0)
 )
 
 # TFileService for GNN track inspector output
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("gnn_inspector_v17p1.root")
+    fileName = cms.string("gnn_inspector_v17s7.root")
 )
 
 # ============================================================================
@@ -210,6 +210,6 @@ print("Mode: GPU Inference via Alpaka/PyTorchAlpaka")
 print("Parameters:")
 print("  - existenceThreshold: 0.01")
 print("  - trackAssignmentThreshold: 0.0")
-print("  - useClusterWeights: True (GNN A as track weights)")
-print("  - model: vertex_slot_v17p1_alpaka.pt (v17p1)")
+print("  - useClusterWeights: False (using adaptive fitter weights, not GNN A)")
+print("  - model: vertex_slot_v17s7_alpaka.pt (v17s7)")
 print("  - backend: CUDA (GPU)")
