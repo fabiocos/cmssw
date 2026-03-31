@@ -24,6 +24,7 @@
 #include "SimGeneral/MixingModule/interface/PileUpEventPrincipal.h"
 
 #include "DataFormats/Math/interface/liblogintpack.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/host.h"
 
 #include <vector>
 #include <unordered_map>
@@ -173,6 +174,8 @@ namespace mtd_digitizer {
     //handle sim hits
     const int maxSimHitsAccTime_;
     MTDSimHitDataAccumulator simHitAccumulator_;
+    BTLDigiTempCollection btlDigiTempCollection_;
+    ETLDigiTempCollection etlDigiTempCollection_;
   };
 
   template <class Traits>
@@ -247,14 +250,35 @@ namespace mtd_digitizer {
 
   template <class Traits>
   void MTDDigitizer<Traits>::finalizeEvent(edm::Event& e, edm::EventSetup const& c, CLHEP::HepRandomEngine* hre) {
+    // Compiler instruction to save BTL and ETL digis in SoA format
     if (premixStage1_) {
       auto simResult = std::make_unique<PMTDSimAccumulator>();
       saveSimHitAccumulator(*simResult, simHitAccumulator_, premixStage1MinCharge_, premixStage1MaxCharge_);
       e.put(std::move(simResult), digiCollection_);
-    } else {
+
+    } else if constexpr (std::is_same_v<Traits, BTLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
-      electronicsSim_.run(simHitAccumulator_, *digiCollection, hre);
+      electronicsSim_.run(simHitAccumulator_, *digiCollection, btlDigiTempCollection_, hre);
+
+      typedef typename Traits::DigiCollectionSoA DigiCollectionSoA;
+      auto digiCollectionSoA =
+          std::make_unique<DigiCollectionSoA>(cms::alpakatools::host(), btlDigiTempCollection_.size());
+      electronicsSim_.updateOutputSoA(btlDigiTempCollection_, *digiCollectionSoA);
+
       e.put(std::move(digiCollection), digiCollection_);
+      e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
+
+    } else if constexpr (std::is_same_v<Traits, ETLDigitizerTraits>) {
+      auto digiCollection = std::make_unique<DigiCollection>();
+      electronicsSim_.run(simHitAccumulator_, *digiCollection, etlDigiTempCollection_, hre);
+
+      typedef typename Traits::DigiCollectionSoA DigiCollectionSoA;
+      auto digiCollectionSoA =
+          std::make_unique<DigiCollectionSoA>(cms::alpakatools::host(), etlDigiTempCollection_.size());
+      electronicsSim_.updateOutputSoA(etlDigiTempCollection_, *digiCollectionSoA);
+
+      e.put(std::move(digiCollection), digiCollection_);
+      e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
     }
 
     //release memory for next event

@@ -24,12 +24,18 @@ ETLElectronicsSim::ETLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       noiseLevel_(pset.getParameter<double>("noiseLevel")),
       sigmaDistorsion_(pset.getParameter<double>("sigmaDistorsion")),
       sigmaTDC_(pset.getParameter<double>("sigmaTDC")),
-      formulaLandauNoise_(pset.getParameter<std::string>("formulaLandauNoise")) {}
+      formulaLandauNoise_(pset.getParameter<std::string>("formulaLandauNoise")),
+#ifdef EDM_ML_DEBUG
+      debug_(true) {}
+#else
+      debug_(false) {}
+#endif
 
 void ETLElectronicsSim::getEventSetup(const edm::EventSetup& evs) { geom_ = &evs.getData(geomToken_); }
 
 void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             ETLDigiCollection& output,
+                            ETLDigiTempCollection& outputTemp,
                             CLHEP::HepRandomEngine* hre) const {
   MTDSimHitData chargeColl, toa1, toa2, tot;
 
@@ -121,7 +127,32 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     // Run the shaper to create a new data frame
     ETLDataFrame rawDataFrame(it->first.detid_);
     runTrivialShaper(rawDataFrame, chargeColl, toa1, tot, it->first.row_, it->first.column_);
+
+    if (!checkValidHit(rawDataFrame)) {
+      continue;
+    }
+
     updateOutput(output, rawDataFrame);
+
+    uint32_t rawId = rawDataFrame.id().rawId();
+    uint8_t  colID = it->first.column_;
+    uint8_t  rowID = it->first.row_;
+    uint8_t  header = 0;    // header is always 0 in this implementation
+    uint8_t  status = 0;    // status is always 0 in this implementation
+    for (int it = 0; it < (int)(chargeColl.size()); it++) {
+      uint8_t  CALdata = 0;   // CAL code is always 0 in this implementation
+      uint16_t ToAdata = std::min(static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)), tdcBitSaturation_);
+      uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), tdcBitSaturation_);
+
+      outputTemp.emplace_back(rawId,
+                              header,
+                              status,
+                              colID,
+                              rowID,
+                              ToAdata,
+                              ToTdata,
+                              CALdata);
+    }
   }
 }
 
@@ -147,13 +178,18 @@ void ETLElectronicsSim::runTrivialShaper(ETLDataFrame& dataFrame,
   //set new ADCs. Notice that we are only interested in the first element of the array for the ETL
   for (int it = 0; it < (int)(chargeColl.size()); it++) {
     //brute force saturation, maybe could to better with an exponential like saturation
-    const uint32_t adc = std::min((uint32_t)std::floor(chargeColl[it] / adcLSB_MIP_), adcBitSaturation_);
-    const uint32_t tdc_time1 = std::min((uint32_t)std::floor(toa[it] / toaLSB_ns_), tdcBitSaturation_);
-    const uint32_t tdc_time2 = std::min((uint32_t)std::floor(tot[it] / toaLSB_ns_), tdcBitSaturation_);
+    const uint16_t adc = std::min(static_cast<uint16_t>(std::floor(chargeColl[it] / adcLSB_MIP_)), adcBitSaturation_);
+    const uint16_t tdc_time1 = std::min(static_cast<uint16_t>(std::floor(toa[it] / toaLSB_ns_)), tdcBitSaturation_);
+    const uint16_t tdc_time2 = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), tdcBitSaturation_);
     //If time over threshold is 0 the event is assumed to not pass the threshold
     bool thres = true;
     if (tdc_time2 == 0 || chargeColl[it] < adcThreshold_MIP_)
       thres = false;
+    if (thres) {
+      std::cout << "[ETLElectronicsSim::runTrivialShaper] it = " << it << std::endl;
+      std::cout << "                                      ToA [ns] = " << toa[it] << ", ToA [TDC counts] = " << tdc_time1 << std::endl;
+      std::cout << "                                      ToT [ns] = " << tot[it] << ", ToT [TDC counts] = " << tdc_time2 << std::endl;
+    }
 
     ETLSample newSample;
     newSample.set(thres, false, tdc_time1, tdc_time2, adc, row, col);
@@ -177,11 +213,8 @@ void ETLElectronicsSim::runTrivialShaper(ETLDataFrame& dataFrame,
 #endif
 }
 
-void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const {
+bool ETLElectronicsSim::checkValidHit(const ETLDataFrame& rawDataFrame) const {
   int itIdx(mtd_digitizer::kInTimeBX);
-  if (rawDataFrame.size() <= itIdx + 2)
-    return;
-
   ETLDataFrame dataFrame(rawDataFrame.id());
   dataFrame.resize(dfSIZE);
   bool putInEvent(false);
@@ -190,8 +223,37 @@ void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame
     if (it == 2)
       putInEvent = rawDataFrame[itIdx - 2 + it].threshold();
   }
+  return putInEvent;
+}
 
-  if (putInEvent) {
-    coll.push_back(dataFrame);
+void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const {
+  ETLDataFrame dataFrame(rawDataFrame.id());
+  dataFrame.resize(dfSIZE);
+  coll.push_back(rawDataFrame);
+}
+
+void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp,
+                                        etldigi::ETLDigiHostCollection& hostColl) const {
+  etldigi::ETLDigiSoAView& etlDigiView = hostColl.view();
+  size_t nDigis = outputTemp.size();
+  if (debug_) {
+    edm::LogError("ETLElectronicsSim") << "Updating output SoA with " << nDigis << " digis." << std::endl;
+  }
+  for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
+    const auto& digiTemp = outputTemp[hitIndex];
+    etlDigiView[hitIndex] = {digiTemp.rawId_,   digiTemp.header_,   digiTemp.status_,
+                             digiTemp.colID_,   digiTemp.rowID_,    digiTemp.ToAdata_,
+                             digiTemp.ToTdata_, digiTemp.CALdata_};
+
+    if (debug_) {
+        edm::LogError("ETLElectronicsSim") << "Processed hit with rawId: " << etlDigiView[hitIndex].rawId()
+                                           << ", header: " << etlDigiView[hitIndex].header()
+                                           << ", status: " << etlDigiView[hitIndex].status()
+                                           << ", col: " << etlDigiView[hitIndex].colID()
+                                           << ", row: " << etlDigiView[hitIndex].rowID()
+                                           << ", toa: " << etlDigiView[hitIndex].ToAdata()
+                                           << ", tot: " << etlDigiView[hitIndex].ToTdata()
+                                           << ", cal: " << etlDigiView[hitIndex].CALdata() << std::endl;
+    }
   }
 }

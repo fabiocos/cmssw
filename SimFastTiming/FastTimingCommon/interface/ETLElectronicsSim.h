@@ -10,6 +10,7 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
+#include "DataFormats/FTLDigiSoA/interface/ETLDigiHostCollection.h"
 #include "SimFastTiming/FastTimingCommon/interface/MTDDigitizerTypes.h"
 
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
@@ -34,12 +35,21 @@ public:
 
   void run(const mtd::MTDSimHitDataAccumulator& input, ETLDigiCollection& output, CLHEP::HepRandomEngine* hre) const;
 
+  void run(const mtd::MTDSimHitDataAccumulator& input,
+           ETLDigiCollection& output,
+           mtd_digitizer::ETLDigiTempCollection& outputTemp,
+           CLHEP::HepRandomEngine* hre) const;
+
   void runTrivialShaper(ETLDataFrame& dataFrame,
                         const mtd::MTDSimHitData& chargeColl,
                         const mtd::MTDSimHitData& toa1,
                         const mtd::MTDSimHitData& toa2,
                         const uint8_t row,
                         const uint8_t column) const;
+
+  bool checkValidHit(const ETLDataFrame& rawDataFrame) const;
+
+  void updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp, etldigi::ETLDigiHostCollection& coll) const;
 
   void updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const;
 
@@ -60,16 +70,18 @@ private:
   // synthesized adc/tdc information
   const float adcSaturation_MIP_;
   const float adcLSB_MIP_;
-  const uint32_t adcBitSaturation_;
+  const uint16_t adcBitSaturation_;
   const float adcThreshold_MIP_;
   const float iThreshold_MIP_;
   const float toaLSB_ns_;
-  const uint32_t tdcBitSaturation_;
+  const uint16_t tdcBitSaturation_;
   const float referenceChargeColl_;
   const float noiseLevel_;
   const float sigmaDistorsion_;
   const float sigmaTDC_;
   const reco::FormulaEvaluator formulaLandauNoise_;
+
+  const bool debug_;
 };
 
 #endif
