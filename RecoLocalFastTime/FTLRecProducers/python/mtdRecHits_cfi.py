@@ -25,3 +25,17 @@ mtdRecHits = cms.EDProducer(
     BarrelHitsName = cms.string('FTLBarrel'),
     EndcapHitsName = cms.string('FTLEndcap'),
 )
+
+from SimFastTiming.FastTimingCommon.mtdDigitizer_cfi import mtdDigitizer
+btlRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
+    baserh = cms.InputTag("mtdBaseRecHitsSoA"),
+    invLightSpeedLYSO = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightCollectionSlope, # [ns/cm]
+    thresholdToKeep = cms.double(1.), # [MeV]
+    calibrationConstant = cms.double(1.)
+)
+
+etlRecHitsSoA = cms.EDProducer('etlrechit::ETLRecHitSoAProducer@alpaka',
+    baserh = cms.InputTag("mtdBaseRecHitsSoA"),
+    thresholdToKeep = cms.double(0.0425), # [MeV]
+    calibrationConstant = cms.double(0.085)
+)
