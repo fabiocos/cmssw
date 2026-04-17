@@ -185,11 +185,6 @@ void ETLElectronicsSim::runTrivialShaper(ETLDataFrame& dataFrame,
     bool thres = true;
     if (tdc_time2 == 0 || chargeColl[it] < adcThreshold_MIP_)
       thres = false;
-    if (thres) {
-      std::cout << "[ETLElectronicsSim::runTrivialShaper] it = " << it << std::endl;
-      std::cout << "                                      ToA [ns] = " << toa[it] << ", ToA [TDC counts] = " << tdc_time1 << std::endl;
-      std::cout << "                                      ToT [ns] = " << tot[it] << ", ToT [TDC counts] = " << tdc_time2 << std::endl;
-    }
 
     ETLSample newSample;
     newSample.set(thres, false, tdc_time1, tdc_time2, adc, row, col);
