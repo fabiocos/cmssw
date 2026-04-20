@@ -64,6 +64,7 @@ private:
   const std::string folder_;
   const float hitMinEnergy2Dis_;
   const bool optionalPlots_;
+  const bool uncalibRecHitsPlots_;
   const double hitMinAmplitude_;
 
   edm::EDGetTokenT<etlrechit::ETLBaseRecHitHostCollection> etlBaseRecHitsSoAToken_;
@@ -119,6 +120,7 @@ EtlLocalRecoSoAValidation::EtlLocalRecoSoAValidation(const edm::ParameterSet& iC
     : folder_(iConfig.getParameter<std::string>("folder")),
       hitMinEnergy2Dis_(iConfig.getParameter<double>("hitMinimumEnergy2Dis")),
       optionalPlots_(iConfig.getParameter<bool>("optionalPlots")),
+      uncalibRecHitsPlots_(iConfig.getParameter<bool>("BaseRecHitsPlots")),
       hitMinAmplitude_(iConfig.getParameter<double>("HitMinimumAmplitude")),
       mtdgeoToken_(esConsumes<MTDGeometry, MTDDigiGeometryRecord>()),
       mtdtopoToken_(esConsumes<MTDTopology, MTDTopologyRcd>()) {
@@ -575,7 +577,7 @@ void EtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
 
   // --- UncalibratedRecHits histograms
 
-  if (optionalPlots_) {
+  if (uncalibRecHitsPlots_) {
     const std::string det_name[2] = {"ETL-", "ETL+"};
     for (unsigned int iside = 0; iside < 2; ++iside) {
       for (unsigned int ihistoTot = 0; ihistoTot < nBinsTot_; ++ihistoTot) {
@@ -603,11 +605,12 @@ void EtlLocalRecoSoAValidation::fillDescriptions(edm::ConfigurationDescriptions&
 
   desc.add<std::string>("folder", "MTD/ETL/LocalRecoSoA");
   desc.add<edm::InputTag>("recHitsSoATag", edm::InputTag("etlRecHitsSoA"));
-  desc.add<edm::InputTag>("uncalibRecHitsTag", edm::InputTag("etlBaseRecHitsSoA"));
+  desc.add<edm::InputTag>("uncalibRecHitsSoATag", edm::InputTag("etlBaseRecHitsSoA"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsEndcap"));
   desc.add<edm::InputTag>("trkHitTag", edm::InputTag("mtdTrackingRecHits"));
   desc.add<double>("hitMinimumEnergy2Dis", 0.001);  // [MeV]
   desc.add<bool>("optionalPlots", false);
+  desc.add<bool>("BaseRecHitsPlots", false);
   desc.add<double>("HitMinimumAmplitude", 0.33);  // [MIP] old, now amplitude for recHit is time_over_threshold in ETL
 
   descriptions.add("etlLocalRecoSoAValid", desc);

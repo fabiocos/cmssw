@@ -8,5 +8,5 @@ from RecoLocalFastTime.FTLClusterizer.mtdClusters_cfi import mtdClusters
 from RecoLocalFastTime.FTLClusterizer.MTDCPEESProducers_cff import *
 from RecoLocalFastTime.FTLRecProducers.MTDTimeCalibESProducers_cff import *
 
-fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlBaseRecHitsSoA,etlBaseRecHitSoA,btlRecHitsSoA,etlRecHitSoA,mtdClusters,mtdTrackingRecHits)
+fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlBaseRecHitsSoA,etlBaseRecHitsSoA,btlRecHitsSoA,etlRecHitsSoA,mtdClusters,mtdTrackingRecHits)
 fastTimingLocalReco = cms.Sequence(fastTimingLocalRecoTask)

@@ -27,10 +27,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         : EDProducer<>(config),
           digi_{consumes(config.getParameter<edm::InputTag>("digi"))},
           uncalibrh_{produces()},
-          adcNBits_(config.getParameter<uint32_t>("adcNBits")),
+          adcNBits_(config.getParameter<uint32_t>("adcNbits")),
           adcSaturation_(config.getParameter<double>("adcSaturation")),
-          adcLSB_(config.getParameter<double>("adcLSB")),
-          toaLSBtoNS_(config.getParameter<double>("toaLSBtoNS")),
+          adcLSB_(adcSaturation_ / (1 << adcNBits_)),
+          toaLSB_ns_(config.getParameter<double>("toaLSB_ns")),
           timeCorr_p0_(config.getParameter<double>("timeCorr_p0")),
           timeCorr_p1_(config.getParameter<double>("timeCorr_p1")),
           timeCorr_p2_(config.getParameter<double>("timeCorr_p2")),
@@ -39,10 +39,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("digi");
-      desc.add<uint32_t>("adcNBits");
+      desc.add<uint32_t>("adcNbits");
       desc.add<double>("adcSaturation");
-      desc.add<double>("adcLSB");
-      desc.add<double>("toaLSBtoNS");
+      desc.add<double>("toaLSB_ns");
       desc.add<double>("timeCorr_p0");
       desc.add<double>("timeCorr_p1");
       desc.add<double>("timeCorr_p2");
@@ -61,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
       ETLBaseRecHitSoAProducerAlgo::fromDigiToBase(
           event.queue(), digi.view(), uncalibrh.view(), adcNBits_, adcSaturation_, adcLSB_,
-          toaLSBtoNS_, timeCorr_p0_, timeCorr_p2_, timeCorr_p1_, timeCorr_p3_);
+          toaLSB_ns_, timeCorr_p0_, timeCorr_p2_, timeCorr_p1_, timeCorr_p3_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -73,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     const uint32_t adcNBits_;
     const double adcSaturation_;
     const double adcLSB_;
-    const double toaLSBtoNS_;
+    const double toaLSB_ns_;
     const double timeCorr_p0_;
     const double timeCorr_p1_;
     const double timeCorr_p2_;
