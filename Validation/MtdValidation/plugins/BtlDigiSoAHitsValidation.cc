@@ -222,13 +222,13 @@ void BtlDigiSoAHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
   meHitCharge_[1] = ibook.book1D("BtlHitChargeR", "BTL DIGI hits charge (R);Q_{DIGI} [ADC counts]", 100, 0., 1024.);
 
   meHitT1coarse_[0] =
-      ibook.book1D("BtlHitT1coarseL", "BTL DIGI hits T1 coarse (L);ToA_{DIGI} [# clk cycles]", 100, 0., 1024.);
+      ibook.book1D("BtlHitT1coarseL", "BTL DIGI hits T1 coarse (L);ToA_{DIGI} [# clk cycles]", 10, 0., 10.);
   meHitT1coarse_[1] =
-      ibook.book1D("BtlHitT1coarseR", "BTL DIGI hits T1 coarse (R);ToA_{DIGI} [# clk cycles]", 100, 0., 1024.);
+      ibook.book1D("BtlHitT1coarseR", "BTL DIGI hits T1 coarse (R);ToA_{DIGI} [# clk cycles]", 10, 0., 10.);
   meHitT2coarse_[0] =
-      ibook.book1D("BtlHitT2coarseL", "BTL DIGI hits T2 coarse (L);ToA_{DIGI} [# clk cycles]", 100, 0., 1024.);
+      ibook.book1D("BtlHitT2coarseL", "BTL DIGI hits T2 coarse (L);ToA_{DIGI} [# clk cycles]", 10, 0., 10.);
   meHitT2coarse_[1] =
-      ibook.book1D("BtlHitT2coarseR", "BTL DIGI hits T2 coarse (R);ToA_{DIGI} [# clk cycles]", 100, 0., 1024.);
+      ibook.book1D("BtlHitT2coarseR", "BTL DIGI hits T2 coarse (R);ToA_{DIGI} [# clk cycles]", 10, 0., 10.);
 
   meHitT1fine_[0] = ibook.book1D("BtlHitT1fineL", "BTL DIGI hits T1 fine (L);ToA_{DIGI} [TDC counts]", 100, 0., 1024.);
   meHitT1fine_[1] = ibook.book1D("BtlHitT1fineR", "BTL DIGI hits T1 fine (R);ToA_{DIGI} [TDC counts]", 100, 0., 1024.);

@@ -4,6 +4,8 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "CLHEP/Random/RandGaussQ.h"
 
+#define EDM_ML_DEBUG
+
 using namespace mtd;
 
 ETLElectronicsSim::ETLElectronicsSim(const edm::ParameterSet& pset, edm::ConsumesCollector iC)
@@ -141,17 +143,20 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t  status = 0;    // status is always 0 in this implementation
     for (int it = 0; it < (int)(chargeColl.size()); it++) {
       uint8_t  CALdata = 0;   // CAL code is always 0 in this implementation
-      uint16_t ToAdata = std::min(static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)), tdcBitSaturation_);
-      uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), tdcBitSaturation_);
-
-      outputTemp.emplace_back(rawId,
-                              header,
-                              status,
-                              colID,
-                              rowID,
-                              ToAdata,
-                              ToTdata,
-                              CALdata);
+      uint16_t ToAdata = static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)) & toaMask;
+      uint16_t ToTdata = static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)) & totMask;
+      //If time over threshold is 0 the event is assumed to not pass the threshold
+      if (ToTdata > 0 && chargeColl[it] >= adcThreshold_MIP_) {
+        std::cout << "[ETLElectronicsSim::run] ToAdata = " << ToAdata << ", ToTdata = " << ToTdata << std::endl;
+        outputTemp.emplace_back(rawId,
+                                header,
+                                status,
+                                colID,
+                                rowID,
+                                ToAdata,
+                                ToTdata,
+                                CALdata);
+      }
     }
   }
 }
@@ -178,9 +183,9 @@ void ETLElectronicsSim::runTrivialShaper(ETLDataFrame& dataFrame,
   //set new ADCs. Notice that we are only interested in the first element of the array for the ETL
   for (int it = 0; it < (int)(chargeColl.size()); it++) {
     //brute force saturation, maybe could to better with an exponential like saturation
-    const uint16_t adc = std::min(static_cast<uint16_t>(std::floor(chargeColl[it] / adcLSB_MIP_)), adcBitSaturation_);
-    const uint16_t tdc_time1 = std::min(static_cast<uint16_t>(std::floor(toa[it] / toaLSB_ns_)), tdcBitSaturation_);
-    const uint16_t tdc_time2 = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), tdcBitSaturation_);
+    const uint32_t adc = std::min((uint32_t)std::floor(chargeColl[it] / adcLSB_MIP_), adcBitSaturation_);
+    const uint32_t tdc_time1 = std::min((uint32_t)std::floor(toa[it] / toaLSB_ns_), tdcBitSaturation_);
+    const uint32_t tdc_time2 = std::min((uint32_t)std::floor(tot[it] / toaLSB_ns_), tdcBitSaturation_);
     //If time over threshold is 0 the event is assumed to not pass the threshold
     bool thres = true;
     if (tdc_time2 == 0 || chargeColl[it] < adcThreshold_MIP_)
@@ -210,6 +215,9 @@ void ETLElectronicsSim::runTrivialShaper(ETLDataFrame& dataFrame,
 
 bool ETLElectronicsSim::checkValidHit(const ETLDataFrame& rawDataFrame) const {
   int itIdx(mtd_digitizer::kInTimeBX);
+  if (rawDataFrame.size() <= itIdx + 2)
+    return false;
+
   ETLDataFrame dataFrame(rawDataFrame.id());
   dataFrame.resize(dfSIZE);
   bool putInEvent(false);
@@ -222,9 +230,22 @@ bool ETLElectronicsSim::checkValidHit(const ETLDataFrame& rawDataFrame) const {
 }
 
 void ETLElectronicsSim::updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const {
+  int itIdx(mtd_digitizer::kInTimeBX);
+  if (rawDataFrame.size() <= itIdx + 2)
+    return;
+
   ETLDataFrame dataFrame(rawDataFrame.id());
   dataFrame.resize(dfSIZE);
-  coll.push_back(rawDataFrame);
+  bool putInEvent(false);
+  for (int it = 0; it < dfSIZE; ++it) {
+    dataFrame.setSample(it, rawDataFrame[itIdx - 2 + it]);
+    if (it == 2)
+      putInEvent = rawDataFrame[itIdx - 2 + it].threshold();
+  }
+
+  if (putInEvent) {
+    coll.push_back(dataFrame);
+  }
 }
 
 void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& outputTemp,

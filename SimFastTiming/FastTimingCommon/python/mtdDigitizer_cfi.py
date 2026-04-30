@@ -102,7 +102,7 @@ _endcap_MTDDigitizer = cms.PSet(
         noiseLevel          = cms.double(0.1750),
         sigmaDistorsion     = cms.double(0.0),
         sigmaTDC            = cms.double(0.010),
-        formulaLandauNoise  = cms.string("TMath::Max(0.020, 0.020 * (0.35 * (x - 1.0) + 1.0))") 
+        formulaLandauNoise  = cms.string("TMath::Max(0.020, 0.020 * (0.35 * (x - 1.0) + 1.0))")
         )
 )
 
