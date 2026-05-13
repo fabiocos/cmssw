@@ -268,6 +268,7 @@ namespace mtd_digitizer {
       e.put(std::move(digiCollection), digiCollection_);
       e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
 
+      btlDigiTempCollection_.clear();
     } else if constexpr (std::is_same_v<Traits, ETLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
       electronicsSim_.run(simHitAccumulator_, *digiCollection, etlDigiTempCollection_, hre);
@@ -279,6 +280,8 @@ namespace mtd_digitizer {
 
       e.put(std::move(digiCollection), digiCollection_);
       e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
+
+      etlDigiTempCollection_.clear();
     }
 
     //release memory for next event

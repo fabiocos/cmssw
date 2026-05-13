@@ -4,8 +4,6 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "CLHEP/Random/RandGaussQ.h"
 
-#define EDM_ML_DEBUG
-
 using namespace mtd;
 
 ETLElectronicsSim::ETLElectronicsSim(const edm::ParameterSet& pset, edm::ConsumesCollector iC)
@@ -143,11 +141,10 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t  status = 0;    // status is always 0 in this implementation
     for (int it = 0; it < (int)(chargeColl.size()); it++) {
       uint8_t  CALdata = 0;   // CAL code is always 0 in this implementation
-      uint16_t ToAdata = static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)) & toaMask;
-      uint16_t ToTdata = static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)) & totMask;
+      uint16_t ToAdata = std::min(static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)), toaMask);
+      uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), totMask);
       //If time over threshold is 0 the event is assumed to not pass the threshold
       if (ToTdata > 0 && chargeColl[it] >= adcThreshold_MIP_) {
-        std::cout << "[ETLElectronicsSim::run] ToAdata = " << ToAdata << ", ToTdata = " << ToTdata << std::endl;
         outputTemp.emplace_back(rawId,
                                 header,
                                 status,

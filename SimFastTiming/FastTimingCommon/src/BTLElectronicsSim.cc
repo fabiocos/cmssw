@@ -538,7 +538,8 @@ uint16_t BTLElectronicsSim::chargetoQfine(const float charge, const float toa1, 
        (p1_ + (p2_ + (p3_ + (p4_ + (p5_ + (p6_ + (p7_ + (p8_ + p9_ * ti) * ti) * ti) * ti) * ti) * ti) * ti) * ti) *
            ti);
 
-  uint16_t Qfine = static_cast<uint16_t>(std::floor(charge)) + pedestal; // Qfine is the ADC value + pedestal
+  const uint32_t adc = std::min(static_cast<uint32_t>(std::floor(charge)), adcBitSaturation_);
+  uint16_t Qfine = adc + pedestal; // Qfine is the ADC value + pedestal
   if (Qfine > adcBitSaturation_)
     Qfine = adcBitSaturation_;
 
