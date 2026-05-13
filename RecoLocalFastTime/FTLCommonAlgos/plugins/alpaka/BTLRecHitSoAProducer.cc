@@ -13,6 +13,7 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
 
 #include "BTLRecHitSoAProducerAlgo.h"
 
@@ -31,7 +32,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           c_LYSO_(1. / invLightSpeedLYSO_),
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
           calibration_(config.getParameter<double>("calibrationConstant")) {}
-    //tcToken_ {consumes<MTDTimeCalib, MTDTimeCalibRecord>(edm::ESInputTag("", "MTDTimeCalib"));}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
@@ -42,10 +42,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    //void BTLRecHitSoAProducer::getEventSetup(const edm::EventSetup& es) {
-    //   auto pTC = es.getHandle(tcToken_);
-    //   time_calib_ = pTC.product();
-    //}
     void produce(edm::StreamID sid, device::Event& event, device::EventSetup const& setup) const override {
       // NB should be inserted a method to retrieve calibrations, now they are fixed to default values
       // Get the base from the Event.
@@ -65,7 +61,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   private:
     const device::EDGetToken<BTLBaseRecHitDeviceCollection> baserh_;
     const device::EDPutToken<BTLRecHitDeviceCollection> rh_;
-    //edm::ESGetToken<MTDTimeCalib, MTDTimeCalibRecord> tcToken_;
     const double invLightSpeedLYSO_;
     const double c_LYSO_;
     const double thresholdToKeep_;

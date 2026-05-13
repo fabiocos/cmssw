@@ -1,6 +1,8 @@
 #include <alpaka/alpaka.hpp>
 
-#include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
+#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
+#include "DataFormats/ForwardDetId/interface/ETLDetId.h"
+
 #include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -15,6 +17,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
   ALPAKA_FN_ACC float timeResolutionInNs(float amp) { return 0.0593858 * pow(amp, -1.02826) + 0.0156719; }
+
+  ALPAKA_FN_ACC float getTimeCalib() { return 0.25; }
 
   class BTLBaseToRecoKernel {
   public:
@@ -68,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         energy *= calibration_;
 
         // --- Time calibration: for the time being just removes a time offset in BTL
-        //time1 += time_calib_->getTimeCalib(entry.detId());
+        time1 -= getTimeCalib();
 
         time_error = timeResolutionInNs(energy);
 

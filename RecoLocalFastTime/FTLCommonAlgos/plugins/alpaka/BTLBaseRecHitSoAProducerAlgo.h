@@ -16,7 +16,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                ::btldigi::BTLDigiSoA::ConstView const& input,
                                BTLBaseRecHitSoA::View& output,
                                const double npeToADC0_,
-                               const double invADCPerMeV_);
+                               const double npeToADC1_,
+                               const double npeSaturationCorr0_,
+                               const double npeSaturationCorr1_,
+                               const double npePerMeV_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

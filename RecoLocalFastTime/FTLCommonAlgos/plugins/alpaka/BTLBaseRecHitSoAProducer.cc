@@ -29,14 +29,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           uncalibrh_{produces()},
           npeToADC0_(config.getParameter<double>("npeToADC0")),
           npeToADC1_(config.getParameter<double>("npeToADC1")),
-          npePerMeV_(config.getParameter<double>("npePerMeV")),
-          invADCPerMeV_(1. / (npeToADC1_ * npePerMeV_)) {}
+          npeSaturationCorr0_(config.getParameter<double>("npeSaturationCorr0")),
+          npeSaturationCorr1_(config.getParameter<double>("npeSaturationCorr1")),
+          npePerMeV_(config.getParameter<double>("npePerMeV")) {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("digi");
       desc.add<double>("npeToADC0");
       desc.add<double>("npeToADC1");
+      desc.add<double>("npeSaturationCorr0");
+      desc.add<double>("npeSaturationCorr1");
       desc.add<double>("npePerMeV");
       descriptions.addWithDefaultLabel(desc);
     }
@@ -51,7 +54,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
       BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(
-          event.queue(), digi.view(), uncalibrh.view(), npeToADC0_, invADCPerMeV_);
+          event.queue(), digi.view(), uncalibrh.view(), npeToADC0_, npeToADC1_, npeSaturationCorr0_, npeSaturationCorr1_, npePerMeV_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -62,8 +65,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     const device::EDPutToken<BTLBaseRecHitDeviceCollection> uncalibrh_;
     const double npeToADC0_;
     const double npeToADC1_;
+    const double npeSaturationCorr0_;
+    const double npeSaturationCorr1_;
     const double npePerMeV_;
-    const double invADCPerMeV_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

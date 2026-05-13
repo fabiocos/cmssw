@@ -75,7 +75,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         ::btldigi::BTLDigiSoA::ConstView input,
         BTLBaseRecHitSoA::View output,
         const double npeToADC0_,
-        const double invADCPerMeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
+        const double npeToADC1_,
+        const double npeSaturationCorr0_,
+        const double npeSaturationCorr1_,
+        const double npePerMeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
 
       static constexpr uint32_t adcBitSaturation_ = 1023;
       static constexpr float tclock = 6.25;
@@ -140,8 +143,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         auto time2Lcorr = time2L - corrL;
 
         // converting the energy from ADC to energy
-        auto energyR = float((float(ampR) - npeToADC0_) * invADCPerMeV_);
-        auto energyL = float((float(ampL) - npeToADC0_) * invADCPerMeV_);
+        auto energyR = float((float(ampR) - npeToADC0_) / npeToADC1_);
+        // Correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
+        float dR = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * energyR;
+        energyR = (-npeSaturationCorr1_ + sqrt(dR)) / (2. * (npeSaturationCorr0_));
+        energyR /= npePerMeV_;
+
+        auto energyL = float((float(ampL) - npeToADC0_) / npeToADC1_);
+        // Correction for SiPM saturation (just invert the function used to model this effect in BTLElectronicsSim)
+        float dL = npeSaturationCorr1_ * npeSaturationCorr1_ + 4. * npeSaturationCorr0_ * energyL;
+        energyL = (-npeSaturationCorr1_ + sqrt(dL)) / (2. * (npeSaturationCorr0_));
+        energyL /= npePerMeV_;
 
 #ifdef EDM_ML_DEBUG
         printf("Base recHit SoA with raw id %i \n", entry.rawId());
@@ -182,7 +194,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                                     ::btldigi::BTLDigiSoA::ConstView const& input,
                                                     BTLBaseRecHitSoA::View& output,
                                                     const double npeToADC0_,
-                                                    const double invADCPerMeV_) {
+                                                    const double npeToADC1_,
+                                                    const double npeSaturationCorr0_,
+                                                    const double npeSaturationCorr1_,
+                                                    const double npePerMeV_) {
     //,
     //Table const& tdc,
     //Table const& qdc) {
@@ -195,7 +210,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLdigiToBaseKernel{}, input, output, npeToADC0_, invADCPerMeV_);
+    alpaka::exec<Acc1D>(queue, grid, BTLdigiToBaseKernel{}, input, output, npeToADC0_, npeToADC1_, npeSaturationCorr0_, npeSaturationCorr1_, npePerMeV_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
