@@ -7,7 +7,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 
-#include "Geometry/MTDCommonData/interface/BTLElectronicsMapping.h"
+#include "CondFormats/MTDObjects/interface/BTLElectronicsMapping.h"
 
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
 #include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
