@@ -19,6 +19,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                const double adcSaturation_,
                                const double adcLSB_,
                                const double toaLSB_ns_,
+                               const double tdcWindowStart_,
                                const double timeCorr_p0_,
                                const double timeCorr_p2_,
                                const double timeCorr_p1_,

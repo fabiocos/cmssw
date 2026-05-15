@@ -25,6 +25,7 @@ ETLElectronicsSim::ETLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       sigmaDistorsion_(pset.getParameter<double>("sigmaDistorsion")),
       sigmaTDC_(pset.getParameter<double>("sigmaTDC")),
       formulaLandauNoise_(pset.getParameter<std::string>("formulaLandauNoise")),
+      tdcWindowStart_(pset.getParameter<double>("tdcWindowStart")),
 #ifdef EDM_ML_DEBUG
       debug_(true) {}
 #else
@@ -141,7 +142,11 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t  status = 0;    // status is always 0 in this implementation
     for (int it = 0; it < (int)(chargeColl.size()); it++) {
       uint8_t  CALdata = 0;   // CAL code is always 0 in this implementation
-      uint16_t ToAdata = std::min(static_cast<uint16_t>(std::floor(toa1[it] / toaLSB_ns_)), toaMask);
+      // Correct time by tdcWindowStart_
+      float toa1corr = toa1[it] - tdcWindowStart_;
+      // Adjust ToA to match ETROC2 output
+      toa1corr = 12.5 - toa1corr;
+      uint16_t ToAdata = std::min(static_cast<uint16_t>(std::floor(toa1corr / toaLSB_ns_)), toaMask);
       uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), totMask);
       //If time over threshold is 0 the event is assumed to not pass the threshold
       if (ToTdata > 0 && chargeColl[it] >= adcThreshold_MIP_) {

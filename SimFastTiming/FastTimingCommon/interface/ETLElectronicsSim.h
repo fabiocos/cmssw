@@ -80,6 +80,7 @@ private:
   const float sigmaDistorsion_;
   const float sigmaTDC_;
   const reco::FormulaEvaluator formulaLandauNoise_;
+  const float tdcWindowStart_;
 
   static constexpr uint16_t toaMask = 0x3FF;   // 10 bits for TOA
   static constexpr uint16_t totMask = 0x1FF;   //  9 bits for TOT

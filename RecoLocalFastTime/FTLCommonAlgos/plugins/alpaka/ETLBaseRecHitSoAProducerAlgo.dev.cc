@@ -26,6 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         const double adcSaturation_,
         const double adcLSB_,
         const double toaLSB_ns_,
+        const double tdcWindowStart_,
         const double timeCorr_p0_,
         const double timeCorr_p2_,
         const double timeCorr_p1_,
@@ -38,7 +39,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
         // for the times at first and second th, still in clock units
         // atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
-        float time = entry.ToAdata() * toaLSB_ns_;
+        float time = 12.5 - entry.ToAdata() * toaLSB_ns_ + tdcWindowStart_;
         float time_over_threshold = entry.ToTdata() * toaLSB_ns_;
         if (time_over_threshold > 0) {
           // Time-walk correction for toa
@@ -80,6 +81,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
                                                     const double adcSaturation_,
                                                     const double adcLSB_,
                                                     const double toaLSB_ns_,
+                                                    const double tdcWindowStart_,
                                                     const double timeCorr_p0_,
                                                     const double timeCorr_p2_,
                                                     const double timeCorr_p1_,
@@ -94,7 +96,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
     alpaka::exec<Acc1D>(queue, grid, ETLdigiToBaseKernel{}, input, output,
-                        adcNBits_, adcSaturation_, adcLSB_, toaLSB_ns_,
+                        adcNBits_, adcSaturation_, adcLSB_, toaLSB_ns_, tdcWindowStart_,
                         timeCorr_p0_, timeCorr_p2_, timeCorr_p1_, timeCorr_p3_);
   }
 

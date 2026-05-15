@@ -51,6 +51,7 @@ etlBaseRecHitsSoA = cms.EDProducer(
     adcNbits      = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.adcNbits,
     adcSaturation = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.adcSaturation_MIP,
     toaLSB_ns     = mtdDigitizer.endcapDigitizer.ElectronicsSimulation.toaLSB_ns,
+    tdcWindowStart     = cms.double(9.375), # now set to 3 x ETROC_clock, phase can be adjusted to set the start at any value
     timeCorr_p0 = cms.double(0.967683), # 0.974683 - 0.007, ad hoc correction for bias from global delay removal
     timeCorr_p1 = cms.double(-0.237274),
     timeCorr_p2 = cms.double(0.021455),

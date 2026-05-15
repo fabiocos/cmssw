@@ -102,7 +102,8 @@ _endcap_MTDDigitizer = cms.PSet(
         noiseLevel          = cms.double(0.1750),
         sigmaDistorsion     = cms.double(0.0),
         sigmaTDC            = cms.double(0.010),
-        formulaLandauNoise  = cms.string("TMath::Max(0.020, 0.020 * (0.35 * (x - 1.0) + 1.0))")
+        formulaLandauNoise  = cms.string("TMath::Max(0.020, 0.020 * (0.35 * (x - 1.0) + 1.0))"),
+        tdcWindowStart      = cms.double(9.375), # now set to 3 x ETROC_clock, phase can be adjusted to set the start at any value
         )
 )
 
