@@ -18,20 +18,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 
   class ETLdigiToBaseKernel {
   public:
-    ALPAKA_FN_ACC void operator()(
-        Acc1D const& acc,
-        ::etldigi::ETLDigiSoA::ConstView input,
-        ETLBaseRecHitSoA::View output,
-        const uint32_t adcNBits_,
-        const double adcSaturation_,
-        const double adcLSB_,
-        const double toaLSB_ns_,
-        const double tdcWindowStart_,
-        const double timeCorr_p0_,
-        const double timeCorr_p2_,
-        const double timeCorr_p1_,
-        const double timeCorr_p3_) const {
-
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                  ::etldigi::ETLDigiSoA::ConstView input,
+                                  ETLBaseRecHitSoA::View output,
+                                  const uint32_t adcNBits_,
+                                  const double adcSaturation_,
+                                  const double adcLSB_,
+                                  const double toaLSB_ns_,
+                                  const double tdcWindowStart_,
+                                  const double timeCorr_p0_,
+                                  const double timeCorr_p2_,
+                                  const double timeCorr_p1_,
+                                  const double timeCorr_p3_) const {
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
@@ -68,7 +66,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
             col,
             time,  // in ns
             time_over_threshold,
-            0,    // flags
+            0,  // flags
         };
       }
     }
@@ -95,9 +93,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, ETLdigiToBaseKernel{}, input, output,
-                        adcNBits_, adcSaturation_, adcLSB_, toaLSB_ns_, tdcWindowStart_,
-                        timeCorr_p0_, timeCorr_p2_, timeCorr_p1_, timeCorr_p3_);
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        ETLdigiToBaseKernel{},
+                        input,
+                        output,
+                        adcNBits_,
+                        adcSaturation_,
+                        adcLSB_,
+                        toaLSB_ns_,
+                        tdcWindowStart_,
+                        timeCorr_p0_,
+                        timeCorr_p2_,
+                        timeCorr_p1_,
+                        timeCorr_p3_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit

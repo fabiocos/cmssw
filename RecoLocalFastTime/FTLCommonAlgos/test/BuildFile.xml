@@ -1,8 +1,0 @@
-<use name="FWCore/Framework"/>
-<use name="FWCore/ParameterSet"/>
-<use name="DataFormats/FTLRecHit"/>
-<use name="DataFormats/FTLRecHitSoA"/>
-<use name="alpaka"/>
-<library file="BTLRecoSoADump.cc" name="BTLRecoSoADump">
-  <flags EDM_PLUGIN="1"/>
-</library>

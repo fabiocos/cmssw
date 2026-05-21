@@ -60,9 +60,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       ETLBaseRecHitDeviceCollection uncalibrh(event.queue(), digi.view().metadata().size());
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      ETLBaseRecHitSoAProducerAlgo::fromDigiToBase(
-          event.queue(), digi.view(), uncalibrh.view(), adcNBits_, adcSaturation_, adcLSB_,
-          toaLSB_ns_, tdcWindowStart_, timeCorr_p0_, timeCorr_p2_, timeCorr_p1_, timeCorr_p3_);
+      ETLBaseRecHitSoAProducerAlgo::fromDigiToBase(event.queue(),
+                                                   digi.view(),
+                                                   uncalibrh.view(),
+                                                   adcNBits_,
+                                                   adcSaturation_,
+                                                   adcLSB_,
+                                                   toaLSB_ns_,
+                                                   tdcWindowStart_,
+                                                   timeCorr_p0_,
+                                                   timeCorr_p2_,
+                                                   timeCorr_p1_,
+                                                   timeCorr_p3_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));

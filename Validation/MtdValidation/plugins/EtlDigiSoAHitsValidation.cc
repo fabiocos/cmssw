@@ -131,7 +131,7 @@ void EtlDigiSoAHitsValidation::analyze(const edm::Event& iEvent, const edm::Even
 
   // --- Loop over the ETL DIGI hits
 
-  unsigned int n_digi_etl[4] = {0, 0, 0, 0}; 
+  unsigned int n_digi_etl[4] = {0, 0, 0, 0};
   for (size_t i = 0; i < 4; i++) {
     ndigiPerLGAD_[i].clear();
     ndigiPerLGADoverQ_[i].clear();
@@ -212,7 +212,7 @@ void EtlDigiSoAHitsValidation::analyze(const edm::Event& iEvent, const edm::Even
     meHitCALvsPhi_[idet]->Fill(global_point.phi(), cal);
     meHitCALvsEta_[idet]->Fill(global_point.eta(), cal);
 
-        n_digi_etl[idet]++;
+    n_digi_etl[idet]++;
     size_t ncount(0);
     ndigiPerLGAD_[idet].emplace(detId.rawId(), ncount);
     ndigiPerLGAD_[idet].at(detId.rawId())++;
@@ -411,20 +411,12 @@ void EtlDigiSoAHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
   meHitToT_[3] =
       ibook.book1D("EtlHitToTZposD2", "ETL DIGI hits ToT (+Z, Second disk);ToT_{DIGI} [TDC counts]", 100, 0., 500.);
 
-  meHitCAL_[0] = ibook.book1D("EtlHitCALZnegD1",
-                              "ETL DIGI hits CAL (-Z, Single(topo1D)/First(topo2D) disk);CAL_{DIGI}",
-                              100,
-                              0.,
-                              500.);
-  meHitCAL_[1] =
-      ibook.book1D("EtlHitCALZnegD2", "ETL DIGI hits CAL (-Z, Second disk);CAL_{DIGI}", 100, 0., 500.);
-  meHitCAL_[2] = ibook.book1D("EtlHitCALZposD1",
-                              "ETL DIGI hits CAL (+Z, Single(topo1D)/First(topo2D) disk);CAL_{DIGI}",
-                              100,
-                              0.,
-                              500.);
-  meHitCAL_[3] =
-      ibook.book1D("EtlHitCALZposD2", "ETL DIGI hits CAL (+Z, Second disk);CAL_{DIGI}", 100, 0., 500.);
+  meHitCAL_[0] = ibook.book1D(
+      "EtlHitCALZnegD1", "ETL DIGI hits CAL (-Z, Single(topo1D)/First(topo2D) disk);CAL_{DIGI}", 100, 0., 500.);
+  meHitCAL_[1] = ibook.book1D("EtlHitCALZnegD2", "ETL DIGI hits CAL (-Z, Second disk);CAL_{DIGI}", 100, 0., 500.);
+  meHitCAL_[2] = ibook.book1D(
+      "EtlHitCALZposD1", "ETL DIGI hits CAL (+Z, Single(topo1D)/First(topo2D) disk);CAL_{DIGI}", 100, 0., 500.);
+  meHitCAL_[3] = ibook.book1D("EtlHitCALZposD2", "ETL DIGI hits CAL (+Z, Second disk);CAL_{DIGI}", 100, 0., 500.);
 
   meOccupancy_[0] =
       ibook.book2D("EtlOccupancyZnegD1",
@@ -624,12 +616,12 @@ void EtlDigiSoAHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
       0.,
       2048.);
   meHitToTvsEta_[1] = ibook.bookProfile("EtlHitToTvsEtaZnegD2",
-                                      "ETL DIGI ToT vs #eta (-Z, Second disk);#eta_{DIGI};ToT_{DIGI} [TDC counts]",
-                                      50,
-                                      -3.2,
-                                      -1.56,
-                                      0.,
-                                      2048.);
+                                        "ETL DIGI ToT vs #eta (-Z, Second disk);#eta_{DIGI};ToT_{DIGI} [TDC counts]",
+                                        50,
+                                        -3.2,
+                                        -1.56,
+                                        0.,
+                                        2048.);
   meHitToTvsEta_[2] = ibook.bookProfile(
       "EtlHitToTvsEtaZposD1",
       "ETL DIGI ToT vs #eta (+Z, Single(topo1D)/First(topo2D) disk);#eta_{DIGI};ToT_{DIGI} [TDC counts]",
@@ -639,75 +631,67 @@ void EtlDigiSoAHitsValidation::bookHistograms(DQMStore::IBooker& ibook,
       0.,
       2048.);
   meHitToTvsEta_[3] = ibook.bookProfile("EtlHitToTvsEtaZposD2",
-                                      "ETL DIGI ToT vs #eta (+Z, Second disk);#eta_{DIGI};ToT_{DIGI} [TDC counts]",
-                                      50,
-                                      1.56,
-                                      3.2,
-                                      0.,
-                                      2048.);
-  meHitCALvsPhi_[0] = ibook.bookProfile(
-      "EtlHitCALvsPhiZnegD1",
-      "ETL DIGI CAL vs #phi (-Z, Single(topo1D)/First(topo2D) disk);#phi_{DIGI} [rad];CAL_{DIGI}",
-      50,
-      -3.15,
-      3.15,
-      0.,
-      2048.);
-  meHitCALvsPhi_[1] =
-      ibook.bookProfile("EtlHitCALvsPhiZnegD2",
-                        "ETL DIGI CAL vs #phi (-Z, Second disk);#phi_{DIGI} [rad];CAL_{DIGI}",
+                                        "ETL DIGI ToT vs #eta (+Z, Second disk);#eta_{DIGI};ToT_{DIGI} [TDC counts]",
+                                        50,
+                                        1.56,
+                                        3.2,
+                                        0.,
+                                        2048.);
+  meHitCALvsPhi_[0] =
+      ibook.bookProfile("EtlHitCALvsPhiZnegD1",
+                        "ETL DIGI CAL vs #phi (-Z, Single(topo1D)/First(topo2D) disk);#phi_{DIGI} [rad];CAL_{DIGI}",
                         50,
                         -3.15,
                         3.15,
                         0.,
                         2048.);
-  meHitCALvsPhi_[2] = ibook.bookProfile(
-      "EtlHitCALvsPhiZposD1",
-      "ETL DIGI CAL vs #phi (+Z, Single(topo1D)/First(topo2D) disk);#phi_{DIGI} [rad];CAL_{DIGI}",
-      50,
-      -3.15,
-      3.15,
-      0.,
-      2048.);
-  meHitCALvsPhi_[3] =
-      ibook.bookProfile("EtlHitCALvsPhiZposD2",
-                        "ETL DIGI CAL vs #phi (+Z, Second disk);#phi_{DIGI} [rad];CAL_{DIGI}",
+  meHitCALvsPhi_[1] = ibook.bookProfile("EtlHitCALvsPhiZnegD2",
+                                        "ETL DIGI CAL vs #phi (-Z, Second disk);#phi_{DIGI} [rad];CAL_{DIGI}",
+                                        50,
+                                        -3.15,
+                                        3.15,
+                                        0.,
+                                        2048.);
+  meHitCALvsPhi_[2] =
+      ibook.bookProfile("EtlHitCALvsPhiZposD1",
+                        "ETL DIGI CAL vs #phi (+Z, Single(topo1D)/First(topo2D) disk);#phi_{DIGI} [rad];CAL_{DIGI}",
                         50,
                         -3.15,
                         3.15,
                         0.,
                         2048.);
-  meHitCALvsEta_[0] = ibook.bookProfile(
-      "EtlHitCALvsEtaZnegD1",
-      "ETL DIGI CAL vs #eta (-Z, Single(topo1D)/First(topo2D) disk);#eta_{DIGI};CAL_{DIGI}",
-      50,
-      -3.2,
-      -1.56,
-      0.,
-      2048.);
+  meHitCALvsPhi_[3] = ibook.bookProfile("EtlHitCALvsPhiZposD2",
+                                        "ETL DIGI CAL vs #phi (+Z, Second disk);#phi_{DIGI} [rad];CAL_{DIGI}",
+                                        50,
+                                        -3.15,
+                                        3.15,
+                                        0.,
+                                        2048.);
+  meHitCALvsEta_[0] =
+      ibook.bookProfile("EtlHitCALvsEtaZnegD1",
+                        "ETL DIGI CAL vs #eta (-Z, Single(topo1D)/First(topo2D) disk);#eta_{DIGI};CAL_{DIGI}",
+                        50,
+                        -3.2,
+                        -1.56,
+                        0.,
+                        2048.);
   meHitCALvsEta_[1] = ibook.bookProfile("EtlHitCALvsEtaZnegD2",
-                                      "ETL DIGI CAL vs #eta (-Z, Second disk);#eta_{DIGI};CAL_{DIGI}",
-                                      50,
-                                      -3.2,
-                                      -1.56,
-                                      0.,
-                                      2048.);
-  meHitCALvsEta_[2] = ibook.bookProfile(
-      "EtlHitCALvsEtaZposD1",
-      "ETL DIGI CAL vs #eta (+Z, Single(topo1D)/First(topo2D) disk);#eta_{DIGI};CAL_{DIGI}",
-      50,
-      1.56,
-      3.2,
-      0.,
-      2048.);
-  meHitCALvsEta_[3] = ibook.bookProfile("EtlHitCALvsEtaZposD2",
-                                      "ETL DIGI CAL vs #eta (+Z, Second disk);#eta_{DIGI};CAL_{DIGI}",
-                                      50,
-                                      1.56,
-                                      3.2,
-                                      0.,
-                                      2048.);
-
+                                        "ETL DIGI CAL vs #eta (-Z, Second disk);#eta_{DIGI};CAL_{DIGI}",
+                                        50,
+                                        -3.2,
+                                        -1.56,
+                                        0.,
+                                        2048.);
+  meHitCALvsEta_[2] =
+      ibook.bookProfile("EtlHitCALvsEtaZposD1",
+                        "ETL DIGI CAL vs #eta (+Z, Single(topo1D)/First(topo2D) disk);#eta_{DIGI};CAL_{DIGI}",
+                        50,
+                        1.56,
+                        3.2,
+                        0.,
+                        2048.);
+  meHitCALvsEta_[3] = ibook.bookProfile(
+      "EtlHitCALvsEtaZposD2", "ETL DIGI CAL vs #eta (+Z, Second disk);#eta_{DIGI};CAL_{DIGI}", 50, 1.56, 3.2, 0., 2048.);
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

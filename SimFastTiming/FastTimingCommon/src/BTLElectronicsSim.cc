@@ -77,7 +77,7 @@ BTLElectronicsSim::~BTLElectronicsSim() { delete smearingClockRU_; }
 
 void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
                             BTLDigiCollection& output,
-                            BTLDigiTempCollection& outputTemp,
+                            BTLDigiContentCollection& btloutput,
                             CLHEP::HepRandomEngine* hre) const {
   // --- Fill the readout-unit clock jitter array
   for (unsigned int iRU = 0; iRU < numberOfRUs_; ++iRU) {
@@ -292,30 +292,31 @@ void BTLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     uint8_t PrevTrigFL = 0;  // Previous trigger flag is not used in this implementation
     uint8_t TACIDL = 0;      // TACIDL is not used in this implementation
 
-    outputTemp.emplace_back(rawId,
-                            BC0count,
-                            status,
-                            BCcount,
-                            chIDR,
-                            T1coarseR,
-                            T2coarseR,
-                            EOIcoarseR,
-                            ChargeR,
-                            T1fineR,
-                            T2fineR,
-                            IdleTimeR,
-                            PrevTrigFR,
-                            TACIDR,
-                            chIDL,
-                            T1coarseL,
-                            T2coarseL,
-                            EOIcoarseL,
-                            ChargeL,
-                            T1fineL,
-                            T2fineL,
-                            IdleTimeL,
-                            PrevTrigFL,
-                            TACIDL);
+    btldigi::BTLDigi newDigi(rawId,
+                             BC0count,
+                             status,
+                             BCcount,
+                             chIDR,
+                             T1coarseR,
+                             T2coarseR,
+                             EOIcoarseR,
+                             ChargeR,
+                             T1fineR,
+                             T2fineR,
+                             IdleTimeR,
+                             PrevTrigFR,
+                             TACIDR,
+                             chIDL,
+                             T1coarseL,
+                             T2coarseL,
+                             EOIcoarseL,
+                             ChargeL,
+                             T1fineL,
+                             T2fineL,
+                             IdleTimeL,
+                             PrevTrigFL,
+                             TACIDL);
+    btloutput.emplace_back(newDigi);
   }  // MTDSimHitDataAccumulator loop
 }
 
@@ -376,41 +377,41 @@ void BTLElectronicsSim::updateOutput(BTLDigiCollection& coll, const BTLDataFrame
   coll.push_back(rawDataFrame);
 }
 
-void BTLElectronicsSim::updateOutputSoA(mtd_digitizer::BTLDigiTempCollection& outputTemp,
-                                        btldigi::BTLDigiHostCollection& hostColl) const {
-  btldigi::BTLDigiSoAView& btlDigiView = hostColl.view();
-  size_t nDigis = outputTemp.size();
-  if (debug_) {
-    edm::LogError("BTLElectronicsSim") << "Updating output SoA with " << nDigis << " digis." << std::endl;
-  }
-  for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
-    const auto& digiTemp = outputTemp[hitIndex];
-    btlDigiView[hitIndex] = {digiTemp.rawId_,      digiTemp.BC0count_,   digiTemp.status_,     digiTemp.BCcount_,
-                             digiTemp.chIDR_,      digiTemp.T1coarseR_,  digiTemp.T2coarseR_,  digiTemp.EOIcoarseR_,
-                             digiTemp.ChargeR_,    digiTemp.T1fineR_,    digiTemp.T2fineR_,    digiTemp.IdleTimeR_,
-                             digiTemp.PrevTrigFR_, digiTemp.TACIDR_,     digiTemp.chIDL_,      digiTemp.T1coarseL_,
-                             digiTemp.T2coarseL_,  digiTemp.EOIcoarseL_, digiTemp.ChargeL_,    digiTemp.T1fineL_,
-                             digiTemp.T2fineL_,    digiTemp.IdleTimeL_,  digiTemp.PrevTrigFL_, digiTemp.TACIDL_};
+//void BTLElectronicsSim::updateOutputSoA(mtd_digitizer::BTLDigiTempCollection& outputTemp,
+//btldigi::BTLDigiHostCollection& hostColl) const {
+//btldigi::BTLDigiSoAView& btlDigiView = hostColl.view();
+//size_t nDigis = outputTemp.size();
+//if (debug_) {
+//edm::LogError("BTLElectronicsSim") << "Updating output SoA with " << nDigis << " digis." << std::endl;
+//}
+//for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
+//const auto& digiTemp = outputTemp[hitIndex];
+//btlDigiView[hitIndex] = {digiTemp.rawId_,      digiTemp.BC0count_,   digiTemp.status_,     digiTemp.BCcount_,
+//digiTemp.chIDR_,      digiTemp.T1coarseR_,  digiTemp.T2coarseR_,  digiTemp.EOIcoarseR_,
+//digiTemp.ChargeR_,    digiTemp.T1fineR_,    digiTemp.T2fineR_,    digiTemp.IdleTimeR_,
+//digiTemp.PrevTrigFR_, digiTemp.TACIDR_,     digiTemp.chIDL_,      digiTemp.T1coarseL_,
+//digiTemp.T2coarseL_,  digiTemp.EOIcoarseL_, digiTemp.ChargeL_,    digiTemp.T1fineL_,
+//digiTemp.T2fineL_,    digiTemp.IdleTimeL_,  digiTemp.PrevTrigFL_, digiTemp.TACIDL_};
 
-    if (debug_) {
-      edm::LogError("BTLElectronicsSim") << "Processed hit with rawId: " << btlDigiView[hitIndex].rawId()
-                                         << ", chIDL: " << static_cast<int>(btlDigiView[hitIndex].chIDL())
-                                         << ", T1coarseL: " << btlDigiView[hitIndex].T1coarseL()
-                                         << ", T1fineL: " << btlDigiView[hitIndex].T1fineL()
-                                         << ", T2coarseL: " << btlDigiView[hitIndex].T2coarseL()
-                                         << ", T2fineL: " << btlDigiView[hitIndex].T2fineL()
-                                         << ", EOIcoarseL: " << btlDigiView[hitIndex].EOIcoarseL()
-                                         << ", ChargeL: " << btlDigiView[hitIndex].ChargeL()
-                                         << ", chIDR: " << static_cast<int>(btlDigiView[hitIndex].chIDR())
-                                         << ", T1coarseR: " << btlDigiView[hitIndex].T1coarseR()
-                                         << ", T1fineR: " << btlDigiView[hitIndex].T1fineR()
-                                         << ", T2coarseR: " << btlDigiView[hitIndex].T2coarseR()
-                                         << ", T2fineR: " << btlDigiView[hitIndex].T2fineR()
-                                         << ", EOIcoarseR: " << btlDigiView[hitIndex].EOIcoarseR()
-                                         << ", ChargeR: " << btlDigiView[hitIndex].ChargeR() << std::endl;
-    }
-  }
-}
+//if (debug_) {
+//edm::LogError("BTLElectronicsSim") << "Processed hit with rawId: " << btlDigiView[hitIndex].rawId()
+//<< ", chIDL: " << static_cast<int>(btlDigiView[hitIndex].chIDL())
+//<< ", T1coarseL: " << btlDigiView[hitIndex].T1coarseL()
+//<< ", T1fineL: " << btlDigiView[hitIndex].T1fineL()
+//<< ", T2coarseL: " << btlDigiView[hitIndex].T2coarseL()
+//<< ", T2fineL: " << btlDigiView[hitIndex].T2fineL()
+//<< ", EOIcoarseL: " << btlDigiView[hitIndex].EOIcoarseL()
+//<< ", ChargeL: " << btlDigiView[hitIndex].ChargeL()
+//<< ", chIDR: " << static_cast<int>(btlDigiView[hitIndex].chIDR())
+//<< ", T1coarseR: " << btlDigiView[hitIndex].T1coarseR()
+//<< ", T1fineR: " << btlDigiView[hitIndex].T1fineR()
+//<< ", T2coarseR: " << btlDigiView[hitIndex].T2coarseR()
+//<< ", T2fineR: " << btlDigiView[hitIndex].T2fineR()
+//<< ", EOIcoarseR: " << btlDigiView[hitIndex].EOIcoarseR()
+//<< ", ChargeR: " << btlDigiView[hitIndex].ChargeR() << std::endl;
+//}
+//}
+//}
 
 float BTLElectronicsSim::rearming_time(const float& hit_time, const float& hit_npe) const {
   // mode 1: the channel is rearmed after the falling edge of the trigger_B signal
@@ -539,7 +540,7 @@ uint16_t BTLElectronicsSim::chargetoQfine(const float charge, const float toa1, 
            ti);
 
   const uint32_t adc = std::min(static_cast<uint32_t>(std::floor(charge)), adcBitSaturation_);
-  uint16_t Qfine = adc + pedestal; // Qfine is the ADC value + pedestal
+  uint16_t Qfine = adc + pedestal;  // Qfine is the ADC value + pedestal
   if (Qfine > adcBitSaturation_)
     Qfine = adcBitSaturation_;
 

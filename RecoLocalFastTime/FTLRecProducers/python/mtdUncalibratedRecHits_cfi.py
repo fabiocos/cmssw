@@ -37,7 +37,7 @@ mtdUncalibratedRecHits = cms.EDProducer(
 
 btlBaseRecHitsSoA = cms.EDProducer(
     'btlrechit::BTLBaseRecHitSoAProducer@alpaka',
-    digi = cms.InputTag("mix", "FTLBarrelSoA"),
+    digi = cms.InputTag("btlDigiSoAProducer", "MTDBarrelSoA"),
     npeToADC0 = cms.double(-22.5),
     npeToADC1 = cms.double(0.0348), # Npe to ADC counts conversion
     npeSaturationCorr0 = cms.double(-8.54e-06),

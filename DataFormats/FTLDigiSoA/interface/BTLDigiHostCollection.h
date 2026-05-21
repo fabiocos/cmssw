@@ -7,6 +7,8 @@
 namespace btldigi {
 
   using BTLDigiHostCollection = PortableHostCollection<BTLDigiSoA>;
+  using BTLDigiHostCollectionView = PortableHostCollection<BTLDigiSoA>::View;
+  using BTLDigiHostCollectionConstView = PortableHostCollection<BTLDigiSoA>::ConstView;
 
 }  //namespace btldigi
 

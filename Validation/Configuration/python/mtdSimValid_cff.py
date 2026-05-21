@@ -26,6 +26,9 @@ from Validation.MtdValidation.mtdTracksValid_cfi import mtdTracksValid
 from Validation.MtdValidation.vertices4DValid_cff import vertices4DValid
 
 mtdSimValid  = cms.Sequence(btlSimHitsValid  + etlSimHitsValid )
-mtdDigiValid = cms.Sequence(btlDigiHitsValid + btlDigiSoAHitsValid + etlDigiHitsValid + etlDigiSoAHitsValid)
-mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + btlLocalRecoSoAValid + etlLocalRecoValid + etlLocalRecoSoAValid + mtdTracksValid + vertices4DValid)
+# mtdDigiValid = cms.Sequence(btlDigiHitsValid + btlDigiSoAHitsValid + etlDigiHitsValid + etlDigiSoAHitsValid)
+mtdDigiValid = cms.Sequence(btlDigiHitsValid + btlDigiSoAHitsValid + etlDigiHitsValid)
+# mtdDigiValid = cms.Sequence(btlDigiHitsValid + etlDigiHitsValid)
+# mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + btlLocalRecoSoAValid + etlLocalRecoValid + etlLocalRecoSoAValid + mtdTracksValid + vertices4DValid)
+mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + etlLocalRecoValid + mtdTracksValid + vertices4DValid)
 

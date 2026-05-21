@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 from RecoLocalFastTime.FTLRecProducers.mtdUncalibratedRecHits_cfi import mtdUncalibratedRecHits, btlBaseRecHitsSoA, etlBaseRecHitsSoA
+from RecoLocalFastTime.FTLRecProducers.btlDigiSoAProducer_cfi import btlDigiSoAProducer
 from RecoLocalFastTime.FTLRecProducers.mtdRecHits_cfi import mtdRecHits, btlRecHitsSoA, etlRecHitsSoA
 from RecoLocalFastTime.FTLRecProducers.mtdTrackingRecHits_cfi import mtdTrackingRecHits
 from RecoLocalFastTime.FTLClusterizer.mtdClusters_cfi import mtdClusters
@@ -8,5 +9,8 @@ from RecoLocalFastTime.FTLClusterizer.mtdClusters_cfi import mtdClusters
 from RecoLocalFastTime.FTLClusterizer.MTDCPEESProducers_cff import *
 from RecoLocalFastTime.FTLRecProducers.MTDTimeCalibESProducers_cff import *
 
-fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlBaseRecHitsSoA,etlBaseRecHitsSoA,btlRecHitsSoA,etlRecHitsSoA,mtdClusters,mtdTrackingRecHits)
+# fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlDigiSoAProducer,btlBaseRecHitsSoA,etlBaseRecHitsSoA,btlRecHitsSoA,etlRecHitsSoA,mtdClusters,mtdTrackingRecHits)
+# fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlDigiSoAProducer,btlBaseRecHitsSoA,btlRecHitsSoA,mtdClusters,mtdTrackingRecHits)
+fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,btlDigiSoAProducer,mtdClusters,mtdTrackingRecHits)
+# fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,mtdClusters,mtdTrackingRecHits)
 fastTimingLocalReco = cms.Sequence(fastTimingLocalRecoTask)

@@ -220,9 +220,10 @@ void EtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   unsigned int n_reco_etl[4] = {0, 0, 0, 0};
   for (int i = 0; i < etlRecHitsSoAHandle->view().metadata().size(); i++) {
     auto recHit = etlRecHitsSoAHandle->view()[i];
-    LogTrace("BtlLocalRecoSoAValidation") << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row() << " r/c/X/dX " << recHit.column()
-                                          << " " << recHit.position() << " " << recHit.position_error() << " E,T,dT "
-                                          << recHit.energy() << " " << recHit.toa() << " " << recHit.toa_error() << " " << recHit.tot();
+    LogTrace("BtlLocalRecoSoAValidation")
+        << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row() << " r/c/X/dX " << recHit.column()
+        << " " << recHit.position() << " " << recHit.position_error() << " E,T,dT " << recHit.energy() << " "
+        << recHit.toa() << " " << recHit.toa_error() << " " << recHit.tot();
     double weight = 1.0;
     ETLDetId detId = recHit.detId();
     DetId geoId = detId.geographicalId();
@@ -316,8 +317,8 @@ void EtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       ETLDetId detId = uRecHit.detId();
       int idet = detId.zside() + detId.nDisc();
 
-      LogTrace("EtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " T " << uRecHit.toa() << " "
-                                            << uRecHit.tot();
+      LogTrace("EtlLocalRecoSoAValidation")
+          << "@URH detid " << detId.rawId() << " T " << uRecHit.toa() << " " << uRecHit.tot();
 
       DetId geoId = detId.geographicalId();
       const MTDGeomDet* thedet = geom->idToDet(geoId);
@@ -364,15 +365,14 @@ void EtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
         etaBin = nBinsEta_ - 1;
 
       meTimeResEta_[iside][etaBin]->Fill(time_res);
-
     }
   }
 }
 
 // ------------ method for histogram booking ------------
 void EtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
-                                            edm::Run const& run,
-                                            edm::EventSetup const& iSetup) {
+                                               edm::Run const& run,
+                                               edm::EventSetup const& iSetup) {
   ibook.setCurrentFolder(folder_);
 
   // --- histograms booking

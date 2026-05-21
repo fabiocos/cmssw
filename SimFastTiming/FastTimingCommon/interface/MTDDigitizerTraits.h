@@ -2,6 +2,7 @@
 #define SimFastTiming_FastTimingCommon_MTDDigitizerTraits_h
 
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
+#include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 
 #include "SimFastTiming/FastTimingCommon/interface/BTLDeviceSim.h"
 #include "SimFastTiming/FastTimingCommon/interface/BTLElectronicsSim.h"
@@ -13,8 +14,8 @@ public:
   // --- The BTL DIGI collection
   typedef BTLDigiCollection DigiCollection;
 
-  // --- The BTL DIGI collection in SoA format
-  typedef btldigi::BTLDigiHostCollection DigiCollectionSoA;
+  // --- The BTL DIGI collection in new format
+  typedef BTLDigiContentCollection MTDDigiCollection;
 
   // --- The BTL sensor response simulation for the bar geometry
   typedef BTLDeviceSim DeviceSim;

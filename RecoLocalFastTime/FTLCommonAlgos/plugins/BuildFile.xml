@@ -6,14 +6,3 @@
 <library file="*.cc" name="RecoLocalFastTimeFTLCommonAlgosPlugins">
   <flags EDM_PLUGIN="1"/>
 </library>
-<library file="alpaka/*.cc" name="RecoLocalFastTimeFTLCommonAlgosPluginsPortable">
-  <use name="alpaka"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/AlpakaCore"/>
-  <use name="HeterogeneousCore/AlpakaInterface"/>
-  <use name="DataFormats/SoATemplate"/>
-  <use name="DataFormats/Portable"/>
-  <flags ALPAKA_BACKENDS="1"/>
-  <flags EDM_PLUGIN="1"/>
-</library>

@@ -210,7 +210,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLdigiToBaseKernel{}, input, output, npeToADC0_, npeToADC1_, npeSaturationCorr0_, npeSaturationCorr1_, npePerMeV_);
+    alpaka::exec<Acc1D>(queue,
+                        grid,
+                        BTLdigiToBaseKernel{},
+                        input,
+                        output,
+                        npeToADC0_,
+                        npeToADC1_,
+                        npeSaturationCorr0_,
+                        npeSaturationCorr1_,
+                        npePerMeV_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

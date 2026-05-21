@@ -138,41 +138,33 @@ namespace mtd_digitizer {
   };
 
   struct ETLDigiContent {
-    ETLDigiContent()
-        : rawId_(0),
-          header_(0),
-          status_(0),
-          colID_(0),
-          rowID_(0),
-          ToAdata_(0),
-          ToTdata_(0),
-          CALdata_(0) {}
+    ETLDigiContent() : rawId_(0), header_(0), status_(0), colID_(0), rowID_(0), ToAdata_(0), ToTdata_(0), CALdata_(0) {}
 
-  uint32_t rawId_;
-  uint8_t  header_;
-  uint8_t  status_;
-  uint8_t  colID_;
-  uint8_t  rowID_;
-  uint16_t ToAdata_;
-  uint16_t ToTdata_;
-  uint16_t CALdata_;
+    uint32_t rawId_;
+    uint8_t header_;
+    uint8_t status_;
+    uint8_t colID_;
+    uint8_t rowID_;
+    uint16_t ToAdata_;
+    uint16_t ToTdata_;
+    uint16_t CALdata_;
 
-  ETLDigiContent(uint32_t rawId,
-                 uint8_t  header,
-                 uint8_t  status,
-                 uint8_t  colID,
-                 uint8_t  rowID,
-                 uint16_t ToAdata,
-                 uint16_t ToTdata,
-                 uint16_t CALdata)
-      : rawId_(rawId),
-        header_(header),
-        status_(status),
-        colID_(colID),
-        rowID_(rowID),
-        ToAdata_(ToAdata),
-        ToTdata_(ToTdata),
-        CALdata_(CALdata) {}
+    ETLDigiContent(uint32_t rawId,
+                   uint8_t header,
+                   uint8_t status,
+                   uint8_t colID,
+                   uint8_t rowID,
+                   uint16_t ToAdata,
+                   uint16_t ToTdata,
+                   uint16_t CALdata)
+        : rawId_(rawId),
+          header_(header),
+          status_(status),
+          colID_(colID),
+          rowID_(rowID),
+          ToAdata_(ToAdata),
+          ToTdata_(ToTdata),
+          CALdata_(CALdata) {}
   };
 
   // use a wider integer now since we have to add row and column in an

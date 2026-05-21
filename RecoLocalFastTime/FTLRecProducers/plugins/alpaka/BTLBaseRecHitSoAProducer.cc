@@ -11,7 +11,7 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 #include "BTLBaseRecHitSoAProducerAlgo.h"
@@ -20,7 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
 
-  class BTLBaseRecHitSoAProducer : public global::EDProducer<> {
+  class BTLBaseRecHitSoAProducer : public stream::EDProducer<> {
   public:
     // constructor
     BTLBaseRecHitSoAProducer(edm::ParameterSet const& config)
@@ -44,7 +44,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    void produce(edm::StreamID sid, device::Event& event, device::EventSetup const& setup) const override {
+    void produce(device::Event& event, device::EventSetup const& setup) override {
       // NB should be inserted a method to retrieve calibrations, now they are fixed to default values
       // Get the digi from the Event.
       btldigi::BTLDigiDeviceCollection const& digi = event.get(digi_);  // this should match Claudio Class name
@@ -53,8 +53,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       BTLBaseRecHitDeviceCollection uncalibrh(event.queue(), digi.view().metadata().size());
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(
-          event.queue(), digi.view(), uncalibrh.view(), npeToADC0_, npeToADC1_, npeSaturationCorr0_, npeSaturationCorr1_, npePerMeV_);
+      BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(event.queue(),
+                                                   digi.view(),
+                                                   uncalibrh.view(),
+                                                   npeToADC0_,
+                                                   npeToADC1_,
+                                                   npeSaturationCorr0_,
+                                                   npeSaturationCorr1_,
+                                                   npePerMeV_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));

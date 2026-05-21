@@ -27,9 +27,11 @@ ETLElectronicsSim::ETLElectronicsSim(const edm::ParameterSet& pset, edm::Consume
       formulaLandauNoise_(pset.getParameter<std::string>("formulaLandauNoise")),
       tdcWindowStart_(pset.getParameter<double>("tdcWindowStart")),
 #ifdef EDM_ML_DEBUG
-      debug_(true) {}
+      debug_(true) {
+}
 #else
-      debug_(false) {}
+      debug_(false) {
+}
 #endif
 
 void ETLElectronicsSim::getEventSetup(const edm::EventSetup& evs) { geom_ = &evs.getData(geomToken_); }
@@ -136,12 +138,12 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
     updateOutput(output, rawDataFrame);
 
     uint32_t rawId = rawDataFrame.id().rawId();
-    uint8_t  colID = it->first.column_;
-    uint8_t  rowID = it->first.row_;
-    uint8_t  header = 0;    // header is always 0 in this implementation
-    uint8_t  status = 0;    // status is always 0 in this implementation
+    uint8_t colID = it->first.column_;
+    uint8_t rowID = it->first.row_;
+    uint8_t header = 0;  // header is always 0 in this implementation
+    uint8_t status = 0;  // status is always 0 in this implementation
     for (int it = 0; it < (int)(chargeColl.size()); it++) {
-      uint8_t  CALdata = 0;   // CAL code is always 0 in this implementation
+      uint8_t CALdata = 0;  // CAL code is always 0 in this implementation
       // Correct time by tdcWindowStart_
       float toa1corr = toa1[it] - tdcWindowStart_;
       // Adjust ToA to match ETROC2 output
@@ -150,14 +152,7 @@ void ETLElectronicsSim::run(const mtd::MTDSimHitDataAccumulator& input,
       uint16_t ToTdata = std::min(static_cast<uint16_t>(std::floor(tot[it] / toaLSB_ns_)), totMask);
       //If time over threshold is 0 the event is assumed to not pass the threshold
       if (ToTdata > 0 && chargeColl[it] >= adcThreshold_MIP_) {
-        outputTemp.emplace_back(rawId,
-                                header,
-                                status,
-                                colID,
-                                rowID,
-                                ToAdata,
-                                ToTdata,
-                                CALdata);
+        outputTemp.emplace_back(rawId, header, status, colID, rowID, ToAdata, ToTdata, CALdata);
       }
     }
   }
@@ -259,19 +254,24 @@ void ETLElectronicsSim::updateOutputSoA(mtd_digitizer::ETLDigiTempCollection& ou
   }
   for (size_t hitIndex = 0; hitIndex < nDigis; ++hitIndex) {
     const auto& digiTemp = outputTemp[hitIndex];
-    etlDigiView[hitIndex] = {digiTemp.rawId_,   digiTemp.header_,   digiTemp.status_,
-                             digiTemp.colID_,   digiTemp.rowID_,    digiTemp.ToAdata_,
-                             digiTemp.ToTdata_, digiTemp.CALdata_};
+    etlDigiView[hitIndex] = {digiTemp.rawId_,
+                             digiTemp.header_,
+                             digiTemp.status_,
+                             digiTemp.colID_,
+                             digiTemp.rowID_,
+                             digiTemp.ToAdata_,
+                             digiTemp.ToTdata_,
+                             digiTemp.CALdata_};
 
     if (debug_) {
-        edm::LogError("ETLElectronicsSim") << "Processed hit with rawId: " << etlDigiView[hitIndex].rawId()
-                                           << ", header: " << etlDigiView[hitIndex].header()
-                                           << ", status: " << etlDigiView[hitIndex].status()
-                                           << ", col: " << etlDigiView[hitIndex].colID()
-                                           << ", row: " << etlDigiView[hitIndex].rowID()
-                                           << ", toa: " << etlDigiView[hitIndex].ToAdata()
-                                           << ", tot: " << etlDigiView[hitIndex].ToTdata()
-                                           << ", cal: " << etlDigiView[hitIndex].CALdata() << std::endl;
+      edm::LogError("ETLElectronicsSim") << "Processed hit with rawId: " << etlDigiView[hitIndex].rawId()
+                                         << ", header: " << etlDigiView[hitIndex].header()
+                                         << ", status: " << etlDigiView[hitIndex].status()
+                                         << ", col: " << etlDigiView[hitIndex].colID()
+                                         << ", row: " << etlDigiView[hitIndex].rowID()
+                                         << ", toa: " << etlDigiView[hitIndex].ToAdata()
+                                         << ", tot: " << etlDigiView[hitIndex].ToTdata()
+                                         << ", cal: " << etlDigiView[hitIndex].CALdata() << std::endl;
     }
   }
 }

@@ -174,7 +174,6 @@ namespace mtd_digitizer {
     //handle sim hits
     const int maxSimHitsAccTime_;
     MTDSimHitDataAccumulator simHitAccumulator_;
-    BTLDigiTempCollection btlDigiTempCollection_;
     ETLDigiTempCollection etlDigiTempCollection_;
   };
 
@@ -258,17 +257,13 @@ namespace mtd_digitizer {
 
     } else if constexpr (std::is_same_v<Traits, BTLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
-      electronicsSim_.run(simHitAccumulator_, *digiCollection, btlDigiTempCollection_, hre);
-
-      typedef typename Traits::DigiCollectionSoA DigiCollectionSoA;
-      auto digiCollectionSoA =
-          std::make_unique<DigiCollectionSoA>(cms::alpakatools::host(), btlDigiTempCollection_.size());
-      electronicsSim_.updateOutputSoA(btlDigiTempCollection_, *digiCollectionSoA);
+      typedef typename Traits::MTDDigiCollection MTDDigiCollection;
+      auto digiMTDCollection = std::make_unique<MTDDigiCollection>();
+      electronicsSim_.run(simHitAccumulator_, *digiCollection, *digiMTDCollection, hre);
 
       e.put(std::move(digiCollection), digiCollection_);
-      e.put(std::move(digiCollectionSoA), digiCollectionSoA_);
+      e.put(std::move(digiMTDCollection), digiMTDCollection_);
 
-      btlDigiTempCollection_.clear();
     } else if constexpr (std::is_same_v<Traits, ETLDigitizerTraits>) {
       auto digiCollection = std::make_unique<DigiCollection>();
       electronicsSim_.run(simHitAccumulator_, *digiCollection, etlDigiTempCollection_, hre);

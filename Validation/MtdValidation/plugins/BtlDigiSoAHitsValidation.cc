@@ -556,7 +556,7 @@ void BtlDigiSoAHitsValidation::fillDescriptions(edm::ConfigurationDescriptions& 
   edm::ParameterSetDescription desc;
 
   desc.add<std::string>("folder", "MTD/BTL/DigiHitsSoA");
-  desc.add<edm::InputTag>("inputTag", edm::InputTag("mix", "FTLBarrelSoA"));
+  desc.add<edm::InputTag>("inputTag", edm::InputTag("btlDigiSoAProducer", "MTDBarrelSoA"));
   desc.add<bool>("optionalPlots", false);
 
   descriptions.add("btlDigiSoAHitsDefaultValid", desc);

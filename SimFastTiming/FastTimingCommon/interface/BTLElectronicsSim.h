@@ -10,6 +10,7 @@
 #include "CondFormats/MTDObjects/interface/BTLElectronicsMapping.h"
 
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
+#include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 #include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
 #include "SimFastTiming/FastTimingCommon/interface/MTDDigitizerTypes.h"
 
@@ -33,7 +34,7 @@ public:
 
   void run(const mtd::MTDSimHitDataAccumulator& input,
            BTLDigiCollection& output,
-           mtd_digitizer::BTLDigiTempCollection& outputTemp,
+           BTLDigiContentCollection& btloutput,
            CLHEP::HepRandomEngine* hre) const;
 
   void runTrivialShaper(BTLDataFrame& dataFrame,
@@ -46,8 +47,6 @@ public:
   bool checkValidHit(const BTLDataFrame& rawDataFrame) const;
 
   void updateOutput(BTLDigiCollection& coll, const BTLDataFrame& rawDataFrame) const;
-
-  void updateOutputSoA(mtd_digitizer::BTLDigiTempCollection& outputTemp, btldigi::BTLDigiHostCollection& coll) const;
 
   static constexpr int dfSIZE = 2;
 

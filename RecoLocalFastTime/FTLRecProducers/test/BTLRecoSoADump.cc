@@ -107,7 +107,7 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
       std::cout << "       energy = " << recHit.energy() << "  time = " << recHit.time()
                 << "  position = " << recHit.position() << " position error = " << recHit.positionError()
-		<< "  time error = " << recHit.timeError() << std::endl;
+                << "  time error = " << recHit.timeError() << std::endl;
 
     }  // recHit loop
 

@@ -31,18 +31,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
         auto entry = input[i];
         float time1 = 0;
         float time2 = 0;
-        float position = -1.; // dummy
-        float position_error = -1.; // dummy
+        float position = -1.;        // dummy
+        float position_error = -1.;  // dummy
         float time_error = 0;
-        float energy = -1; // dummy
-        uint8_t flag = 0; // assumed to be ok
+        float energy = -1;  // dummy
+        uint8_t flag = 0;   // assumed to be ok
 
         //!!!!!!! position error calculation to be added
 
         // time set
         time1 = entry.toa();
         time2 = entry.tot();
- 
+
         // --- Energy calibration
         energy = time2;  //for ETL, it is the time_over_threshold
         energy *= calibration_;
@@ -58,8 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 #ifdef EDM_ML_DEBUG
 
         printf("RecHit SoA with raw id %i \n", entry.detId().rawId());
-        printf(
-            "Time 1: %f +- %f \n", time1, time_error);
+        printf("Time 1: %f +- %f \n", time1, time_error);
         printf("Time 2: %f \n", time2);
         printf("Energy %f \n", energy);
         printf("Position: %f +- %f \n", position, position_error);
@@ -67,16 +66,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
 #endif
 
         // fill the rechit
-        output[i] = {entry.detId(),
-                     entry.row(),
-                     entry.column(),
-                     time1,
-                     time2,
-                     energy,
-                     position,
-                     time_error,
-                     position_error,
-                     flag};
+        output[i] = {
+            entry.detId(), entry.row(), entry.column(), time1, time2, energy, position, time_error, position_error, flag};
       }
     }
   };

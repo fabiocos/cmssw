@@ -48,8 +48,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::etlrechit {
       ETLRecHitDeviceCollection rh(event.queue(), baserh.view().metadata().size());
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      ETLRecHitSoAProducerAlgo::fromBaseToReco(
-          event.queue(), baserh.view(), rh.view(), thresholdToKeep_, calibration_);
+      ETLRecHitSoAProducerAlgo::fromBaseToReco(event.queue(), baserh.view(), rh.view(), thresholdToKeep_, calibration_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));

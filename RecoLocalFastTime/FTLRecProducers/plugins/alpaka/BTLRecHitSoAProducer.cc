@@ -11,7 +11,7 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
 
@@ -21,7 +21,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
 
-  class BTLRecHitSoAProducer : public global::EDProducer<> {
+  class BTLRecHitSoAProducer : public stream::EDProducer<> {
   public:
     // constructor
     BTLRecHitSoAProducer(edm::ParameterSet const& config)
@@ -42,7 +42,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    void produce(edm::StreamID sid, device::Event& event, device::EventSetup const& setup) const override {
+    void produce(device::Event& event, device::EventSetup const& setup) override {
       // NB should be inserted a method to retrieve calibrations, now they are fixed to default values
       // Get the base from the Event.
       BTLBaseRecHitDeviceCollection const& baserh = event.get(baserh_);

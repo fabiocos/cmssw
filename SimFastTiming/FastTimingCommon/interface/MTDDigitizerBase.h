@@ -9,7 +9,7 @@
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 
-#include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
+#include "DataFormats/FTLDigi/interface/MTDDigiCollections.h"
 #include "DataFormats/FTLDigiSoA/interface/ETLDigiHostCollection.h"
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
 #include "DataFormats/FTLDigi/interface/PMTDSimAccumulator.h"
@@ -37,6 +37,9 @@ public:
                    edm::ConsumesCollector& iC)
       : inputSimHits_(config.getParameter<edm::InputTag>("inputSimHits")),
         digiCollection_(config.getParameter<std::string>("digiCollectionTag")),
+        digiMTDCollection_(config.existsAs<std::string>("digiMTDCollectionTag")
+                               ? config.getParameter<std::string>("digiMTDCollectionTag")
+                               : ""),
         digiCollectionSoA_(config.existsAs<std::string>("digiCollectionSoATag")
                                ? config.getParameter<std::string>("digiCollectionSoATag")
                                : ""),
@@ -53,7 +56,7 @@ public:
         producesCollector.produces<PMTDSimAccumulator>(digiCollection_);
       } else {
         producesCollector.produces<BTLDigiCollection>(digiCollection_);
-        producesCollector.produces<btldigi::BTLDigiHostCollection>(digiCollectionSoA_);
+        producesCollector.produces<BTLDigiContentCollection>(digiMTDCollection_);
       }
     } else if (name_ == "ETLDigitizer")
       if (premixStage1_) {
@@ -91,6 +94,7 @@ protected:
   //input/output names
   const edm::InputTag inputSimHits_;
   const std::string digiCollection_;
+  const std::string digiMTDCollection_;
   const std::string digiCollectionSoA_;
 
   //misc switches
