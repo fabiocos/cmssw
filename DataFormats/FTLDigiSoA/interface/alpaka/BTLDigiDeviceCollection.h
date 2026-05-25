@@ -1,10 +1,10 @@
 #ifndef DataFormats_FTLDigiSoA_interface_alpaka_BTLDigiDeviceCollection_h
 #define DataFormats_FTLDigiSoA_interface_alpaka_BTLDigiDeviceCollection_h
 
-#include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
-#include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "DataFormats/FTLDigiSoA/interface/BTLDigiSoA.h"
+#include "DataFormats/FTLDigiSoA/interface/BTLDigiHostCollection.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btldigi {
 

@@ -91,7 +91,7 @@ void BTLDigiSoAProducer::produce(edm::Event& event, edm::EventSetup const&) {
 #endif
 
   // put into event
-  event.put(std::move(soa),digiCollectionSoA_);
+  event.put(std::move(soa), digiCollectionSoA_);
 }
 
 // plugin registration

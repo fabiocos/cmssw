@@ -30,5 +30,5 @@ mtdSimValid  = cms.Sequence(btlSimHitsValid  + etlSimHitsValid )
 mtdDigiValid = cms.Sequence(btlDigiHitsValid + btlDigiSoAHitsValid + etlDigiHitsValid)
 # mtdDigiValid = cms.Sequence(btlDigiHitsValid + etlDigiHitsValid)
 # mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + btlLocalRecoSoAValid + etlLocalRecoValid + etlLocalRecoSoAValid + mtdTracksValid + vertices4DValid)
-mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + etlLocalRecoValid + mtdTracksValid + vertices4DValid)
+mtdRecoValid = cms.Sequence(mtdAssociationProducers + btlLocalRecoValid + btlLocalRecoSoAValid + etlLocalRecoValid + mtdTracksValid + vertices4DValid)
 

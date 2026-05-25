@@ -20,7 +20,6 @@ RecoLocalFastTimeRECO.outputCommands.extend(RecoLocalFastTimeAOD.outputCommands)
 RecoLocalFastTimeFEVT = cms.PSet(
     outputCommands = cms.untracked.vstring(
         'keep *_mtdUncalibratedRecHits_*_*',
-        'keep *_btlDigiSoAProducer_MTDBarrelSoA_*',
         'keep *_btlBaseRecHitsSoA_*_*',
         'keep *_etlBaseRecHitsSoA_*_*',
         'keep *_mtdTrackingRecHits_*_*',
