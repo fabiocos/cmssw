@@ -73,7 +73,15 @@ void ETLDeviceSim::getHitsResponse(const std::vector<std::tuple<int, uint32_t, f
     }
     const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
     const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
-
+    // Selection no LGAD on 2nd disc front face
+    if (etlid.nDisc() == 2 && etlid.discSide() == 0) {
+      // angular selection on LGAD central position
+      Local3DPoint local_point(topo.localX(8), topo.localY(8), 0.);
+      const auto& global_point = thedet->toGlobal(local_point);
+      if (std::abs(global_point.eta()) < 2.1) {
+        continue;
+      }
+    }
     const float toa = std::get<2>(hitRefs[i]);
     const PSimHit& hit = hits->at(hitidx);
     float charge = convertGeVToMeV(hit.energyLoss()) * MIPPerMeV_;
