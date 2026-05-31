@@ -1,0 +1,3 @@
+<use name="EventFilter/MTDRawToDigi"/>
+<bin file="test_bitstream.cc">
+</bin>

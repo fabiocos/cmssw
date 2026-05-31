@@ -1,0 +1,110 @@
+#include "FWCore/Utilities/interface/Exception.h"
+
+#include <cstdint>
+#include <cstddef>
+#include <type_traits>
+#include <algorithm>
+
+template <std::size_t DIM>
+BitStream<DIM>::BitStream() {
+  for (std::size_t i = 0; i < DIM; ++i) {
+    data[i] = 0;
+  }
+}
+
+template <std::size_t DIM>
+void BitStream<DIM>::clear() {
+  for (std::size_t i = 0; i < DIM; ++i) {
+    data[i] = 0;
+  }
+}
+
+template <std::size_t DIM>
+void BitStream<DIM>::set_bits(std::size_t pos, std::size_t bitCount, uint64_t value) {
+  if (bitCount == 0) {
+    return;
+  }
+  if (bitCount > 64) {
+    throw cms::Exception("OutOfRange") << "bitCount must be <= 64";
+  }
+  if (pos + bitCount > BITS) {
+    throw cms::Exception("OutOfRange") << "write out of range";
+  }
+
+  // mask value to bitCount
+  uint64_t mask = (bitCount == 64) ? ~uint64_t(0) : ((uint64_t(1) << bitCount) - 1);
+  value &= mask;
+
+  std::size_t remaining = bitCount;
+  std::size_t bitPos = pos;
+
+  while (remaining > 0) {
+    std::size_t wordIndex = bitPos / WORD_BITS;
+    std::size_t offset = bitPos % WORD_BITS;
+    std::size_t canWrite = std::min<std::size_t>(remaining, WORD_BITS - offset);
+
+    uint64_t writeMask = ((canWrite == 64) ? ~uint64_t(0) : ((uint64_t(1) << canWrite) - 1)) << offset;
+    uint64_t chunk = (value & ((uint64_t(1) << canWrite) - 1)) << offset;
+
+    data[wordIndex] = (data[wordIndex] & ~writeMask) | (chunk & writeMask);
+
+    // advance
+    value >>= canWrite;
+    remaining -= canWrite;
+    bitPos += canWrite;
+  }
+}
+
+template <std::size_t DIM>
+uint64_t BitStream<DIM>::get_bits(std::size_t pos, std::size_t bitCount) const {
+  if (bitCount == 0) {
+    return 0;
+  }
+  if (bitCount > 64) {
+    throw cms::Exception("OutOfRange") << "bitCount must be <= 64";
+  }
+  if (pos + bitCount > BITS) {
+    throw cms::Exception("OutOfRange") << "read out of range";
+  }
+
+  uint64_t result = 0;
+  std::size_t remaining = bitCount;
+  std::size_t bitPos = pos;
+  std::size_t shift = 0;
+
+  while (remaining > 0) {
+    std::size_t wordIndex = bitPos / WORD_BITS;
+    std::size_t offset = bitPos % WORD_BITS;
+    std::size_t canRead = std::min<std::size_t>(remaining, WORD_BITS - offset);
+
+    uint64_t piece = (data[wordIndex] >> offset) & ((canRead == 64) ? ~uint64_t(0) : ((uint64_t(1) << canRead) - 1));
+    result |= (piece << shift);
+
+    remaining -= canRead;
+    bitPos += canRead;
+    shift += canRead;
+  }
+  return result;
+}
+
+template <std::size_t DIM>
+void BitStream<DIM>::set_bit(std::size_t pos, bool value) {
+  if (pos >= BITS) {
+    throw cms::Exception("OutOfRange") << "bit index out of range";
+  }
+  std::size_t idx = pos / WORD_BITS;
+  std::size_t off = pos % WORD_BITS;
+  if (value) {
+    data[idx] |= (word_t(1) << off);
+  } else {
+    data[idx] &= ~(word_t(1) << off);
+  }
+}
+
+template <std::size_t DIM>
+bool BitStream<DIM>::get_bit(std::size_t pos) const {
+  if (pos >= BITS) {
+    throw cms::Exception("OutOfRange") << "bit index out of range";
+  }
+  return (data[pos / WORD_BITS] >> (pos % WORD_BITS)) & 1;
+}
