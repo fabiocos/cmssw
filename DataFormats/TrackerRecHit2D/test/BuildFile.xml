@@ -11,3 +11,5 @@
   <use name="FWCore/ParameterSet"/>
   <use name="FWCore/Utilities"/>
 </library>
+
+<test name="testMTDTrackingRecHit" command="testMTDTrackingRecHit.sh"/>
